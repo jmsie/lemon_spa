@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>服務問卷</title>
+  <style>
+    body { font-family: "Noto Sans TC", system-ui, sans-serif; background: #0f172a0d; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1.25rem; }
+    main { width: min(680px, 100%); }
+    .card { background: #ffffff; padding: 2.5rem; border-radius: 1.25rem; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18); }
+    h1 { margin-top: 0; margin-bottom: 0.75rem; font-size: 2.2rem; color: #0f172a; text-align: center; }
+    .lead { margin: 0 0 1.75rem; color: #475569; text-align: center; line-height: 1.6; }
+    .session { background: #eff6ff; border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 0.85rem; padding: 1.25rem; margin-bottom: 1.75rem; }
+    .session h2 { margin: 0 0 0.5rem; font-size: 1.1rem; color: #1d4ed8; }
+    .session p { margin: 0; color: #1e293b; line-height: 1.5; }
+    form { display: flex; flex-direction: column; gap: 1.5rem; }
+    fieldset { border: none; margin: 0; padding: 0; }
+    legend { font-weight: 700; color: #0f172a; margin-bottom: 0.85rem; }
+    .rating-options { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .rating-option { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid #cbd5f5; background: #f8fafc; cursor: pointer; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .rating-option input { accent-color: #2563eb; }
+    .rating-option:hover { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+    textarea { width: 100%; border-radius: 0.85rem; border: 1px solid #cbd5f5; min-height: 140px; padding: 0.9rem 1rem; font-size: 1rem; resize: vertical; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+    button { align-self: center; background: #2563eb; color: #f8fafc; border: none; border-radius: 999px; padding: 0.85rem 2.8rem; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: background 0.2s ease, transform 0.1s ease; }
+    button:hover { background: #1d4ed8; }
+    button:active { transform: scale(0.98); }
+    .errors { border: 1px solid rgba(220, 38, 38, 0.4); background: #fef2f2; color: #b91c1c; padding: 0.85rem 1rem; border-radius: 0.75rem; }
+    .errors ul { margin: 0.5rem 0 0; padding-left: 1.5rem; }
+    @media (max-width: 640px) {
+      .card { padding: 1.75rem; }
+      .rating-options { gap: 0.75rem; }
+      .rating-option { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h1>服務問卷</h1>
+      <p class="lead">感謝您選擇 {{ therapist.nickname }} 的療程，花一點時間告訴我們這次的體驗如何。</p>
+
+      <div class="session">
+        <h2>本次預約</h2>
+        <p>
+          按摩師：<strong>{{ therapist.nickname }}</strong><br>
+          預約時間：<strong>{{ appointment.start_time|date:"Y/m/d H:i" }}</strong>
+        </p>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="errors">
+          <strong>請確認以下資訊：</strong>
+          <ul>
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+          <fieldset>
+            <legend>{{ field.label }}</legend>
+            {% if field.name == "rating" %}
+              <div class="rating-options">
+                {% for subfield in field %}
+                  <label class="rating-option">
+                    {{ subfield.tag }}
+                    <span>{{ subfield.choice_label }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            {% else %}
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}
+              <small>{{ field.help_text }}</small>
+            {% endif %}
+            {% if field.errors %}
+              <div class="errors">
+                <ul>
+                  {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          </fieldset>
+        {% endfor %}
+        <button type="submit">送出問卷</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

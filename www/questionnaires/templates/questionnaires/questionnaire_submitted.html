@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>感謝您的回饋</title>
+  <style>
+    body { font-family: "Noto Sans TC", system-ui, sans-serif; background: #f8fafc; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    main { width: min(520px, 100%); }
+    .card { background: #ffffff; padding: 2.5rem; border-radius: 1.25rem; box-shadow: 0 24px 40px rgba(15, 23, 42, 0.16); text-align: center; }
+    h1 { margin: 0 0 1rem; font-size: 2rem; color: #0f172a; }
+    p { color: #475569; line-height: 1.6; margin-bottom: 1.75rem; }
+    .highlight { color: #1d4ed8; font-weight: 600; }
+    .note { margin-top: 1.25rem; font-size: 0.95rem; color: #64748b; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h1>感謝您的回饋！</h1>
+      <p>
+        已收到您對 <span class="highlight">{{ therapist.nickname }}</span> 的服務評價。<br>
+        這些回饋能幫助我們提供更好的體驗。
+      </p>
+      <p class="note">您可以隨時關閉此頁面。</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,7 +1,11 @@
 """Data models for service questionnaires."""
 
+from __future__ import annotations
+
 from django.db import models
 from django.utils import timezone
+
+from appointments.models import Appointment
 
 
 class Questionnaire(models.Model):
@@ -9,6 +13,14 @@ class Questionnaire(models.Model):
 
     RATING_CHOICES = [(i, f"{i} 星") for i in range(1, 6)]
 
+    appointment = models.OneToOneField(
+        Appointment,
+        on_delete=models.PROTECT,
+        related_name="questionnaire",
+        verbose_name="預約",
+        null=True,
+        blank=True,
+    )
     therapist = models.ForeignKey(
         "therapist_panel.Therapist",
         on_delete=models.CASCADE,

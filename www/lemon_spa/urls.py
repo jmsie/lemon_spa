@@ -10,4 +10,5 @@ urlpatterns = [
     path("client_dashboard/", include("client_dashboard.urls", namespace="client_dashboard")),
     path("therapist_panel/", include("therapist_panel.urls", namespace="therapist_panel")),
     path("appointments/", include("appointments.urls", namespace="appointments")),
+    path("questionnaires/", include("questionnaires.urls")),
 ]

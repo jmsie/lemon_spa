@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>問卷已完成</title>
+  <style>
+    body { font-family: "Noto Sans TC", system-ui, sans-serif; background: #f8fafc; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    main { width: min(520px, 100%); }
+    .card { background: #ffffff; padding: 2.5rem; border-radius: 1.25rem; box-shadow: 0 24px 40px rgba(15, 23, 42, 0.16); text-align: center; }
+    h1 { margin: 0 0 1rem; font-size: 2rem; color: #0f172a; }
+    p { color: #475569; line-height: 1.6; margin-bottom: 1.75rem; }
+    .highlight { color: #1d4ed8; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h1>問卷已完成</h1>
+      <p>
+        您針對 <span class="highlight">{{ therapist.nickname }}</span> 在
+        <span class="highlight">{{ appointment.start_time|date:"Y/m/d H:i" }}</span> 的服務問卷已經填寫完成。
+      </p>
+      <p>若有其他回饋，歡迎直接與我們聯繫，謝謝！</p>
+    </section>
+  </main>
+</body>
+</html>
