@@ -1,3 +1,5 @@
-from django.shortcuts import render
+"""Legacy views for therapist panel."""
 
-# Create your views here.
+from therapist_panel.api.views import TherapistViewSet
+
+__all__ = ["TherapistViewSet"]

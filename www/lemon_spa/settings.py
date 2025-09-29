@@ -103,6 +103,7 @@ DEBUG = _env_bool("DJANGO_DEBUG")
 ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS", default=["localhost"])
 
 INSTALLED_APPS = [
+    "rest_framework",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
