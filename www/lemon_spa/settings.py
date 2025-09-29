@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     "accounts",
     "client_dashboard",
     "therapist_panel",
+    "questionnaires",
 ]
 
 MIDDLEWARE = [
