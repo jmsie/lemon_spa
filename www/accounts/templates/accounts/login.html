@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sign in</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f8fafc; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+    .container { background: #ffffff; padding: 2rem 2.5rem; border-radius: 0.75rem; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12); width: min(360px, 90%); }
+    h1 { margin-top: 0; font-size: 1.5rem; color: #0f172a; }
+    label { display: block; margin-top: 1rem; font-weight: 600; color: #0f172a; }
+    input { width: 100%; padding: 0.75rem; margin-top: 0.25rem; border: 1px solid #cbd5f5; border-radius: 0.5rem; font-size: 1rem; }
+    button { margin-top: 1.5rem; width: 100%; padding: 0.75rem; font-size: 1rem; font-weight: 600; color: #ffffff; background: #2563eb; border: none; border-radius: 0.5rem; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    .errorlist { margin: 1rem 0 0; padding: 0.75rem; border-radius: 0.5rem; list-style: none; background: #fee2e2; color: #b91c1c; }
+    .hint { margin-top: 1.5rem; color: #475569; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Welcome Back</h1>
+    {% if form.non_field_errors %}
+      <ul class="errorlist">
+        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if next %}
+        <input type="hidden" name="next" value="{{ next }}">
+      {% endif %}
+      <label for="id_username">Email or Username</label>
+      {{ form.username }}
+      <label for="id_password">Password</label>
+      {{ form.password }}
+      <button type="submit">Sign in</button>
+    </form>
+    <p class="hint">Use your assigned credentials to access either the therapist panel or the client dashboard.</p>
+  </main>
+</body>
+</html>

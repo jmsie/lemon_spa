@@ -11,13 +11,20 @@ class TherapistAdmin(admin.ModelAdmin):
         "nickname",
         "first_name",
         "last_name",
+        "user",
         "phone_number",
-        "email",
+        "get_email",
     )
     search_fields = (
         "first_name",
         "last_name",
         "nickname",
+        "user__username",
+        "user__email",
         "phone_number",
-        "email",
     )
+    autocomplete_fields = ("user",)
+
+    @admin.display(description="Email", ordering="user__email")
+    def get_email(self, obj):
+        return obj.user.email

@@ -7,5 +7,5 @@ from therapist_panel.api.serializers import TherapistSerializer
 
 
 class TherapistViewSet(viewsets.ModelViewSet):
-    queryset = Therapist.objects.all()
+    queryset = Therapist.objects.select_related("user").all()
     serializer_class = TherapistSerializer

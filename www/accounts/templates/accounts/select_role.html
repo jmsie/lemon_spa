@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Select Role</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f4f4f5; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { background: #ffffff; padding: 2.5rem; border-radius: 0.85rem; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12); width: min(420px, 95%); }
+    h1 { margin-top: 0; font-size: 1.8rem; color: #0f172a; }
+    p { color: #475569; margin-bottom: 1.5rem; }
+    form { display: flex; flex-direction: column; gap: 0.75rem; }
+    button { padding: 0.9rem 1.2rem; border-radius: 0.65rem; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    button.role-client { background: #0ea5e9; color: #f8fafc; }
+    button.role-therapist { background: #2563eb; color: #f8fafc; }
+    button:hover { filter: brightness(0.95); }
+    .hint { margin-top: 1.5rem; font-size: 0.9rem; color: #64748b; }
+  </style>
+</head>
+<body>
+  <section class="container">
+    <h1>Choose your role</h1>
+    <p>Select which workspace you’d like to open. You can switch later from the header.</p>
+    {% if roles %}
+      {% for role in roles %}
+        <form method="post">
+          {% csrf_token %}
+          {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+          {% endif %}
+          <input type="hidden" name="role" value="{{ role.key }}">
+          <button type="submit" class="role-{{ role.key }}">{{ role.label }}</button>
+        </form>
+      {% endfor %}
+    {% else %}
+      <p>No roles available. Please contact support.</p>
+    {% endif %}
+    <p class="hint">Your selection becomes the active role for this session.</p>
+  </section>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Client Dashboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 1.5rem 2rem; background: #0ea5e9; color: #f8fafc; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .user-bar { display: flex; align-items: center; gap: 0.75rem; }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .card { background: #ffffff; padding: 2.5rem; border-radius: 1rem; box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12); width: min(540px, 90%); }
+    h1 { margin: 0 0 1rem; font-size: 2rem; }
+    p { margin: 0.5rem 0; color: #334155; }
+    .switch-button, .logout-button { border-radius: 9999px; padding: 0.45rem 1.1rem; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; }
+    .switch-button { background: #2563eb; color: #f8fafc; }
+    .logout-button { background: transparent; color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.5); }
+    .logout-button:hover { background: rgba(220, 38, 38, 0.1); }
+    form { margin: 0; }
+    .actions { display: flex; gap: 0.75rem; }
+    .actions form { margin: 0; }
+    .role { margin-top: 0.5rem; color: #0ea5e9; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Client Dashboard</strong>
+    <div class="user-bar">
+      <span>{{ user.get_username }}</span>
+      <div class="actions">
+        {% if has_therapist_role %}
+          <form method="post" action="{% url 'accounts:switch_role' 'therapist' %}">
+            {% csrf_token %}
+            <button type="submit" class="switch-button">Go to Therapist Panel</button>
+          </form>
+        {% endif %}
+        <form method="post" action="{% url 'therapist_panel:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="logout-button">Sign out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="card">
+      <h1>Welcome {{ user.first_name|default:user.get_username }}</h1>
+      <p class="role">Active role: {{ active_role_label }}</p>
+      <p>This is the placeholder client dashboard. Replace this section with the real client tools and bookings overview.</p>
+    </section>
+  </main>
+</body>
+</html>
