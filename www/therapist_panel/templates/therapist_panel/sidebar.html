@@ -32,6 +32,14 @@
       </a>
     </li>    
     <li class="nav-item">
+      <a
+        href="{% url 'therapist_panel:reviews' %}"
+        class="nav-link {% if current_url_name == 'reviews' %}active{% else %}text-white-50{% endif %}"
+      >
+        Reviews
+      </a>
+    </li>
+    <li class="nav-item">
       <a href="#" class="nav-link text-white-50 disabled" tabindex="-1">Clients</a>
     </li>
     <li class="nav-item">

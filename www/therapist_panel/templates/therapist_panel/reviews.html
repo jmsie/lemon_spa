@@ -1,0 +1,137 @@
+{% extends "therapist_panel/base.html" %}
+
+{% block title %}Service Reviews | Therapist Panel{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h1 class="h3 mb-1">Service Reviews</h1>
+      <p class="text-body-secondary mb-0">View feedback from your clients and track overall satisfaction.</p>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4" id="reviews-summary" hidden>
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="text-body-secondary mb-1">Average Rating</p>
+          <h2 class="display-6 mb-0" id="average-rating">0</h2>
+          <small class="text-body-secondary" id="rating-count">Based on 0 reviews</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reviews-feedback"></div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-borderless mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" style="width: 120px;">Rating</th>
+              <th scope="col">Comment</th>
+              <th scope="col" style="width: 200px;">Submitted</th>
+            </tr>
+          </thead>
+          <tbody id="reviews-table-body">
+            <tr>
+              <td colspan="3" class="text-center py-4 text-body-secondary">No reviews yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    (function () {
+      const apiBase = "/api/questionnaires/questionnaires/";
+      const tableBody = document.getElementById("reviews-table-body");
+      const feedback = document.getElementById("reviews-feedback");
+      const summaryContainer = document.getElementById("reviews-summary");
+      const averageRatingEl = document.getElementById("average-rating");
+      const ratingCountEl = document.getElementById("rating-count");
+
+      function renderEmptyRow(message) {
+        tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-body-secondary">${message}</td></tr>`;
+      }
+
+      function showFeedback(message, type = "danger") {
+        feedback.innerHTML = `
+          <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>`;
+      }
+
+      function formatDate(isoString) {
+        if (!isoString) {
+          return "-";
+        }
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) {
+          return isoString;
+        }
+        return date.toLocaleString();
+      }
+
+      function renderSummary(items) {
+        if (!items.length) {
+          summaryContainer.hidden = true;
+          return;
+        }
+        const total = items.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+        const average = total / items.length;
+        averageRatingEl.textContent = average.toFixed(1);
+        ratingCountEl.textContent = `Based on ${items.length} review${items.length === 1 ? "" : "s"}`;
+        summaryContainer.hidden = false;
+      }
+
+      function renderRows(items) {
+        if (!items.length) {
+          renderEmptyRow("No reviews have been submitted yet.");
+          return;
+        }
+        const rows = items
+          .map((item) => {
+            const comment = item.comment ? item.comment.replace(/\n/g, "<br>") : "(No additional comments)";
+            return `
+              <tr>
+                <td>
+                  <span class="badge text-bg-primary fs-6">${item.rating}/5</span>
+                </td>
+                <td class="text-body-secondary">${comment}</td>
+                <td>${formatDate(item.created_at)}</td>
+              </tr>`;
+          })
+          .join("");
+        tableBody.innerHTML = rows;
+      }
+
+      async function loadReviews() {
+        renderEmptyRow("Loading reviews...");
+        try {
+          const response = await fetch(apiBase, {
+            headers: { Accept: "application/json" },
+          });
+          if (!response.ok) {
+            throw new Error("Unable to load reviews");
+          }
+          const data = await response.json();
+          const items = Array.isArray(data) ? data : data.results || [];
+          renderSummary(items);
+          renderRows(items);
+        } catch (error) {
+          renderEmptyRow("Failed to load reviews. Please try again later.");
+          showFeedback(error.message || "An unexpected error occurred.");
+        }
+      }
+
+      loadReviews();
+    })();
+  </script>
+{% endblock %}

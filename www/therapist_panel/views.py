@@ -72,9 +72,16 @@ class TherapistTreatmentManagementView(TherapistPanelContextMixin, TemplateView)
     template_name = "therapist_panel/treatments.html"
 
 
+class TherapistQuestionnaireListView(TherapistPanelContextMixin, TemplateView):
+    """Display questionnaires submitted for the logged-in therapist."""
+
+    template_name = "therapist_panel/reviews.html"
+
+
 __all__ = [
     "TherapistViewSet",
     "TherapistPanelIndexView",
     "TherapistProfileUpdateView",
     "TherapistTreatmentManagementView",
+    "TherapistQuestionnaireListView",
 ]

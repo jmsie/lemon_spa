@@ -7,6 +7,7 @@ from django.views.generic import RedirectView
 from therapist_panel.views import (
     TherapistPanelIndexView,
     TherapistProfileUpdateView,
+    TherapistQuestionnaireListView,
     TherapistTreatmentManagementView,
 )
 
@@ -22,5 +23,6 @@ urlpatterns = [
     path("", TherapistPanelIndexView.as_view(), name="index"),
     path("profile/", TherapistProfileUpdateView.as_view(), name="profile_edit"),
     path("treatments/", TherapistTreatmentManagementView.as_view(), name="treatments"),
+    path("reviews/", TherapistQuestionnaireListView.as_view(), name="reviews"),
     path("api/", include("therapist_panel.api.urls", namespace="api")),
 ]
