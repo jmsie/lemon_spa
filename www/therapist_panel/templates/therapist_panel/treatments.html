@@ -1,0 +1,304 @@
+{% extends "therapist_panel/base.html" %}
+
+{% block title %}Manage Treatments | Therapist Panel{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h1 class="h3 mb-1">Treatments</h1>
+      <p class="text-body-secondary mb-0">Create, edit, and enable your available sessions.</p>
+    </div>
+    <button type="button" class="btn btn-primary" id="add-treatment-btn">Add treatment</button>
+  </div>
+
+  <div id="treatments-feedback"></div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-borderless mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Price</th>
+              <th scope="col">Notes</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="treatments-table-body">
+            <tr>
+              <td colspan="6" class="text-center py-4 text-body-secondary">No treatments available.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="treatmentModal" tabindex="-1" aria-labelledby="treatmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="treatmentModalLabel">Add treatment</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="treatment-form">
+          <div class="modal-body">
+            <div id="form-errors"></div>
+            <div class="mb-3">
+              <label for="treatment-name" class="form-label">Name</label>
+              <input type="text" id="treatment-name" name="name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="treatment-duration" class="form-label">Duration (minutes)</label>
+              <input type="number" min="1" id="treatment-duration" name="duration_minutes" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="treatment-price" class="form-label">Price</label>
+              <input type="number" min="0" step="0.01" id="treatment-price" name="price" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="treatment-notes" class="form-label">Notes</label>
+              <textarea id="treatment-notes" name="notes" class="form-control" rows="3" placeholder="Optional"></textarea>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="1" id="treatment-active" name="is_active" checked>
+              <label class="form-check-label" for="treatment-active">Active</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="save-treatment-btn">Save treatment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    (function () {
+      const apiBase = "/api/therapist_panel/treatments/";
+      const tableBody = document.getElementById("treatments-table-body");
+      const feedback = document.getElementById("treatments-feedback");
+      const addButton = document.getElementById("add-treatment-btn");
+      const modalElement = document.getElementById("treatmentModal");
+      const modal = new bootstrap.Modal(modalElement);
+      const form = document.getElementById("treatment-form");
+      const modalTitle = document.getElementById("treatmentModalLabel");
+      const formErrors = document.getElementById("form-errors");
+      const activeCheckbox = document.getElementById("treatment-active");
+      let editingId = null;
+
+      function getCookie(name) {
+        const match = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") + "=([^;]*)"));
+        return match ? decodeURIComponent(match[1]) : null;
+      }
+
+      function resetForm() {
+        form.reset();
+        formErrors.innerHTML = "";
+        editingId = null;
+        activeCheckbox.checked = true;
+      }
+
+      function showFormErrors(errors) {
+        if (!errors) {
+          formErrors.innerHTML = "";
+          return;
+        }
+        const entries = Object.entries(errors);
+        if (!entries.length) {
+          formErrors.innerHTML = "";
+          return;
+        }
+        const list = entries
+          .map(([field, messages]) => `<div class="alert alert-danger" role="alert"><strong>${field}</strong>: ${[].concat(messages).join(" ")}</div>`)
+          .join("");
+        formErrors.innerHTML = list;
+      }
+
+      function showFeedback(message, type = "success") {
+        feedback.innerHTML = `
+          <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>`;
+      }
+
+      function formatPrice(price) {
+        const value = Number(price);
+        if (Number.isNaN(value)) {
+          return price;
+        }
+        return new Intl.NumberFormat(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(value);
+      }
+
+      function renderEmptyRow(message) {
+        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-body-secondary">${message}</td></tr>`;
+      }
+
+      function renderRows(items) {
+        if (!items.length) {
+          renderEmptyRow("No treatments yet. Add your first treatment to get started.");
+          return;
+        }
+        const rows = items
+          .map((item) => {
+            const statusBadge = item.is_active
+              ? '<span class="badge text-bg-success">Active</span>'
+              : '<span class="badge text-bg-secondary">Inactive</span>';
+            const notes = item.notes ? item.notes : "—";
+            return `
+              <tr data-id="${item.id}" data-active="${item.is_active}">
+                <td>${item.name}</td>
+                <td>${item.duration_minutes} min</td>
+                <td>${formatPrice(item.price)}</td>
+                <td class="text-body-secondary">${notes}</td>
+                <td>${statusBadge}</td>
+                <td class="text-end">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary" data-action="edit">Edit</button>
+                    <button type="button" class="btn btn-outline-${item.is_active ? "warning" : "success"}" data-action="toggle">
+                      ${item.is_active ? "Disable" : "Enable"}
+                    </button>
+                  </div>
+                </td>
+              </tr>`;
+          })
+          .join("");
+        tableBody.innerHTML = rows;
+      }
+
+      async function loadTreatments() {
+        renderEmptyRow("Loading treatments…");
+        try {
+          const response = await fetch(apiBase, {
+            headers: { Accept: "application/json" },
+          });
+          if (!response.ok) {
+            throw new Error("Unable to load treatments");
+          }
+          const data = await response.json();
+          const items = Array.isArray(data) ? data : data.results || [];
+          renderRows(items);
+        } catch (error) {
+          renderEmptyRow("Failed to load treatments. Please try again later.");
+        }
+      }
+
+      async function saveTreatment(event) {
+        event.preventDefault();
+        formErrors.innerHTML = "";
+        const payload = {
+          name: document.getElementById("treatment-name").value.trim(),
+          duration_minutes: Number(document.getElementById("treatment-duration").value),
+          price: document.getElementById("treatment-price").value,
+          notes: document.getElementById("treatment-notes").value.trim(),
+          is_active: activeCheckbox.checked,
+        };
+        const isEdit = Boolean(editingId);
+        const url = isEdit ? `${apiBase}${editingId}/` : apiBase;
+        const method = isEdit ? "PATCH" : "POST";
+        try {
+          const response = await fetch(url, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken") || "",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            showFormErrors(errorData);
+            return;
+          }
+
+          modal.hide();
+          showFeedback(isEdit ? "Treatment updated." : "Treatment created.");
+          await loadTreatments();
+        } catch (error) {
+          showFormErrors({ __all__: ["Unable to save treatment. Please try again."] });
+        }
+      }
+
+      async function toggleTreatment(row) {
+        const id = row.dataset.id;
+        const isActive = row.dataset.active === "true";
+        try {
+          const response = await fetch(`${apiBase}${id}/`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken") || "",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ is_active: !isActive }),
+          });
+          if (!response.ok) {
+            throw new Error("Unable to toggle treatment");
+          }
+          showFeedback(!isActive ? "Treatment enabled." : "Treatment disabled.", !isActive ? "success" : "warning");
+          await loadTreatments();
+        } catch (error) {
+          showFeedback("Failed to update treatment status.", "danger");
+        }
+      }
+
+      function populateForm(item) {
+        document.getElementById("treatment-name").value = item.name;
+        document.getElementById("treatment-duration").value = item.duration_minutes;
+        document.getElementById("treatment-price").value = item.price;
+        document.getElementById("treatment-notes").value = item.notes || "";
+        activeCheckbox.checked = item.is_active;
+      }
+
+      tableBody.addEventListener("click", async (event) => {
+        const action = event.target.getAttribute("data-action");
+        if (!action) {
+          return;
+        }
+        const row = event.target.closest("tr");
+        if (!row) {
+          return;
+        }
+        const id = row.dataset.id;
+        if (action === "edit") {
+          const response = await fetch(`${apiBase}${id}/`, { headers: { Accept: "application/json" } });
+          if (response.ok) {
+            const item = await response.json();
+            editingId = id;
+            modalTitle.textContent = "Edit treatment";
+            populateForm(item);
+            showFormErrors();
+            modal.show();
+          } else {
+            showFeedback("Unable to load treatment details.", "danger");
+          }
+        } else if (action === "toggle") {
+          await toggleTreatment(row);
+        }
+      });
+
+      addButton.addEventListener("click", () => {
+        resetForm();
+        modalTitle.textContent = "Add treatment";
+        modal.show();
+      });
+
+      modalElement.addEventListener("hidden.bs.modal", resetForm);
+      form.addEventListener("submit", saveTreatment);
+
+      loadTreatments();
+    })();
+  </script>
+{% endblock %}

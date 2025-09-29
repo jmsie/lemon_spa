@@ -66,8 +66,15 @@ class TherapistProfileUpdateView(TherapistPanelContextMixin, FormView):
         return super().form_valid(form)
 
 
+class TherapistTreatmentManagementView(TherapistPanelContextMixin, TemplateView):
+    """Interface for managing therapist treatments via the API."""
+
+    template_name = "therapist_panel/treatments.html"
+
+
 __all__ = [
     "TherapistViewSet",
     "TherapistPanelIndexView",
     "TherapistProfileUpdateView",
+    "TherapistTreatmentManagementView",
 ]
