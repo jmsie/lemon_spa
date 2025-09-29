@@ -43,6 +43,10 @@ class TherapistTreatment(models.Model):
         validators=[MinValueValidator(0)],
         help_text="Charge for the session in local currency.",
     )
+    preparation_minutes = models.PositiveIntegerField(
+        default=20,
+        help_text="Setup time required before the session begins.",
+    )
     notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

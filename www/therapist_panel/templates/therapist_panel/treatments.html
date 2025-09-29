@@ -22,6 +22,7 @@
               <th scope="col">Name</th>
               <th scope="col">Duration</th>
               <th scope="col">Price</th>
+              <th scope="col">Prep time</th>
               <th scope="col">Notes</th>
               <th scope="col">Status</th>
               <th scope="col" class="text-end">Actions</th>
@@ -29,7 +30,7 @@
           </thead>
           <tbody id="treatments-table-body">
             <tr>
-              <td colspan="6" class="text-center py-4 text-body-secondary">No treatments available.</td>
+              <td colspan="7" class="text-center py-4 text-body-secondary">No treatments available.</td>
             </tr>
           </tbody>
         </table>
@@ -58,6 +59,10 @@
             <div class="mb-3">
               <label for="treatment-price" class="form-label">Price</label>
               <input type="number" min="0" step="0.01" id="treatment-price" name="price" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="treatment-preparation" class="form-label">Preparation time (minutes)</label>
+              <input type="number" min="0" id="treatment-preparation" name="preparation_minutes" class="form-control" value="20" required>
             </div>
             <div class="mb-3">
               <label for="treatment-notes" class="form-label">Notes</label>
@@ -91,6 +96,7 @@
       const modalTitle = document.getElementById("treatmentModalLabel");
       const formErrors = document.getElementById("form-errors");
       const activeCheckbox = document.getElementById("treatment-active");
+      const preparationInput = document.getElementById("treatment-preparation");
       let editingId = null;
 
       function getCookie(name) {
@@ -103,6 +109,7 @@
         formErrors.innerHTML = "";
         editingId = null;
         activeCheckbox.checked = true;
+        preparationInput.value = 20;
       }
 
       function showFormErrors(errors) {
@@ -141,7 +148,7 @@
       }
 
       function renderEmptyRow(message) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-body-secondary">${message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-body-secondary">${message}</td></tr>`;
       }
 
       function renderRows(items) {
@@ -160,6 +167,7 @@
                 <td>${item.name}</td>
                 <td>${item.duration_minutes} min</td>
                 <td>${formatPrice(item.price)}</td>
+                <td>${item.preparation_minutes ?? 0} min</td>
                 <td class="text-body-secondary">${notes}</td>
                 <td>${statusBadge}</td>
                 <td class="text-end">
@@ -201,6 +209,7 @@
           duration_minutes: Number(document.getElementById("treatment-duration").value),
           price: document.getElementById("treatment-price").value,
           notes: document.getElementById("treatment-notes").value.trim(),
+          preparation_minutes: Number(preparationInput.value || 0),
           is_active: activeCheckbox.checked,
         };
         const isEdit = Boolean(editingId);
@@ -259,6 +268,7 @@
         document.getElementById("treatment-duration").value = item.duration_minutes;
         document.getElementById("treatment-price").value = item.price;
         document.getElementById("treatment-notes").value = item.notes || "";
+        preparationInput.value = item.preparation_minutes ?? 20;
         activeCheckbox.checked = item.is_active;
       }
 

@@ -14,6 +14,7 @@ class TherapistTreatmentSerializer(serializers.ModelSerializer):
             "name",
             "duration_minutes",
             "price",
+            "preparation_minutes",
             "notes",
             "is_active",
             "created_at",

@@ -8,7 +8,7 @@ from .models import Therapist, TherapistTreatment
 class TherapistTreatmentInline(admin.TabularInline):
     model = TherapistTreatment
     extra = 0
-    fields = ("name", "duration_minutes", "price", "is_active")
+    fields = ("name", "duration_minutes", "preparation_minutes", "price", "is_active")
     show_change_link = True
 
 
@@ -45,6 +45,7 @@ class TherapistTreatmentAdmin(admin.ModelAdmin):
         "therapist",
         "duration_minutes",
         "price",
+        "preparation_minutes",
         "is_active",
     )
     list_filter = ("is_active",)
