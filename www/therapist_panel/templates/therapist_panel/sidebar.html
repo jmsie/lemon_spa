@@ -1,0 +1,43 @@
+<div class="d-flex flex-column align-items-center align-items-sm-start px-3 py-4 text-white min-vh-100">
+  <a href="{% url 'therapist_panel:index' %}" class="d-flex align-items-center mb-3 text-white text-decoration-none w-100">
+    <span class="fs-4 fw-semibold">Therapist Panel</span>
+  </a>
+  <p class="text-white-50 small mb-4 w-100">Manage sessions, clients, and availability.</p>
+  <ul class="nav nav-pills flex-column w-100 gap-1">
+    <li class="nav-item">
+      <a
+        href="{% url 'therapist_panel:index' %}"
+        class="nav-link d-flex align-items-center justify-content-between {% if current_url_name == 'index' %}active{% else %}text-white-50{% endif %}"
+      >
+        <span>Dashboard</span>
+        {% if current_url_name == 'index' %}
+          <span class="badge text-bg-light text-dark">Now</span>
+        {% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="#" class="nav-link text-white-50 disabled" tabindex="-1">Clients</a>
+    </li>
+    <li class="nav-item">
+      <a href="#" class="nav-link text-white-50 disabled" tabindex="-1">Schedule</a>
+    </li>
+    <li class="nav-item">
+      <a href="#" class="nav-link text-white-50 disabled" tabindex="-1">Messages</a>
+    </li>
+  </ul>
+  <div class="mt-auto w-100">
+    <div class="d-flex align-items-center gap-3 mb-3 w-100">
+      <span class="badge text-bg-primary fs-6 rounded-circle p-3 lh-1">
+        {{ user.get_full_name|default:user.get_username|first|upper }}
+      </span>
+      <div class="d-flex flex-column">
+        <span class="fw-semibold">{{ user.get_full_name|default:user.get_username }}</span>
+        <span class="text-white-50 small">{{ active_role_label }}</span>
+      </div>
+    </div>
+    <form method="post" action="{% url 'therapist_panel:logout' %}" class="d-grid">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-light">Sign out</button>
+    </form>
+  </div>
+</div>

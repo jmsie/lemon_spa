@@ -23,6 +23,7 @@ class TherapistPanelIndexView(TherapistRoleRequiredMixin, TemplateView):
             therapist_profile = getattr(request.user, "therapist_profile", None)
         context.update(
             {
+                "current_url_name": getattr(request.resolver_match, "url_name", ""),
                 "active_role": active_role,
                 "active_role_label": role_to_label(active_role),
                 "has_client_role": user_has_role(request.user, ROLE_CLIENT),
