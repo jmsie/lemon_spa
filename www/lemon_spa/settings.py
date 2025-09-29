@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     "client_dashboard",
     "therapist_panel",
     "questionnaires",
+    "appointments",
 ]
 
 MIDDLEWARE = [

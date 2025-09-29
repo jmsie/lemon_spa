@@ -22,6 +22,25 @@
 
   <div class="row g-4">
     <div class="col-12 col-xl-8">
+      {% if therapist_profile and appointment_booking_url %}
+        <div class="card border-primary-subtle mb-4">
+          <div class="card-body">
+            <span class="badge text-bg-info mb-3">Share your link</span>
+            <h2 class="card-title h4">專屬預約網址</h2>
+            <p class="card-text">將此連結分享給客戶，讓他們直接預約 {{ therapist_profile.nickname }} 按摩師。</p>
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                value="{{ appointment_booking_url }}"
+                readonly
+                id="booking-link-input"
+              >
+              <button class="btn btn-outline-primary" type="button" data-copy-target="#booking-link-input">複製</button>
+            </div>
+          </div>
+        </div>
+      {% endif %}
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <span class="badge text-bg-primary mb-3">{{ active_role_label }}</span>
@@ -48,4 +67,61 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script>
+    (function () {
+      const button = document.querySelector('[data-copy-target="#booking-link-input"]');
+      if (!button) {
+        return;
+      }
+      button.addEventListener('click', () => {
+        const targetSelector = button.getAttribute('data-copy-target');
+        const input = document.querySelector(targetSelector);
+        if (!input) {
+          return;
+        }
+        const text = input.value;
+        const showFeedback = (message, isError = false) => {
+          button.disabled = false;
+          button.textContent = message;
+          button.classList.toggle('btn-success', !isError);
+          button.classList.toggle('btn-outline-primary', isError);
+          setTimeout(() => {
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-primary');
+            button.textContent = '複製';
+          }, 2000);
+        };
+
+        button.disabled = true;
+        button.textContent = '複製中…';
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(() => showFeedback('已複製！'))
+            .catch(() => {
+              input.select();
+              try {
+                document.execCommand('copy');
+                showFeedback('已複製！');
+              } catch (err) {
+                showFeedback('複製失敗', true);
+              }
+            });
+          return;
+        }
+
+        input.select();
+        try {
+          document.execCommand('copy');
+          showFeedback('已複製！');
+        } catch (err) {
+          showFeedback('複製失敗', true);
+        }
+      });
+    })();
+  </script>
 {% endblock %}

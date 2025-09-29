@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>按摩預約</title>
+  <style>
+    body { font-family: "Noto Sans TC", system-ui, sans-serif; background: #f1f5f9; margin: 0; padding: 0; display: flex; min-height: 100vh; align-items: center; justify-content: center; }
+    main { width: min(640px, 94%); }
+    .card { background: #ffffff; padding: 2.5rem; border-radius: 1rem; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12); }
+    h1 { margin-top: 0; margin-bottom: 1.5rem; font-size: 2rem; color: #0f172a; text-align: center; }
+    p.lead { margin-top: 0; margin-bottom: 1.5rem; color: #475569; text-align: center; }
+    form { display: grid; gap: 1.25rem; }
+    label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: #1e293b; }
+    input, select, textarea { width: 100%; padding: 0.75rem 0.85rem; border-radius: 0.6rem; border: 1px solid #cbd5f5; font-size: 1rem; background: #f8fafc; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); background: #fff; }
+    .actions { text-align: center; }
+    button { background: #0ea5e9; border: none; color: #f8fafc; border-radius: 9999px; padding: 0.75rem 2.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s ease, transform 0.1s ease; }
+    button:hover { background: #0284c7; }
+    button:active { transform: scale(0.98); }
+    .messages { list-style: none; padding: 0.75rem 1rem; margin: 0 0 1.25rem; border-radius: 0.75rem; background: #ecfdf5; color: #047857; border: 1px solid rgba(5, 150, 105, 0.35); }
+    .field-errors { margin-top: 0.35rem; color: #dc2626; font-size: 0.9rem; }
+    .field-errors li { margin-left: 1rem; }
+    .selected-therapist { background: #eff6ff; border: 1px solid rgba(59, 130, 246, 0.35); padding: 0.85rem 1rem; border-radius: 0.75rem; color: #1d4ed8; margin-bottom: 1rem; font-weight: 600; text-align: center; }
+    @media (max-width: 640px) {
+      .card { padding: 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h1>按摩預約</h1>
+      <p class="lead">留下聯絡資訊，我們會協助安排合適的時段。</p>
+
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if selected_therapist %}
+        <div class="selected-therapist">
+          為 {{ selected_therapist.nickname }} 按摩師建立預約
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        {% for hidden_field in form.hidden_fields %}
+          {{ hidden_field }}
+        {% endfor %}
+        {% if form.non_field_errors %}
+          <div class="field-errors">
+            <ul>
+              {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        {% for field in form.visible_fields %}
+          <div class="form-field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+            {{ field }}
+            {% if field.help_text %}
+              <small>{{ field.help_text }}</small>
+            {% endif %}
+            {% if field.errors %}
+              <ul class="field-errors">
+                {% for error in field.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <div class="actions">
+          <button type="submit">送出預約</button>
+        </div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

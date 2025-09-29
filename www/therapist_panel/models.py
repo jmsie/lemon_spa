@@ -1,11 +1,16 @@
 """Data models for therapist information."""
 
+from __future__ import annotations
+
+import uuid
+
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
 
 class Therapist(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

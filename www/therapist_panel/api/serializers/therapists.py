@@ -16,6 +16,7 @@ class TherapistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Therapist
         fields = [
+            "uuid",
             "id",
             "user",
             "email",
@@ -27,7 +28,7 @@ class TherapistSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "email"]
+        read_only_fields = ["id", "uuid", "created_at", "updated_at", "email"]
 
     def validate_user(self, user: User) -> User:
         if self.instance and self.instance.user == user:

@@ -2,7 +2,7 @@
 
 from django.contrib import messages
 from django.http import Http404
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import FormView, TemplateView
 
 from accounts.constants import ROLE_CLIENT, ROLE_THERAPIST
@@ -36,6 +36,12 @@ class TherapistPanelContextMixin(TherapistRoleRequiredMixin):
                 "therapist_profile": self.get_therapist_profile() if has_therapist_role else None,
             }
         )
+        profile = context.get("therapist_profile")
+        if profile:
+            booking_path = reverse("appointments:book_with_therapist", args=[profile.uuid])
+            context["appointment_booking_url"] = request.build_absolute_uri(booking_path)
+        else:
+            context["appointment_booking_url"] = None
         return context
 
 

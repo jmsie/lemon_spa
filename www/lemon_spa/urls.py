@@ -9,4 +9,5 @@ urlpatterns = [
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("client_dashboard/", include("client_dashboard.urls", namespace="client_dashboard")),
     path("therapist_panel/", include("therapist_panel.urls", namespace="therapist_panel")),
+    path("appointments/", include("appointments.urls", namespace="appointments")),
 ]
