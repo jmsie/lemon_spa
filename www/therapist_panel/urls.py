@@ -4,7 +4,7 @@ from django.contrib.auth.views import LogoutView
 from django.urls import include, path
 from django.views.generic import RedirectView
 
-from therapist_panel.views import TherapistPanelIndexView
+from therapist_panel.views import TherapistPanelIndexView, TherapistProfileUpdateView
 
 app_name = "therapist_panel"
 
@@ -16,5 +16,6 @@ urlpatterns = [
     ),
     path("logout/", LogoutView.as_view(next_page="accounts:login"), name="logout"),
     path("", TherapistPanelIndexView.as_view(), name="index"),
+    path("profile/", TherapistProfileUpdateView.as_view(), name="profile_edit"),
     path("api/", include("therapist_panel.api.urls", namespace="api")),
 ]
