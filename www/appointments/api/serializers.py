@@ -12,13 +12,20 @@ from appointments.models import Appointment
 class AppointmentSerializer(serializers.ModelSerializer):
     """Expose appointment details for API access."""
 
+    therapist_uuid = serializers.UUIDField(source="therapist.uuid", read_only=True)
+    therapist_name = serializers.CharField(source="therapist.nickname", read_only=True)
+    treatment_name = serializers.CharField(source="treatment.name", read_only=True)
+
     class Meta:
         model = Appointment
         fields = [
             "id",
             "uuid",
             "therapist",
+            "therapist_uuid",
+            "therapist_name",
             "treatment",
+            "treatment_name",
             "start_time",
             "end_time",
             "customer_name",

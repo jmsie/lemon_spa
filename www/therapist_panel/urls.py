@@ -24,5 +24,9 @@ urlpatterns = [
     path("profile/", TherapistProfileUpdateView.as_view(), name="profile_edit"),
     path("treatments/", TherapistTreatmentManagementView.as_view(), name="treatments"),
     path("reviews/", TherapistQuestionnaireListView.as_view(), name="reviews"),
+    path(
+        "schedule/",
+        include(("scheduling.urls", "scheduling"), namespace="scheduling"),
+    ),
     path("api/", include("therapist_panel.api.urls", namespace="api")),
 ]
