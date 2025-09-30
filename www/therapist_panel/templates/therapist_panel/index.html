@@ -2,6 +2,21 @@
 
 {% block title %}Dashboard | Therapist Panel{% endblock %}
 
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .appointment-item.past {
+      opacity: 0.55;
+      filter: grayscale(0.35);
+    }
+    .appointment-item.past strong,
+    .appointment-item.past span,
+    .appointment-item.past small {
+      color: var(--bs-secondary-color, #6c757d);
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
@@ -41,6 +56,33 @@
           </div>
         </div>
       {% endif %}
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <span class="badge text-bg-secondary mb-3">Today's schedule</span>
+            <h2 class="card-title h4">今日預約</h2>
+            <!-- current time is: -->
+            <strong>{{ current_time|date:"H:i" }}</strong>
+            {% if today_appointments %}
+            <ul class="list-group list-group-flush">
+              {% for appointment in today_appointments %}
+                {% if appointment.end_time <= current_time %}
+                  <li class="list-group-item px-0 appointment-item past">
+                {% else %}
+                  <li class="list-group-item px-0 appointment-item">
+                {% endif %}
+                    <div class="d-flex justify-content-between flex-wrap gap-2">
+                      <strong>{{ appointment.start_time|date:"H:i" }} – {{ appointment.end_time|date:"H:i" }}</strong>
+                      <span>{{ appointment.customer_name }}</span>
+                    </div>
+                    <small class="d-block text-body-secondary">{{ appointment.treatment.name }}</small>
+                    <small class="d-block text-body-secondary">☎ {{ appointment.customer_phone }}</small>
+                  </li>
+              {% endfor %}
+            </ul>
+            {% endif %}            
+          </div>
+        </div>
+
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <span class="badge text-bg-primary mb-3">{{ active_role_label }}</span>

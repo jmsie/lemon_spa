@@ -8,7 +8,9 @@ from django.views.generic import FormView, TemplateView
 from accounts.constants import ROLE_CLIENT, ROLE_THERAPIST
 from accounts.mixins import TherapistRoleRequiredMixin
 from accounts.services import get_active_role, role_to_label, user_has_role
+from django.utils import timezone
 from therapist_panel.api.views import TherapistViewSet
+from therapist_panel.services import get_today_appointments
 from therapist_panel.forms import TherapistProfileForm
 
 
@@ -40,8 +42,11 @@ class TherapistPanelContextMixin(TherapistRoleRequiredMixin):
         if profile:
             booking_path = reverse("appointments:book_with_therapist", args=[profile.uuid])
             context["appointment_booking_url"] = request.build_absolute_uri(booking_path)
+            context["today_appointments"] = get_today_appointments(profile)
         else:
             context["appointment_booking_url"] = None
+            context["today_appointments"] = []
+        context["current_time"] = timezone.now()
         return context
 
 
