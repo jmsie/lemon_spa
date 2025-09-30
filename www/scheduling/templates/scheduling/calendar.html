@@ -63,6 +63,45 @@
       </div>
     </div>
   </div>
+
+  <div class="modal fade" id="appointmentCreateModal" tabindex="-1" aria-labelledby="appointmentCreateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="appointmentCreateModalLabel">新增預約</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="appointment-create-form" novalidate>
+            <div class="mb-3">
+              <label for="create-start-time" class="form-label">開始時間</label>
+              <input type="datetime-local" class="form-control" id="create-start-time" name="start_time" required>
+            </div>
+            <div class="mb-3">
+              <label for="create-treatment" class="form-label">療程</label>
+              <select class="form-select" id="create-treatment" name="treatment" required></select>
+            </div>
+            <div class="mb-3">
+              <label for="create-customer-name" class="form-label">顧客姓名</label>
+              <input type="text" class="form-control" id="create-customer-name" name="customer_name" required>
+            </div>
+            <div class="mb-3">
+              <label for="create-customer-phone" class="form-label">顧客電話</label>
+              <input type="tel" class="form-control" id="create-customer-phone" name="customer_phone" required>
+            </div>
+            <div class="mb-3">
+              <label for="create-note" class="form-label">備註</label>
+              <textarea class="form-control" id="create-note" name="note" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="appointment-create-save">建立預約</button>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -108,11 +147,67 @@
       const formEl = document.getElementById('appointment-form');
       const saveButton = document.getElementById('appointment-save');
       const cancelButton = document.getElementById('appointment-cancel');
+      const createModalEl = document.getElementById('appointmentCreateModal');
+      const createModal = createModalEl ? new bootstrap.Modal(createModalEl) : null;
+      const createFormEl = document.getElementById('appointment-create-form');
+      const createSaveButton = document.getElementById('appointment-create-save');
+      const createTreatmentSelect = document.getElementById('create-treatment');
 
       let activeEvent = null;
+      let cachedTreatments = null;
 
       const appointmentsApiBase = '{{ appointments_api_url }}';
       const appointmentDetailUrl = (uuid) => `${appointmentsApiBase}${uuid}/`;
+      const appointmentListUrl = () => appointmentsApiBase;
+
+      const toLocalInputValue = (date) => {
+        if (!date) {
+          return '';
+        }
+        const local = new Date(date);
+        local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
+        return local.toISOString().slice(0, 16);
+      };
+
+      const loadTreatments = async () => {
+        if (cachedTreatments) {
+          return cachedTreatments;
+        }
+        try {
+          const response = await fetch('{% url "therapist_panel:api:treatments:treatment-list" %}', {
+            headers: { 'Accept': 'application/json' },
+          });
+          if (!response.ok) {
+            throw new Error('failed to load treatments');
+          }
+          const data = await response.json();
+          cachedTreatments = data;
+          return data;
+        } catch (error) {
+          console.error(error);
+          showFeedback('無法載入療程清單，請稍後再試。', 'danger');
+          return [];
+        }
+      };
+
+      const populateTreatmentSelect = async () => {
+        if (!createTreatmentSelect) {
+          return;
+        }
+        const treatments = await loadTreatments();
+        createTreatmentSelect.innerHTML = '';
+        for (const treatment of treatments) {
+          if (!treatment.is_active) {
+            continue;
+          }
+          const option = document.createElement('option');
+          option.value = treatment.id;
+          option.textContent = `${treatment.name} (${treatment.duration_minutes} 分)`;
+          option.dataset.duration = treatment.duration_minutes;
+          option.dataset.preparation = treatment.preparation_minutes;
+          createTreatmentSelect.appendChild(option);
+        }
+      };
 
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
@@ -129,6 +224,7 @@
         scrollTime: '09:00:00',
         editable: true,
         eventDurationEditable: false,
+        selectable: true,
         eventSources: [
           {
             events: async function(info, successCallback, failureCallback) {
@@ -237,6 +333,23 @@
             info.revert();
           }
         },
+        select: async function(selectionInfo) {
+          if (!createModal || !createFormEl || !createTreatmentSelect) {
+            return;
+          }
+
+          await populateTreatmentSelect();
+          if (!createTreatmentSelect.options.length) {
+            showFeedback('目前沒有可用的療程，請先建立療程。', 'warning');
+            return;
+          }
+
+          createFormEl.reset();
+          const startLocal = toLocalInputValue(selectionInfo.start);
+          createFormEl.querySelector('[name="start_time"]').value = startLocal;
+          createModal.show();
+          calendar.unselect();
+        },
       });
 
       calendar.render();
@@ -316,6 +429,47 @@
           } catch (error) {
             console.error(error);
             showFeedback('取消失敗，請稍後再試。', 'danger');
+          }
+        });
+      }
+
+      if (createSaveButton && createFormEl && createModal) {
+        createSaveButton.addEventListener('click', async () => {
+          const startInput = createFormEl.querySelector('[name="start_time"]');
+          const treatmentOption = createTreatmentSelect && createTreatmentSelect.options[createTreatmentSelect.selectedIndex];
+          if (!startInput || !treatmentOption) {
+            return;
+          }
+
+          const payload = {
+            start_time: new Date(startInput.value).toISOString(),
+            treatment: Number(treatmentOption.value),
+            customer_name: createFormEl.querySelector('[name="customer_name"]').value.trim(),
+            customer_phone: createFormEl.querySelector('[name="customer_phone"]').value.trim(),
+            note: createFormEl.querySelector('[name="note"]').value.trim(),
+          };
+
+          try {
+            const response = await fetch(appointmentListUrl(), {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              throw new Error('預約建立失敗');
+            }
+
+            createModal.hide();
+            showFeedback('預約已建立。', 'success');
+            calendar.refetchEvents();
+          } catch (error) {
+            console.error(error);
+            showFeedback('建立預約失敗，請確認資料後再試。', 'danger');
           }
         });
       }

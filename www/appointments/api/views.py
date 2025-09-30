@@ -45,3 +45,17 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(start_time__lt=end)
 
         return queryset
+
+    def perform_create(self, serializer):
+        therapist = getattr(self.request.user, "therapist_profile", None)
+        if therapist is None:
+            serializer.save()
+        else:
+            serializer.save(therapist=therapist)
+
+    def perform_update(self, serializer):
+        therapist = getattr(self.request.user, "therapist_profile", None)
+        if therapist is None:
+            serializer.save()
+        else:
+            serializer.save(therapist=therapist)

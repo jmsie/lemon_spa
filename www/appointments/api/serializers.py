@@ -36,6 +36,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "uuid",
+            "therapist",
             "end_time",
             "therapist_uuid",
             "therapist_name",
