@@ -31,8 +31,16 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "customer_name",
             "customer_phone",
             "note",
+            "is_cancelled",
         ]
-        read_only_fields = ["id", "uuid", "end_time"]
+        read_only_fields = [
+            "id",
+            "uuid",
+            "end_time",
+            "therapist_uuid",
+            "therapist_name",
+            "treatment_name",
+        ]
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         therapist = attrs.get("therapist") or getattr(self.instance, "therapist", None)

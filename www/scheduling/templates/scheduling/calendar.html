@@ -10,6 +10,11 @@
     .fc-event-time { font-weight: 500; }
     .fc-event-customer { font-size: 0.85rem; }
     .fc-event-phone { font-size: 0.8rem; color: #64748b; }
+    .fc-event.appointment-cancelled,
+    .fc-event.appointment-cancelled .fc-event-main {
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
   </style>
 {% endblock %}
 
@@ -51,6 +56,7 @@
           </form>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-outline-danger me-auto" id="appointment-cancel">取消預約</button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
           <button type="button" class="btn btn-primary" id="appointment-save">儲存變更</button>
         </div>
@@ -101,6 +107,7 @@
       const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
       const formEl = document.getElementById('appointment-form');
       const saveButton = document.getElementById('appointment-save');
+      const cancelButton = document.getElementById('appointment-cancel');
 
       let activeEvent = null;
 
@@ -144,7 +151,9 @@
                     customerName: item.customer_name,
                     customerPhone: item.customer_phone,
                     note: item.note,
+                    isCancelled: item.is_cancelled,
                   },
+                  classNames: item.is_cancelled ? ['appointment-cancelled'] : [],
                 }));
                 successCallback(events);
               } catch (error) {
@@ -159,7 +168,9 @@
 
           const titleEl = document.createElement('div');
           titleEl.classList.add('fc-event-title');
-          titleEl.textContent = arg.event.title;
+          const baseTitle = arg.event.title;
+          const isCancelled = Boolean(arg.event.extendedProps.isCancelled);
+          titleEl.textContent = isCancelled ? `${baseTitle} (已取消)` : baseTitle;
           container.appendChild(titleEl);
 
           const customerName = arg.event.extendedProps.customerName;
@@ -190,10 +201,18 @@
           formEl.querySelector('[name="customer_name"]').value = activeEvent.extendedProps.customerName || '';
           formEl.querySelector('[name="customer_phone"]').value = activeEvent.extendedProps.customerPhone || '';
           formEl.querySelector('[name="note"]').value = activeEvent.extendedProps.note || '';
+          if (cancelButton) {
+            cancelButton.disabled = Boolean(activeEvent.extendedProps.isCancelled);
+          }
           modal.show();
         },
         eventDrop: async function(info) {
           if (!info.event.start) {
+            return;
+          }
+          if (info.event.extendedProps.isCancelled) {
+            showFeedback('已取消的預約無法調整時間。', 'warning');
+            info.revert();
             return;
           }
           try {
@@ -256,6 +275,47 @@
           } catch (error) {
             console.error(error);
             showFeedback('更新失敗，請確認資料後再試。', 'danger');
+          }
+        });
+      }
+
+      if (cancelButton && modal) {
+        cancelButton.addEventListener('click', async () => {
+          if (!activeEvent) {
+            return;
+          }
+
+          if (activeEvent.extendedProps.isCancelled) {
+            modal.hide();
+            return;
+          }
+
+          if (!window.confirm('確認要取消這筆預約嗎？')) {
+            return;
+          }
+
+          try {
+            const response = await fetch(appointmentDetailUrl(activeEvent.id), {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({ is_cancelled: true }),
+            });
+
+            if (!response.ok) {
+              throw new Error('預約取消失敗');
+            }
+
+            modal.hide();
+            showFeedback('預約已取消。', 'warning');
+            activeEvent = null;
+            calendar.refetchEvents();
+          } catch (error) {
+            console.error(error);
+            showFeedback('取消失敗，請稍後再試。', 'danger');
           }
         });
       }

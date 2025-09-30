@@ -15,6 +15,7 @@ class AppointmentAdmin(admin.ModelAdmin):
         "end_time",
         "customer_name",
         "customer_phone",
+        "is_cancelled",
     )
     search_fields = (
         "customer_name",
@@ -23,5 +24,5 @@ class AppointmentAdmin(admin.ModelAdmin):
         "therapist__last_name",
         "therapist__nickname",
     )
-    list_filter = ("therapist", "treatment")
+    list_filter = ("therapist", "treatment", "is_cancelled")
     ordering = ("-start_time",)

@@ -27,6 +27,7 @@ class Appointment(models.Model):
     customer_name = models.CharField(max_length=150)
     customer_phone = models.CharField(max_length=32)
     note = models.TextField(blank=True)
+    is_cancelled = models.BooleanField(default=False)
 
     class Meta:
         db_table = "appoinments"
