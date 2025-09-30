@@ -22,7 +22,39 @@
   </div>
   <div class="card shadow-sm">
     <div class="card-body">
+      <div id="schedule-feedback" class="alert d-none" role="alert"></div>
       <div id="schedule-calendar"></div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="appointmentModalLabel">編輯預約</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="appointment-form" novalidate>
+            <div class="mb-3">
+              <label for="appointment-customer-name" class="form-label">顧客姓名</label>
+              <input type="text" class="form-control" id="appointment-customer-name" name="customer_name" required>
+            </div>
+            <div class="mb-3">
+              <label for="appointment-customer-phone" class="form-label">顧客電話</label>
+              <input type="tel" class="form-control" id="appointment-customer-phone" name="customer_phone" required>
+            </div>
+            <div class="mb-3">
+              <label for="appointment-note" class="form-label">備註</label>
+              <textarea class="form-control" id="appointment-note" name="note" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="appointment-save">儲存變更</button>
+        </div>
+      </div>
     </div>
   </div>
 {% endblock %}
@@ -40,6 +72,41 @@
         return;
       }
 
+      const csrfToken = (function() {
+        const name = 'csrftoken=';
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+          const trimmed = cookie.trim();
+          if (trimmed.startsWith(name)) {
+            return decodeURIComponent(trimmed.substring(name.length));
+          }
+        }
+        return '';
+      })();
+
+      const feedbackEl = document.getElementById('schedule-feedback');
+      const showFeedback = (message, variant = 'success') => {
+        if (!feedbackEl) {
+          return;
+        }
+        feedbackEl.className = `alert alert-${variant}`;
+        feedbackEl.textContent = message;
+        feedbackEl.classList.remove('d-none');
+        setTimeout(() => {
+          feedbackEl.classList.add('d-none');
+        }, 3000);
+      };
+
+      const modalEl = document.getElementById('appointmentModal');
+      const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
+      const formEl = document.getElementById('appointment-form');
+      const saveButton = document.getElementById('appointment-save');
+
+      let activeEvent = null;
+
+      const appointmentsApiBase = '{{ appointments_api_url }}';
+      const appointmentDetailUrl = (uuid) => `${appointmentsApiBase}${uuid}/`;
+
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
         headerToolbar: {
@@ -53,6 +120,8 @@
         locale: 'zh-tw',
         firstDay: 1,
         scrollTime: '09:00:00',
+        editable: true,
+        eventDurationEditable: false,
         eventSources: [
           {
             events: async function(info, successCallback, failureCallback) {
@@ -71,8 +140,10 @@
                   start: item.start_time,
                   end: item.end_time,
                   extendedProps: {
+                    therapistUuid: item.therapist_uuid,
                     customerName: item.customer_name,
                     customerPhone: item.customer_phone,
+                    note: item.note,
                   },
                 }));
                 successCallback(events);
@@ -109,9 +180,85 @@
 
           return { domNodes: [container] };
         },
+        eventClick: function(info) {
+          info.jsEvent.preventDefault();
+          activeEvent = info.event;
+          if (!formEl || !modal) {
+            return;
+          }
+          formEl.reset();
+          formEl.querySelector('[name="customer_name"]').value = activeEvent.extendedProps.customerName || '';
+          formEl.querySelector('[name="customer_phone"]').value = activeEvent.extendedProps.customerPhone || '';
+          formEl.querySelector('[name="note"]').value = activeEvent.extendedProps.note || '';
+          modal.show();
+        },
+        eventDrop: async function(info) {
+          if (!info.event.start) {
+            return;
+          }
+          try {
+            await fetch(appointmentDetailUrl(info.event.id), {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({ start_time: info.event.start.toISOString() }),
+            }).then((response) => {
+              if (!response.ok) {
+                throw new Error('時間更新失敗');
+              }
+            });
+            showFeedback('預約時間已更新。');
+            calendar.refetchEvents();
+          } catch (error) {
+            console.error(error);
+            showFeedback('更新失敗，請稍後再試。', 'danger');
+            info.revert();
+          }
+        },
       });
 
       calendar.render();
+
+      if (saveButton && formEl && modal) {
+        saveButton.addEventListener('click', async () => {
+          if (!activeEvent) {
+            return;
+          }
+
+          const payload = {
+            customer_name: formEl.querySelector('[name="customer_name"]').value.trim(),
+            customer_phone: formEl.querySelector('[name="customer_phone"]').value.trim(),
+            note: formEl.querySelector('[name="note"]').value.trim(),
+          };
+
+          try {
+            const response = await fetch(appointmentDetailUrl(activeEvent.id), {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              throw new Error('預約更新失敗');
+            }
+
+            modal.hide();
+            showFeedback('預約資訊已更新。');
+            activeEvent = null;
+            calendar.refetchEvents();
+          } catch (error) {
+            console.error(error);
+            showFeedback('更新失敗，請確認資料後再試。', 'danger');
+          }
+        });
+      }
     })();
   </script>
 {% endblock %}
