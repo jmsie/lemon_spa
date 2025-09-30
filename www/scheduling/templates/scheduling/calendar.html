@@ -42,6 +42,10 @@
         <div class="modal-body">
           <form id="appointment-form" novalidate>
             <div class="mb-3">
+              <label for="appointment-treatment" class="form-label">療程</label>
+              <select class="form-select" id="appointment-treatment" name="treatment" required></select>
+            </div>
+            <div class="mb-3">
               <label for="appointment-customer-name" class="form-label">顧客姓名</label>
               <input type="text" class="form-control" id="appointment-customer-name" name="customer_name" required>
             </div>
@@ -147,6 +151,7 @@
       const formEl = document.getElementById('appointment-form');
       const saveButton = document.getElementById('appointment-save');
       const cancelButton = document.getElementById('appointment-cancel');
+      const editTreatmentSelect = document.getElementById('appointment-treatment');
       const createModalEl = document.getElementById('appointmentCreateModal');
       const createModal = createModalEl ? new bootstrap.Modal(createModalEl) : null;
       const createFormEl = document.getElementById('appointment-create-form');
@@ -190,12 +195,12 @@
         }
       };
 
-      const populateTreatmentSelect = async () => {
-        if (!createTreatmentSelect) {
+      const populateTreatmentSelect = async (selectElement) => {
+        if (!selectElement) {
           return;
         }
         const treatments = await loadTreatments();
-        createTreatmentSelect.innerHTML = '';
+        selectElement.innerHTML = '';
         for (const treatment of treatments) {
           if (!treatment.is_active) {
             continue;
@@ -205,7 +210,7 @@
           option.textContent = `${treatment.name} (${treatment.duration_minutes} 分)`;
           option.dataset.duration = treatment.duration_minutes;
           option.dataset.preparation = treatment.preparation_minutes;
-          createTreatmentSelect.appendChild(option);
+          selectElement.appendChild(option);
         }
       };
 
@@ -248,6 +253,7 @@
                     customerPhone: item.customer_phone,
                     note: item.note,
                     isCancelled: item.is_cancelled,
+                    treatmentId: item.treatment,
                   },
                   classNames: item.is_cancelled ? ['appointment-cancelled'] : [],
                 }));
@@ -287,13 +293,17 @@
 
           return { domNodes: [container] };
         },
-        eventClick: function(info) {
+        eventClick: async function(info) {
           info.jsEvent.preventDefault();
           activeEvent = info.event;
           if (!formEl || !modal) {
             return;
           }
           formEl.reset();
+          await populateTreatmentSelect(editTreatmentSelect);
+          if (editTreatmentSelect) {
+            editTreatmentSelect.value = activeEvent.extendedProps.treatmentId || '';
+          }
           formEl.querySelector('[name="customer_name"]').value = activeEvent.extendedProps.customerName || '';
           formEl.querySelector('[name="customer_phone"]').value = activeEvent.extendedProps.customerPhone || '';
           formEl.querySelector('[name="note"]').value = activeEvent.extendedProps.note || '';
@@ -338,7 +348,7 @@
             return;
           }
 
-          await populateTreatmentSelect();
+          await populateTreatmentSelect(createTreatmentSelect);
           if (!createTreatmentSelect.options.length) {
             showFeedback('目前沒有可用的療程，請先建立療程。', 'warning');
             return;
@@ -347,6 +357,9 @@
           createFormEl.reset();
           const startLocal = toLocalInputValue(selectionInfo.start);
           createFormEl.querySelector('[name="start_time"]').value = startLocal;
+          if (createTreatmentSelect && createTreatmentSelect.options.length) {
+            createTreatmentSelect.selectedIndex = 0;
+          }
           createModal.show();
           calendar.unselect();
         },
@@ -365,6 +378,10 @@
             customer_phone: formEl.querySelector('[name="customer_phone"]').value.trim(),
             note: formEl.querySelector('[name="note"]').value.trim(),
           };
+
+          if (editTreatmentSelect && editTreatmentSelect.value) {
+            payload.treatment = Number(editTreatmentSelect.value);
+          }
 
           try {
             const response = await fetch(appointmentDetailUrl(activeEvent.id), {
