@@ -74,7 +74,10 @@
                       <strong>{{ appointment.start_time|date:"H:i" }} – {{ appointment.end_time|date:"H:i" }}</strong>
                       <span>{{ appointment.customer_name }}</span>
                     </div>
-                    <small class="d-block text-body-secondary">{{ appointment.treatment.name }}</small>
+                    <small class="d-block text-body-secondary">
+                      {{ appointment.treatment.name }}
+                      {% if appointment.is_cancelled %}(已取消){% endif %}
+                    </small>
                     <small class="d-block text-body-secondary">☎ {{ appointment.customer_phone }}</small>
                   </li>
               {% endfor %}
