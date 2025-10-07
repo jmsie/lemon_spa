@@ -96,10 +96,4 @@ jobs:
             echo "===> Start containers"
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
-            echo "===> Run migrations"
-            docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
-
-            echo "===> Collect static files"
-            docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
-
             echo "✅ Deploy completed!"
