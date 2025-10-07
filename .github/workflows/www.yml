@@ -39,7 +39,7 @@ jobs:
 
             # 確保 .env 存在（不由 git 管理）
             if [ ! -f ".env" ]; then
-              echo "ERROR: /srv/app/.env not found"; exit 1
+              echo "ERROR: .env not found in $(pwd)"; exit 1
             fi
 
             # === 2) Build & Up（用你的指令）===
