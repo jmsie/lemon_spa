@@ -1,0 +1,48 @@
+name: Deploy to EC2 (Compose build on host)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "www/**"  # Trigger only when there are changes in www folder
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (not used on host, but keeps logs complete)
+        uses: actions/checkout@v4
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}      # 建議填 "deploy"
+          key: ${{ secrets.EC2_SSH_KEY }}        # 你的私鑰（對應 EC2 上的 authorized_keys）
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            # === 1) 準備 repo ===
+            mkdir -p /srv/app
+            cd /srv/app
+
+            # 方案 A：EC2 上用 Deploy Key 拉（repo 需先設定 Deploy key）
+            if [ ! -d ".git" ]; then
+              git init
+              git remote add origin git@github.com:${{ github.repository }}.git
+            fi
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+
+            # 確保 .env 存在（不由 git 管理）
+            if [ ! -f ".env" ]; then
+              echo "ERROR: /srv/app/.env not found"; exit 1
+            fi
+
+            # === 2) Build & Up（用你的指令）===
+            docker compose -f docker-compose.prod.yml build
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
