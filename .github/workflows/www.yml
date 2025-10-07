@@ -1,35 +1,35 @@
-name: Deploy to EC2 (Compose build on host)
+name: Deploy to EC2 (modular)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
     paths:
-      - "www/*"  # Trigger only when there are changes in www folder
+      - "www/**"
       - ".github/workflows/www.yml"
   workflow_dispatch:
 
 jobs:
-  deploy:
+  prepare:
+    name: 🧩 Prepare & Sync Code
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (not used on host, but keeps logs complete)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Deploy over SSH
+      - name: Prepare environment on EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}      # 建議填 "deploy"
-          key: ${{ secrets.EC2_SSH_KEY }}        # 你的私鑰（對應 EC2 上的 authorized_keys）
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script_stop: true
           script: |
             set -euo pipefail
 
-            # === 1) 準備 repo ===
+            echo "===> Prepare repo"
             cd ~
+            mkdir -p ~/.ssh && chmod 700 ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
 
-            # 方案 A：EC2 上用 Deploy Key 拉（repo 需先設定 Deploy key）
             if [ ! -d ".git" ]; then
               git init
               git remote add origin git@github.com:${{ github.repository }}.git
@@ -37,12 +37,69 @@ jobs:
             git fetch --depth=1 origin main
             git reset --hard origin/main
 
-            # 確保 .env 存在（不由 git 管理）
-            if [ ! -f ".env" ]; then
-              echo "ERROR: .env not found in $(pwd)"; exit 1
+            cd www
+
+            echo "===> Write .env"
+            umask 077
+            echo ${{ secrets.PROD_ENV_B64 }} >> .env.b64
+
+
+            if ! base64 -d .env.b64 > .env 2>/dev/null; then
+              echo "❌ Base64 decode failed."
+              exit 1
             fi
 
-            # === 2) Build & Up（用你的指令）===
+            rm -f .env.b64
+            chmod 600 .env
+
+            if [ ! -s .env ]; then
+              echo "❌ www/.env not found or empty."
+              exit 1
+            fi
+
+            echo "✅ .env created successfully"
+
+  build:
+    name: 🏗️ Build Docker Images
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: Build on EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd ~/www
+            echo "===> Building docker images"
             docker compose -f docker-compose.prod.yml build
+
+  deploy:
+    name: 🚀 Deploy & Restart Services
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Run containers and migrations
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd ~/www
+
+            echo "===> Start containers"
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
+            echo "===> Run migrations"
+            docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
+
+            echo "===> Collect static files"
+            docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+
+            echo "✅ Deploy completed!"
