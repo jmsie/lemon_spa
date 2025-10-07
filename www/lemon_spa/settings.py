@@ -28,7 +28,12 @@ def _load_env_file(path: Path) -> None:
         os.environ.setdefault(key.strip(), cleaned)
 
 
-_load_env_file(BASE_DIR / ".env")
+ENV_FILE_NAME = os.environ.get("DJANGO_ENV_FILE", ".env")
+if ENV_FILE_NAME:
+    env_path = Path(ENV_FILE_NAME)
+    if not env_path.is_absolute():
+        env_path = BASE_DIR / env_path
+    _load_env_file(env_path)
 
 
 def _env(key: str, default: str | None = None) -> str:
@@ -101,6 +106,7 @@ def _parse_database_url(url: str) -> dict[str, str]:
 SECRET_KEY = _env("DJANGO_SECRET_KEY")
 DEBUG = _env_bool("DJANGO_DEBUG")
 ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS", default=["localhost"])
+CSRF_TRUSTED_ORIGINS = _env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [
     "rest_framework",
@@ -175,6 +181,46 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+SECURE_SSL_REDIRECT = _env_bool("DJANGO_SECURE_SSL_REDIRECT")
+SESSION_COOKIE_SECURE = _env_bool("DJANGO_SESSION_COOKIE_SECURE", default=SECURE_SSL_REDIRECT)
+CSRF_COOKIE_SECURE = _env_bool("DJANGO_CSRF_COOKIE_SECURE", default=SECURE_SSL_REDIRECT)
+SECURE_CONTENT_TYPE_NOSNIFF = _env_bool("DJANGO_SECURE_CONTENT_TYPE_NOSNIFF", default=not DEBUG)
+SECURE_REFERRER_POLICY = os.environ.get("DJANGO_SECURE_REFERRER_POLICY", "same-origin")
+
+_hsts_seconds = os.environ.get("DJANGO_SECURE_HSTS_SECONDS")
+try:
+    SECURE_HSTS_SECONDS = int(_hsts_seconds) if _hsts_seconds else 0
+except ValueError as exc:
+    raise ImproperlyConfigured("DJANGO_SECURE_HSTS_SECONDS must be an integer") from exc
+
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0 and _env_bool(
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True
+)
+SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0 and _env_bool(
+    "DJANGO_SECURE_HSTS_PRELOAD", default=True
+)
+
+USE_X_FORWARDED_HOST = _env_bool("DJANGO_USE_X_FORWARDED_HOST")
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https")
+    if _env_bool("DJANGO_USE_SECURE_PROXY_HEADER")
+    else None
+)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        }
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
+    },
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "accounts:login"
