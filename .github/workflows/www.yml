@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "www/**"  # Trigger only when there are changes in www folder
+      - "www/*"  # Trigger only when there are changes in www folder
+      - ".github/workflows/www.yml"
   workflow_dispatch:
 
 jobs:
@@ -26,8 +27,7 @@ jobs:
             set -euo pipefail
 
             # === 1) 準備 repo ===
-            mkdir -p /srv/app
-            cd /srv/app
+            cd ~
 
             # 方案 A：EC2 上用 Deploy Key 拉（repo 需先設定 Deploy key）
             if [ ! -d ".git" ]; then
