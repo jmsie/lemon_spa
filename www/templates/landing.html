@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lemon Spa</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --accent: #f4b942;
+            --background: #fefbf4;
+            --text: #1f1f1f;
+            --muted: #555555;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: var(--text);
+            background: var(--background);
+            line-height: 1.6;
+        }
+
+        header {
+            padding: 4rem 1.5rem 3rem;
+            text-align: center;
+            background: radial-gradient(circle at top, rgba(244, 185, 66, 0.35), transparent 65%);
+        }
+
+        header h1 {
+            margin-bottom: 1rem;
+            font-size: clamp(2rem, 6vw, 3.5rem);
+        }
+
+        header p {
+            margin: 0 auto;
+            max-width: 40rem;
+            color: var(--muted);
+            font-size: 1.1rem;
+        }
+
+        main {
+            padding: 0 1.5rem 4rem;
+            max-width: 70rem;
+            margin: 0 auto;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            padding: 1.75rem;
+            background: #ffffff;
+            border-radius: 1rem;
+            border: 1px solid rgba(31, 31, 31, 0.05);
+            box-shadow: 0 14px 30px rgba(31, 31, 31, 0.08);
+        }
+
+        .feature-card h3 {
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+            font-size: 1.3rem;
+        }
+
+        .feature-card p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .cta {
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        .cta a {
+            display: inline-block;
+            padding: 0.85rem 2.5rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #1f1f1f;
+            background: linear-gradient(135deg, #f8d06a, #f4b942);
+            border-radius: 999px;
+            text-decoration: none;
+            box-shadow: 0 10px 25px rgba(244, 185, 66, 0.35);
+            transition: transform 150ms ease, box-shadow 150ms ease;
+        }
+
+        .cta a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(244, 185, 66, 0.45);
+        }
+
+        footer {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>讓療癒真正發生</h1>
+        <p>我們把治療師、個案與照護團隊聚集在同一個平台，打造兼具清晰、安心與可追蹤成效的完整療程體驗。</p>
+    </header>
+
+    <main>
+        <section class="features">
+            <article class="feature-card">
+                <h3>接單系統</h3>
+                <p>一鍵生成專屬預約連結，輕鬆放在 IG、Line 等各種社群，讓客人隨時都能預約。</p>
+            </article>
+            <article class="feature-card">
+                <h3>問卷系統</h3>
+                <p>療程結束自動寄出問卷，第一時間掌握客人回饋，持續優化服務品質。</p>
+            </article>
+            <article class="feature-card">
+                <h3>排班好簡單</h3>
+                <p>用月曆式介面管理班表與空檔，支援拖拉調整與同步提醒，排班變得直覺又快速。</p>
+            </article>
+            <article class="feature-card">
+                <h3>Call 客工具</h3>
+                <p>自動彙整空檔，主動發送優惠或邀請訊息，讓按摩師也能做主動行銷。</p>
+            </article>
+        </section>
+
+        <section class="cta">
+            <h2>準備好開始了嗎？</h2>
+            <p>登入即可進入您的專屬工作空間。</p>
+            <a href="{% url 'accounts:login' %}">前往登入</a>
+        </section>
+    </main>
+
+    <footer>
+        &copy; {% now "Y" %} Lemon Spa. All rights reserved.
+    </footer>
+</body>
+</html>
