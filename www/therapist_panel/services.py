@@ -8,14 +8,18 @@ from django.utils import timezone
 
 from appointments.models import Appointment
 from therapist_panel.models import Therapist
+from scheduling.utils import ensure_timezone, to_utc
 
 
 def get_today_appointments(therapist: Therapist) -> list[Appointment]:
     """Return all appointments starting today for the given therapist."""
 
-    now = timezone.now()
-    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_of_day = start_of_day + timedelta(days=1)
+    tzinfo = ensure_timezone(therapist.timezone)
+    local_now = timezone.localtime(timezone.now(), timezone=tzinfo)
+    start_of_day_local = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_day_local = start_of_day_local + timedelta(days=1)
+    start_of_day = to_utc(start_of_day_local, therapist.timezone)
+    end_of_day = to_utc(end_of_day_local, therapist.timezone)
 
     return list(
         Appointment.objects.filter(

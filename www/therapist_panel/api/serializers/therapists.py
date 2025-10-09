@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from therapist_panel.models import Therapist
 
 User = get_user_model()
@@ -25,6 +27,7 @@ class TherapistSerializer(serializers.ModelSerializer):
             "nickname",
             "phone_number",
             "address",
+            "timezone",
             "created_at",
             "updated_at",
         ]
@@ -40,3 +43,12 @@ class TherapistSerializer(serializers.ModelSerializer):
             return user
 
         raise serializers.ValidationError("This user is already linked to a therapist.")
+
+    def validate_timezone(self, value: str) -> str:
+        if not value:
+            raise serializers.ValidationError("Timezone is required.")
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as exc:  # pragma: no cover - tiny guard
+            raise serializers.ValidationError("Invalid timezone identifier.") from exc
+        return value

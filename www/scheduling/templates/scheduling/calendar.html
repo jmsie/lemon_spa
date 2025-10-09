@@ -44,6 +44,16 @@
       opacity: 0.6;
       text-decoration: line-through;
     }
+    .fc-event.time-off-event,
+    .fc-event.time-off-event .fc-event-main {
+      background-color: #e2e8f0;
+      border-color: #cbd5f5;
+      color: #1f2937;
+    }
+    .fc-event.time-off-event .time-off-label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
   </style>
 {% endblock %}
 
@@ -60,6 +70,12 @@
       <div id="schedule-feedback" class="alert d-none" role="alert"></div>
       <div id="schedule-calendar"></div>
     </div>
+  </div>
+
+  <div class="d-flex justify-content-end mt-3">
+    <button type="button" class="btn btn-outline-primary" id="time-off-create-button">
+      <i class="bi bi-calendar-minus me-1"></i>新增休假
+    </button>
   </div>
 
   <!-- 編輯預約 Modal -->
@@ -140,6 +156,42 @@
       </div>
     </div>
   </div>
+
+  <!-- 新增休假 Modal -->
+  <div class="modal fade" id="timeOffModal" tabindex="-1" aria-labelledby="timeOffModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="timeOffModalLabel">新增休假</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="time-off-form" novalidate>
+            <div class="mb-3">
+              <label for="time-off-start" class="form-label">開始時間</label>
+              <input type="datetime-local" class="form-control" id="time-off-start" name="starts_at" step="1800" required>
+            </div>
+            <div class="mb-3">
+              <label for="time-off-end" class="form-label">結束時間</label>
+              <input type="datetime-local" class="form-control" id="time-off-end" name="ends_at" step="1800" required>
+            </div>
+            <div class="mb-3">
+              <label for="time-off-note" class="form-label">備註</label>
+              <textarea class="form-control" id="time-off-note" name="note" rows="3" placeholder="例如：請假、進修..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-danger me-auto d-none" id="time-off-delete">
+            <i class="bi bi-trash"></i>
+            刪除
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="time-off-save">建立休假</button>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -191,13 +243,37 @@
       const createFormEl = document.getElementById('appointment-create-form');
       const createSaveButton = document.getElementById('appointment-create-save');
       const createTreatmentSelect = document.getElementById('create-treatment');
+      const timeOffButton = document.getElementById('time-off-create-button');
+      const timeOffModalEl = document.getElementById('timeOffModal');
+      const timeOffModal = timeOffModalEl ? new bootstrap.Modal(timeOffModalEl) : null;
+      const timeOffFormEl = document.getElementById('time-off-form');
+      const timeOffSaveButton = document.getElementById('time-off-save');
+      const timeOffDeleteButton = document.getElementById('time-off-delete');
+      const timeOffModalTitle = document.getElementById('timeOffModalLabel');
 
       let activeEvent = null;
       let cachedTreatments = null;
+      let activeTimeOffEvent = null;
+      let isEditingTimeOff = false;
+
+      const resetTimeOffModalState = () => {
+        isEditingTimeOff = false;
+        activeTimeOffEvent = null;
+        if (timeOffModalTitle) {
+          timeOffModalTitle.textContent = '新增休假';
+        }
+        if (timeOffSaveButton) {
+          timeOffSaveButton.textContent = '建立休假';
+        }
+        if (timeOffDeleteButton) {
+          timeOffDeleteButton.classList.add('d-none');
+        }
+      };
 
       const appointmentsApiBase = '{{ appointments_api_url }}';
       const appointmentDetailUrl = (uuid) => `${appointmentsApiBase}${uuid}/`;
       const appointmentListUrl = () => appointmentsApiBase;
+      const timeOffApiBase = '{{ time_off_api_url }}';
 
       const toLocalInputValue = (date) => {
         if (!date) {
@@ -206,6 +282,52 @@
         const local = new Date(date);
         local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
         return local.toISOString().slice(0, 16);
+      };
+
+      const mapFriendlyMessage = (message, fallback) => {
+        if (!message) {
+          return fallback;
+        }
+        const normalized = message.toLowerCase();
+        if (normalized.includes('time off')) {
+          return '此時段與休假重疊，請選擇其他時間。';
+        }
+        return message;
+      };
+
+      const getErrorMessage = async (response, fallback) => {
+        if (!response || typeof response.json !== 'function') {
+          return fallback;
+        }
+        try {
+          const data = await response.json();
+          if (!data) {
+            return fallback;
+          }
+          if (typeof data === 'string') {
+            return mapFriendlyMessage(data, fallback);
+          }
+          if (Array.isArray(data) && data.length > 0) {
+            return mapFriendlyMessage(typeof data[0] === 'string' ? data[0] : fallback, fallback);
+          }
+          if (typeof data.detail === 'string') {
+            return mapFriendlyMessage(data.detail, fallback);
+          }
+          for (const value of Object.values(data)) {
+            if (Array.isArray(value) && value.length > 0) {
+              const candidate = value[0];
+              if (typeof candidate === 'string') {
+                return mapFriendlyMessage(candidate, fallback);
+              }
+            }
+            if (typeof value === 'string') {
+              return mapFriendlyMessage(value, fallback);
+            }
+          }
+        } catch (error) {
+          console.debug('Failed to parse error response:', error);
+        }
+        return mapFriendlyMessage(null, fallback);
       };
 
       const loadTreatments = async () => {
@@ -297,6 +419,7 @@
                     note: item.note,
                     isCancelled: item.is_cancelled,
                     treatmentId: item.treatment,
+                    eventType: 'appointment',
                   },
                   classNames: item.is_cancelled ? ['appointment-cancelled'] : [],
                 }));
@@ -306,9 +429,47 @@
                 failureCallback(error);
               }
             },
-          }
+          },
+          {
+            events: async function(info, successCallback, failureCallback) {
+              const url = new URL(timeOffApiBase, window.location.origin);
+              url.searchParams.set('start', info.startStr);
+              url.searchParams.set('end', info.endStr);
+              try {
+                const response = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+                if (!response.ok) {
+                  throw new Error('Failed to load time off');
+                }
+                const data = await response.json();
+                const events = data.map((item) => ({
+                  id: item.uuid,
+                  title: item.note ? `休假：${item.note}` : '休假',
+                  start: item.starts_at,
+                  end: item.ends_at,
+                  editable: false,
+                  classNames: ['time-off-event'],
+                  extendedProps: {
+                    eventType: 'timeOff',
+                    note: item.note,
+                  },
+                }));
+                successCallback(events);
+              } catch (error) {
+                console.error(error);
+                failureCallback(error);
+              }
+            },
+          },
         ],
         eventContent: function(arg) {
+          if (arg.event.extendedProps.eventType === 'timeOff') {
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('time-off-label');
+            wrapper.textContent = arg.event.extendedProps.note
+              ? `休假：${arg.event.extendedProps.note}`
+              : '休假';
+            return { domNodes: [wrapper] };
+          }
           const container = document.createElement('div');
 
           const titleEl = document.createElement('div');
@@ -338,6 +499,37 @@
         },
         eventClick: async function(info) {
           info.jsEvent.preventDefault();
+          if (info.event.extendedProps.eventType === 'timeOff') {
+            if (!timeOffModal || !timeOffFormEl) {
+              return;
+            }
+            isEditingTimeOff = true;
+            activeTimeOffEvent = info.event;
+            timeOffFormEl.reset();
+            const startField = timeOffFormEl.querySelector('[name="starts_at"]');
+            const endField = timeOffFormEl.querySelector('[name="ends_at"]');
+            const noteField = timeOffFormEl.querySelector('[name="note"]');
+            if (startField && info.event.start) {
+              startField.value = toLocalInputValue(info.event.start);
+            }
+            if (endField && info.event.end) {
+              endField.value = toLocalInputValue(info.event.end);
+            }
+            if (noteField) {
+              noteField.value = info.event.extendedProps.note || '';
+            }
+            if (timeOffModalTitle) {
+              timeOffModalTitle.textContent = '編輯休假';
+            }
+            if (timeOffSaveButton) {
+              timeOffSaveButton.textContent = '儲存休假';
+            }
+            if (timeOffDeleteButton) {
+              timeOffDeleteButton.classList.remove('d-none');
+            }
+            timeOffModal.show();
+            return;
+          }
           activeEvent = info.event;
           if (!formEl || !modal) {
             return;
@@ -356,6 +548,10 @@
           modal.show();
         },
         eventDrop: async function(info) {
+          if (info.event.extendedProps.eventType === 'timeOff') {
+            info.revert();
+            return;
+          }
           if (!info.event.start) {
             return;
           }
@@ -365,7 +561,7 @@
             return;
           }
           try {
-            await fetch(appointmentDetailUrl(info.event.id), {
+            const response = await fetch(appointmentDetailUrl(info.event.id), {
               method: 'PATCH',
               headers: {
                 'Content-Type': 'application/json',
@@ -373,16 +569,17 @@
                 'Accept': 'application/json',
               },
               body: JSON.stringify({ start_time: info.event.start.toISOString() }),
-            }).then((response) => {
-              if (!response.ok) {
-                throw new Error('時間更新失敗');
-              }
             });
+
+            if (!response.ok) {
+              const message = await getErrorMessage(response, '時間更新失敗，請稍後再試。');
+              throw new Error(message);
+            }
             showFeedback('預約時間已更新。');
             calendar.refetchEvents();
           } catch (error) {
             console.error(error);
-            showFeedback('更新失敗，請稍後再試。', 'danger');
+            showFeedback(error instanceof Error ? error.message : '更新失敗，請稍後再試。', 'danger');
             info.revert();
           }
         },
@@ -443,7 +640,8 @@
             });
 
             if (!response.ok) {
-              throw new Error('預約更新失敗');
+              const message = await getErrorMessage(response, '預約更新失敗');
+              throw new Error(message);
             }
 
             modal.hide();
@@ -452,7 +650,7 @@
             calendar.refetchEvents();
           } catch (error) {
             console.error(error);
-            showFeedback('更新失敗，請確認資料後再試。', 'danger');
+            showFeedback(error instanceof Error ? error.message : '更新失敗，請確認資料後再試。', 'danger');
           }
         });
       }
@@ -526,7 +724,8 @@
             });
 
             if (!response.ok) {
-              throw new Error('預約建立失敗');
+              const message = await getErrorMessage(response, '預約建立失敗');
+              throw new Error(message);
             }
 
             createModal.hide();
@@ -534,7 +733,159 @@
             calendar.refetchEvents();
           } catch (error) {
             console.error(error);
-            showFeedback('建立預約失敗，請確認資料後再試。', 'danger');
+            showFeedback(error instanceof Error ? error.message : '建立預約失敗，請確認資料後再試。', 'danger');
+          }
+        });
+      }
+
+      if (timeOffButton && timeOffModal && timeOffFormEl) {
+        timeOffButton.addEventListener('click', () => {
+          resetTimeOffModalState();
+          timeOffFormEl.reset();
+          const startField = timeOffFormEl.querySelector('[name="starts_at"]');
+          const endField = timeOffFormEl.querySelector('[name="ends_at"]');
+          const now = new Date();
+          const roundedStart = new Date(now.getTime());
+          const minutes = roundedStart.getMinutes();
+          const remainder = minutes % 30;
+          if (remainder !== 0) {
+            roundedStart.setMinutes(minutes + (30 - remainder), 0, 0);
+          } else {
+            roundedStart.setSeconds(0, 0);
+          }
+          const roundedEnd = new Date(roundedStart.getTime() + 60 * 60 * 1000);
+          if (startField) {
+            startField.value = toLocalInputValue(roundedStart);
+          }
+          if (endField) {
+            endField.value = toLocalInputValue(roundedEnd);
+          }
+          timeOffModal.show();
+        });
+      }
+
+      if (timeOffSaveButton && timeOffFormEl && timeOffModal) {
+        timeOffSaveButton.addEventListener('click', async () => {
+          const startInput = timeOffFormEl.querySelector('[name="starts_at"]');
+          const endInput = timeOffFormEl.querySelector('[name="ends_at"]');
+          const noteInput = timeOffFormEl.querySelector('[name="note"]');
+          if (!startInput || !endInput) {
+            return;
+          }
+          if (!startInput.value || !endInput.value) {
+            showFeedback('請填寫開始與結束時間。', 'warning');
+            return;
+          }
+          const startDate = new Date(startInput.value);
+          const endDate = new Date(endInput.value);
+          if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+            showFeedback('時間格式不正確，請重新輸入。', 'warning');
+            return;
+          }
+          if (endDate <= startDate) {
+            showFeedback('結束時間必須晚於開始時間。', 'warning');
+            return;
+          }
+
+          const payload = {
+            starts_at: startDate.toISOString(),
+            ends_at: endDate.toISOString(),
+            note: noteInput ? noteInput.value.trim() : '',
+          };
+
+          const isEditingCurrent = Boolean(isEditingTimeOff && activeTimeOffEvent);
+
+          try {
+            const endpoint = isEditingCurrent ? `${timeOffApiBase}${activeTimeOffEvent.id}/` : timeOffApiBase;
+            const method = isEditingCurrent ? 'PATCH' : 'POST';
+            const response = await fetch(endpoint, {
+              method,
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              let errorMessage = isEditingCurrent ? '休假更新失敗' : '休假建立失敗';
+              try {
+                const errorData = await response.json();
+                if (errorData && typeof errorData === 'object') {
+                  if (typeof errorData.detail === 'string') {
+                    errorMessage = errorData.detail;
+                  } else {
+                    const firstKey = Object.keys(errorData)[0];
+                    const firstValue = firstKey ? errorData[firstKey] : null;
+                    if (Array.isArray(firstValue) && firstValue.length > 0) {
+                      errorMessage = firstValue[0];
+                    } else if (typeof firstValue === 'string') {
+                      errorMessage = firstValue;
+                    }
+                  }
+                }
+              } catch (parseError) {
+                // ignore parse error and keep default message
+              }
+              throw new Error(errorMessage);
+            }
+
+            timeOffModal.hide();
+            timeOffFormEl.reset();
+            showFeedback(isEditingCurrent ? '休假已更新。' : '休假已建立。', isEditingCurrent ? 'info' : 'success');
+            calendar.refetchEvents();
+          } catch (error) {
+            console.error(error);
+            const fallback = isEditingCurrent ? '更新休假失敗，請稍後再試。' : '建立休假失敗，請稍後再試。';
+            showFeedback(error instanceof Error ? error.message : fallback, 'danger');
+          }
+        });
+      }
+
+      if (timeOffDeleteButton && timeOffModal) {
+        timeOffDeleteButton.addEventListener('click', async () => {
+          if (!activeTimeOffEvent) {
+            return;
+          }
+          if (!window.confirm('確認要刪除此休假區間嗎？')) {
+            return;
+          }
+          try {
+            const response = await fetch(`${timeOffApiBase}${activeTimeOffEvent.id}/`, {
+              method: 'DELETE',
+              headers: {
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json',
+              },
+            });
+            if (!response.ok) {
+              let errorMessage = '休假刪除失敗';
+              try {
+                const errorData = await response.json();
+                if (errorData && typeof errorData.detail === 'string') {
+                  errorMessage = errorData.detail;
+                }
+              } catch (parseError) {
+                // ignore
+              }
+              throw new Error(errorMessage);
+            }
+            timeOffModal.hide();
+            showFeedback('休假已刪除。', 'warning');
+            calendar.refetchEvents();
+          } catch (error) {
+            console.error(error);
+            showFeedback(error instanceof Error ? error.message : '刪除休假失敗，請稍後再試。', 'danger');
+          }
+        });
+      }
+
+      if (timeOffModalEl) {
+        timeOffModalEl.addEventListener('hidden.bs.modal', () => {
+          resetTimeOffModalState();
+          if (timeOffFormEl) {
+            timeOffFormEl.reset();
           }
         });
       }

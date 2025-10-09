@@ -8,6 +8,8 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from therapist_panel.constants import DEFAULT_THERAPIST_TIMEZONE
+
 
 class Therapist(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -21,6 +23,11 @@ class Therapist(models.Model):
     nickname = models.CharField(max_length=150)
     phone_number = models.CharField(max_length=32)
     address = models.CharField(max_length=255)
+    timezone = models.CharField(
+        max_length=64,
+        default=DEFAULT_THERAPIST_TIMEZONE,
+        help_text="IANA timezone identifier describing the therapist's local time.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

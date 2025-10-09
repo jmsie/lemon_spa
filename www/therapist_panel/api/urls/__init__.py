@@ -7,4 +7,5 @@ app_name = "therapist_panel_api"
 urlpatterns = [
     path("", include("therapist_panel.api.urls.therapists")),
     path("", include("therapist_panel.api.urls.treatments")),
+    path("", include("therapist_panel.api.urls.time_off")),
 ]

@@ -3,6 +3,7 @@
 from django.contrib import admin
 
 from .models import Therapist, TherapistTreatment
+from scheduling.models import TherapistTimeOff
 
 
 class TherapistTreatmentInline(admin.TabularInline):
@@ -20,6 +21,7 @@ class TherapistAdmin(admin.ModelAdmin):
         "last_name",
         "user",
         "phone_number",
+        "timezone",
         "get_email",
     )
     search_fields = (
@@ -32,6 +34,7 @@ class TherapistAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ("user",)
     inlines = (TherapistTreatmentInline,)
+    list_filter = ("timezone",)
 
     @admin.display(description="Email", ordering="user__email")
     def get_email(self, obj):
@@ -50,3 +53,30 @@ class TherapistTreatmentAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_active",)
     search_fields = ("name", "therapist__nickname", "therapist__first_name", "therapist__last_name")
+
+
+@admin.register(TherapistTimeOff)
+class TherapistTimeOffAdmin(admin.ModelAdmin):
+    list_display = ("therapist", "get_local_starts_at", "get_local_ends_at", "note", "created_at")
+    list_filter = ("therapist",)
+    search_fields = (
+        "therapist__nickname",
+        "therapist__first_name",
+        "therapist__last_name",
+        "note",
+    )
+    ordering = ("-starts_at",)
+    readonly_fields = ("created_at", "updated_at")
+    autocomplete_fields = ("therapist",)
+
+    @admin.display(description="Starts at", ordering="starts_at")
+    def get_local_starts_at(self, obj):
+        from scheduling.utils import from_utc
+
+        return from_utc(obj.starts_at, obj.therapist.timezone).strftime("%Y-%m-%d %H:%M")
+
+    @admin.display(description="Ends at", ordering="ends_at")
+    def get_local_ends_at(self, obj):
+        from scheduling.utils import from_utc
+
+        return from_utc(obj.ends_at, obj.therapist.timezone).strftime("%Y-%m-%d %H:%M")
