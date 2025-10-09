@@ -3,41 +3,67 @@
 {% block title %}Service Reviews | Therapist Panel{% endblock %}
 
 {% block content %}
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-    <div>
-      <h1 class="h3 mb-1">Service Reviews</h1>
+  <!-- 頁面標題 -->
+  <div class="row align-items-center mb-4">
+    <div class="col-12">
+      <h1 class="h3 mb-1">
+        <i class="bi bi-star me-2 text-warning"></i>Service Reviews
+      </h1>
       <p class="text-body-secondary mb-0">View feedback from your clients and track overall satisfaction.</p>
     </div>
   </div>
 
+  <!-- 評價統計摘要 -->
   <div class="row g-3 mb-4" id="reviews-summary" hidden>
     <div class="col-12 col-md-6 col-lg-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <p class="text-body-secondary mb-1">Average Rating</p>
-          <h2 class="display-6 mb-0" id="average-rating">0</h2>
+      <div class="card border-primary">
+        <div class="card-header bg-primary text-white">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-graph-up me-2"></i>Average Rating
+          </h5>
+        </div>
+        <div class="card-body text-center">
+          <h2 class="display-4 mb-2" id="average-rating">0</h2>
+          <div class="mb-2">
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+          </div>
           <small class="text-body-secondary" id="rating-count">Based on 0 reviews</small>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- 回饋訊息區域 -->
   <div id="reviews-feedback"></div>
 
-  <div class="card shadow-sm">
+  <!-- 評價列表 -->
+  <div class="card">
+    <div class="card-header">
+      <h5 class="card-title mb-0">
+        <i class="bi bi-chat-quote me-2"></i>Customer Reviews
+      </h5>
+    </div>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover table-borderless mb-0 align-middle">
           <thead class="table-light">
             <tr>
-              <th scope="col" style="width: 120px;">Rating</th>
-              <th scope="col">Comment</th>
-              <th scope="col" style="width: 200px;">Submitted</th>
+              <th scope="col" class="px-3" style="width: 120px;">Rating</th>
+              <th scope="col" class="px-3">Comment</th>
+              <th scope="col" class="px-3 d-none d-md-table-cell" style="width: 200px;">Submitted</th>
             </tr>
           </thead>
           <tbody id="reviews-table-body">
             <tr>
-              <td colspan="3" class="text-center py-4 text-body-secondary">No reviews yet.</td>
+              <td colspan="3" class="text-center py-5 text-body-secondary">
+                <i class="bi bi-chat-dots display-1 text-muted"></i>
+                <div class="mt-3">No reviews yet.</div>
+                <small>Reviews from customers will appear here.</small>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -57,15 +83,23 @@
       const ratingCountEl = document.getElementById("rating-count");
 
       function renderEmptyRow(message) {
-        tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-body-secondary">${message}</td></tr>`;
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="3" class="text-center py-5 text-body-secondary">
+              <i class="bi bi-chat-dots display-1 text-muted"></i>
+              <div class="mt-3">${message}</div>
+            </td>
+          </tr>`;
       }
 
       function showFeedback(message, type = "danger") {
-        feedback.innerHTML = `
+        const alertHTML = `
           <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="bi bi-${type === 'danger' ? 'exclamation-triangle' : 'check-circle'} me-2"></i>
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>`;
+        feedback.innerHTML = alertHTML;
       }
 
       function formatDate(isoString) {
@@ -76,7 +110,19 @@
         if (Number.isNaN(date.getTime())) {
           return isoString;
         }
-        return date.toLocaleString();
+        return date.toLocaleDateString();
+      }
+
+      function renderStars(rating) {
+        const stars = [];
+        for (let i = 1; i <= 5; i++) {
+          if (i <= rating) {
+            stars.push('<i class="bi bi-star-fill text-warning"></i>');
+          } else {
+            stars.push('<i class="bi bi-star text-muted"></i>');
+          }
+        }
+        return stars.join('');
       }
 
       function renderSummary(items) {
@@ -96,16 +142,31 @@
           renderEmptyRow("No reviews have been submitted yet.");
           return;
         }
+        
         const rows = items
           .map((item) => {
-            const comment = item.comment ? item.comment.replace(/\n/g, "<br>") : "(No additional comments)";
+            const comment = item.comment ? item.comment.replace(/\n/g, "<br>") : "<em class='text-muted'>No additional comments</em>";
+            const rating = Number(item.rating || 0);
+            
             return `
               <tr>
-                <td>
-                  <span class="badge text-bg-primary fs-6">${item.rating}/5</span>
+                <td class="px-3">
+                  <div class="d-flex align-items-center">
+                    <span class="badge bg-primary me-2">${rating}/5</span>
+                  </div>
+                  <div class="mt-1 d-none d-sm-block">
+                    ${renderStars(rating)}
+                  </div>
                 </td>
-                <td class="text-body-secondary">${comment}</td>
-                <td>${formatDate(item.created_at)}</td>
+                <td class="px-3">
+                  <div class="text-body-secondary">${comment}</div>
+                </td>
+                <td class="px-3 d-none d-md-table-cell">
+                  <small class="text-muted">
+                    <i class="bi bi-calendar me-1"></i>
+                    ${formatDate(item.created_at)}
+                  </small>
+                </td>
               </tr>`;
           })
           .join("");

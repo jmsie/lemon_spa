@@ -5,43 +5,55 @@
 {% block extra_head %}
   {{ block.super }}
   <style>
+    /* 最少量的自定義樣式 */
     .appointment-item.past {
-      opacity: 0.55;
-      filter: grayscale(0.35);
-    }
-    .appointment-item.past strong,
-    .appointment-item.past span,
-    .appointment-item.past small {
-      color: var(--bs-secondary-color, #6c757d);
+      opacity: 0.6;
     }
   </style>
 {% endblock %}
 
 {% block content %}
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-    <div>
+  <!-- 歡迎區域 -->
+  <div class="row align-items-center mb-4">
+    <div class="col-12 col-lg-6">
       <h1 class="h3 mb-1">Hello {{ user.first_name|default:user.get_username }}</h1>
       <p class="text-body-secondary mb-0">Welcome back to your therapist workspace.</p>
     </div>
-    <div class="d-flex flex-wrap gap-2">
-      <a href="{% url 'therapist_panel:treatments' %}" class="btn btn-primary">Manage treatments</a>
-      <a href="{% url 'therapist_panel:profile_edit' %}" class="btn btn-outline-primary">Edit contact info</a>
-      {% if has_client_role %}
-        <form method="post" action="{% url 'accounts:switch_role' 'client' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-info text-white">Go to Client Dashboard</button>
-        </form>
-      {% endif %}
+    <div class="col-12 col-lg-6">
+      <div class="d-flex flex-column flex-lg-row gap-2 mt-3 mt-lg-0">
+        <a href="{% url 'therapist_panel:treatments' %}" class="btn btn-primary">
+          <i class="bi bi-heart-pulse me-1"></i>
+          Manage treatments
+        </a>
+        <a href="{% url 'therapist_panel:profile_edit' %}" class="btn btn-outline-primary">
+          <i class="bi bi-person-gear me-1"></i>
+          Edit contact info
+        </a>
+        {% if has_client_role %}
+          <form method="post" action="{% url 'accounts:switch_role' 'client' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-info text-white w-100">
+              <i class="bi bi-arrow-right-circle me-1"></i>
+              Client Dashboard
+            </button>
+          </form>
+        {% endif %}
+      </div>
     </div>
   </div>
 
   <div class="row g-4">
+    <!-- 主要內容區域 -->
     <div class="col-12 col-xl-8">
+      <!-- 預約連結分享卡片 -->
       {% if therapist_profile and appointment_booking_url %}
-        <div class="card border-primary-subtle mb-4">
+        <div class="card border-primary mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+              <i class="bi bi-share me-2"></i>專屬預約網址
+            </h5>
+          </div>
           <div class="card-body">
-            <span class="badge text-bg-info mb-3">Share your link</span>
-            <h2 class="card-title h4">專屬預約網址</h2>
             <p class="card-text">將此連結分享給客戶，讓他們直接預約 {{ therapist_profile.nickname }} 按摩師。</p>
             <div class="input-group">
               <input
@@ -51,63 +63,110 @@
                 readonly
                 id="booking-link-input"
               >
-              <button class="btn btn-outline-primary" type="button" data-copy-target="#booking-link-input">複製</button>
+              <button class="btn btn-outline-primary" type="button" data-copy-target="#booking-link-input">
+                <i class="bi bi-clipboard"></i>
+                <span class="d-none d-sm-inline ms-1">複製</span>
+              </button>
             </div>
           </div>
         </div>
       {% endif %}
-        <div class="card shadow-sm mb-4">
-          <div class="card-body">
-            <span class="badge text-bg-secondary mb-3">Today's schedule</span>
-            <h2 class="card-title h4">今日預約</h2>
-            <!-- current time is: -->
-            <strong>{{ current_time|date:"H:i" }}</strong>
-            {% if today_appointments %}
-            <ul class="list-group list-group-flush">
-              {% for appointment in today_appointments %}
-                {% if appointment.end_time <= current_time %}
-                  <li class="list-group-item px-0 appointment-item past">
-                {% else %}
-                  <li class="list-group-item px-0 appointment-item">
-                {% endif %}
-                    <div class="d-flex justify-content-between flex-wrap gap-2">
-                      <strong>{{ appointment.start_time|date:"H:i" }} – {{ appointment.end_time|date:"H:i" }}</strong>
-                      <span>{{ appointment.customer_name }}</span>
-                    </div>
-                    <small class="d-block text-body-secondary">
-                      {{ appointment.treatment.name }}
-                      {% if appointment.is_cancelled %}(已取消){% endif %}
-                    </small>
-                    <small class="d-block text-body-secondary">☎ {{ appointment.customer_phone }}</small>
-                  </li>
-              {% endfor %}
-            </ul>
-            {% endif %}            
-          </div>
-        </div>
 
-      <div class="card shadow-sm h-100">
+      <!-- 今日排程卡片 -->
+      <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-calendar-day me-2"></i>今日預約
+          </h5>
+        </div>
         <div class="card-body">
-          <span class="badge text-bg-primary mb-3">{{ active_role_label }}</span>
-          <h2 class="card-title h4">Get started</h2>
+          <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-clock text-primary me-2"></i>
+            <span class="badge bg-primary fs-6">{{ current_time|date:"H:i" }}</span>
+          </div>
+          
+          {% if today_appointments %}
+            <div class="list-group list-group-flush">
+              {% for appointment in today_appointments %}
+                <div class="list-group-item {% if appointment.end_time <= current_time %}appointment-item past{% endif %}">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">
+                        <span class="badge bg-light text-dark me-2">{{ appointment.start_time|date:"H:i" }} — {{ appointment.end_time|date:"H:i" }}</span>
+                        {{ appointment.customer_name }}
+                      </h6>
+                      <p class="mb-1">
+                        <i class="bi bi-heart-pulse me-1"></i>{{ appointment.treatment.name }}
+                      </p>
+                      <small class="text-muted">
+                        <i class="bi bi-telephone me-1"></i>{{ appointment.customer_phone }}
+                      </small>
+                    </div>
+                    <div>
+                      {% if appointment.is_cancelled %}
+                        <span class="badge bg-secondary">已取消</span>
+                      {% elif appointment.end_time <= current_time %}
+                        <span class="badge bg-success">已完成</span>
+                      {% else %}
+                        <span class="badge bg-warning text-dark">進行中</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-5">
+              <i class="bi bi-calendar-x display-1 text-muted"></i>
+              <h6 class="mt-3 text-muted">今日沒有預約</h6>
+              <p class="text-muted">享受您的空閒時光！</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 入門指南卡片 -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <span class="badge bg-primary me-2">{{ active_role_label }}</span>
+            Get started
+          </h5>
+        </div>
+        <div class="card-body">
           <p class="card-text">This dashboard is ready for therapist tools, scheduling, and client insights.</p>
           {% if therapist_profile %}
-            <div class="alert alert-secondary mt-4 mb-0" role="alert">
+            <div class="alert alert-info mb-0" role="alert">
+              <i class="bi bi-info-circle me-2"></i>
               Your therapist record ID is <strong>{{ therapist_profile.id }}</strong>.
             </div>
           {% endif %}
         </div>
       </div>
     </div>
+
+    <!-- 側邊快速操作區域 -->
     <div class="col-12 col-xl-4">
-      <div class="card border-0 bg-body h-100">
-        <div class="card-body">
-          <h3 class="h5">Quick actions</h3>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item px-0">Review upcoming appointments</li>
-            <li class="list-group-item px-0">Update your availability</li>
-            <li class="list-group-item px-0">Share resources with clients</li>
-          </ul>
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-lightning-charge text-warning me-2"></i>
+            Quick actions
+          </h5>
+        </div>
+        <div class="list-group list-group-flush">
+          <a href="{% url 'therapist_panel:scheduling:therapist_schedule' %}" class="list-group-item list-group-item-action">
+            <i class="bi bi-calendar-check me-2 text-primary"></i>
+            Review upcoming appointments
+          </a>
+          <a href="{% url 'therapist_panel:scheduling:therapist_schedule' %}" class="list-group-item list-group-item-action">
+            <i class="bi bi-clock me-2 text-success"></i>
+            Update your availability
+          </a>
+          <a href="{% url 'therapist_panel:treatments' %}" class="list-group-item list-group-item-action">
+            <i class="bi bi-share me-2 text-info"></i>
+            Share resources with clients
+          </a>
         </div>
       </div>
     </div>
@@ -117,56 +176,87 @@
 {% block extra_scripts %}
   {{ block.super }}
   <script>
-    (function () {
+    // 使用 Bootstrap 的 Toast 來顯示複製結果
+    document.addEventListener('DOMContentLoaded', function() {
       const button = document.querySelector('[data-copy-target="#booking-link-input"]');
-      if (!button) {
-        return;
-      }
-      button.addEventListener('click', () => {
-        const targetSelector = button.getAttribute('data-copy-target');
-        const input = document.querySelector(targetSelector);
-        if (!input) {
-          return;
-        }
+      if (!button) return;
+      
+      // 創建 Toast 容器
+      const toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+      toastContainer.style.zIndex = '1055';
+      document.body.appendChild(toastContainer);
+      
+      button.addEventListener('click', function() {
+        const input = document.querySelector('#booking-link-input');
+        if (!input) return;
+        
         const text = input.value;
-        const showFeedback = (message, isError = false) => {
-          button.disabled = false;
-          button.textContent = message;
-          button.classList.toggle('btn-success', !isError);
-          button.classList.toggle('btn-outline-primary', isError);
-          setTimeout(() => {
-            button.classList.remove('btn-success');
-            button.classList.add('btn-outline-primary');
-            button.textContent = '複製';
-          }, 2000);
-        };
-
+        const originalHTML = button.innerHTML;
+        
+        // 顯示載入狀態
         button.disabled = true;
-        button.textContent = '複製中…';
-
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>複製中...';
+        
+        const showToast = (message, isSuccess = true) => {
+          const toastHTML = `
+            <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+              <div class="toast-header">
+                <i class="bi ${isSuccess ? 'bi-check-circle text-success' : 'bi-x-circle text-danger'} me-2"></i>
+                <strong class="me-auto">${isSuccess ? '成功' : '錯誤'}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+              </div>
+              <div class="toast-body">${message}</div>
+            </div>
+          `;
+          
+          toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+          const toastElement = toastContainer.lastElementChild;
+          const toast = new bootstrap.Toast(toastElement);
+          toast.show();
+          
+          // 自動清理 toast 元素
+          toastElement.addEventListener('hidden.bs.toast', function() {
+            toastElement.remove();
+          });
+        };
+        
+        const resetButton = () => {
+          button.disabled = false;
+          button.innerHTML = originalHTML;
+        };
+        
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text)
-            .then(() => showFeedback('已複製！'))
+            .then(() => {
+              resetButton();
+              showToast('預約連結已複製到剪貼簿！');
+            })
             .catch(() => {
+              // 降級到舊方法
               input.select();
               try {
                 document.execCommand('copy');
-                showFeedback('已複製！');
+                resetButton();
+                showToast('預約連結已複製到剪貼簿！');
               } catch (err) {
-                showFeedback('複製失敗', true);
+                resetButton();
+                showToast('複製失敗，請手動複製', false);
               }
             });
-          return;
-        }
-
-        input.select();
-        try {
-          document.execCommand('copy');
-          showFeedback('已複製！');
-        } catch (err) {
-          showFeedback('複製失敗', true);
+        } else {
+          // 降級方法
+          input.select();
+          try {
+            document.execCommand('copy');
+            resetButton();
+            showToast('預約連結已複製到剪貼簿！');
+          } catch (err) {
+            resetButton();
+            showToast('複製失敗，請手動複製', false);
+          }
         }
       });
-    })();
+    });
   </script>
 {% endblock %}

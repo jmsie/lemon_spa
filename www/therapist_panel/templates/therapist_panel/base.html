@@ -11,15 +11,42 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     {% block extra_head %}{% endblock %}
   </head>
   <body class="bg-body-tertiary">
+    <!-- 手機版頂部導航 -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">Therapist Panel</span>
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+    </nav>
+
     <div class="container-fluid">
-      <div class="row flex-nowrap min-vh-100">
-        <aside class="col-12 col-md-3 col-xl-2 px-sm-2 px-0 bg-dark">
-          {% include "therapist_panel/sidebar.html" %}
+      <div class="row">
+        <!-- 桌面版側邊欄 -->
+        <aside class="col-md-3 col-xl-2 px-0 bg-dark d-none d-md-block">
+          <div class="min-vh-100">
+            {% include "therapist_panel/sidebar.html" %}
+          </div>
         </aside>
-        <main class="col py-4 px-4">
+        
+        <!-- 手機版 Offcanvas 側邊欄 -->
+        <div class="offcanvas offcanvas-start bg-dark text-white d-md-none" tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title text-white" id="offcanvasSidebarLabel">選單</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body p-0">
+            {% include "therapist_panel/sidebar.html" %}
+          </div>
+        </div>
+        
+        <!-- 主要內容 -->
+        <main class="col-md-9 col-xl-10 px-3 px-md-4 py-4">
           {% if messages %}
             <div class="mb-4">
               {% for message in messages %}
@@ -37,11 +64,13 @@
         </main>
       </div>
     </div>
+
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
       crossorigin="anonymous"
     ></script>
+    
     {% block extra_scripts %}{% endblock %}
   </body>
 </html>

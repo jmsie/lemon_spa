@@ -6,8 +6,12 @@
   <div class="row justify-content-center">
     <div class="col-12 col-lg-8 col-xl-6">
       <div class="card shadow-sm">
+        <div class="card-header">
+          <h1 class="h4 mb-0">
+            <i class="bi bi-person-gear me-2"></i>Edit contact information
+          </h1>
+        </div>
         <div class="card-body">
-          <h1 class="h4 mb-3">Edit contact information</h1>
           <p class="text-body-secondary mb-4">Keep your clients in the loop with up to date details.</p>
           <form method="post" novalidate>
             {% csrf_token %}
@@ -23,9 +27,15 @@
                 {% endfor %}
               </div>
             {% endfor %}
-            <div class="d-flex justify-content-between align-items-center">
-              <a href="{% url 'therapist_panel:index' %}" class="btn btn-outline-secondary">Cancel</a>
-              <button type="submit" class="btn btn-primary">Save changes</button>
+            
+            <!-- 響應式按鈕布局 -->
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 gap-sm-3 mt-4">
+              <a href="{% url 'therapist_panel:index' %}" class="btn btn-outline-secondary order-sm-first">
+                <i class="bi bi-arrow-left me-1"></i>Cancel
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Save changes
+              </button>
             </div>
           </form>
         </div>
