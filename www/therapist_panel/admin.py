@@ -3,7 +3,12 @@
 from django.contrib import admin
 
 from .models import Therapist, TherapistTreatment
-from scheduling.models import TherapistTimeOff, TherapistTimeOffSeries
+from scheduling.models import (
+    TherapistTimeOff,
+    TherapistTimeOffSeries,
+    TherapistWorkingHours,
+    TherapistWorkingHoursSeries,
+)
 
 
 class TherapistTreatmentInline(admin.TabularInline):
@@ -108,5 +113,61 @@ class TherapistTimeOffSeriesAdmin(admin.ModelAdmin):
         "therapist__first_name",
         "therapist__last_name",
         "note",
+    )
+    autocomplete_fields = ("therapist",)
+
+
+@admin.register(TherapistWorkingHours)
+class TherapistWorkingHoursAdmin(admin.ModelAdmin):
+    list_display = (
+        "therapist",
+        "get_local_starts_at",
+        "get_local_ends_at",
+        "series",
+        "is_generated",
+        "note",
+        "created_at",
+    )
+    list_filter = ("therapist", "is_generated")
+    search_fields = (
+        "therapist__nickname",
+        "therapist__first_name",
+        "therapist__last_name",
+        "note",
+    )
+    ordering = ("-starts_at",)
+    readonly_fields = ("created_at", "updated_at")
+    autocomplete_fields = ("therapist",)
+
+    @admin.display(description="Starts at", ordering="starts_at")
+    def get_local_starts_at(self, obj):
+        from scheduling.utils import from_utc
+
+        return from_utc(obj.starts_at, obj.therapist.timezone).strftime("%Y-%m-%d %H:%M")
+
+    @admin.display(description="Ends at", ordering="ends_at")
+    def get_local_ends_at(self, obj):
+        from scheduling.utils import from_utc
+
+        return from_utc(obj.ends_at, obj.therapist.timezone).strftime("%Y-%m-%d %H:%M")
+
+
+@admin.register(TherapistWorkingHoursSeries)
+class TherapistWorkingHoursSeriesAdmin(admin.ModelAdmin):
+    list_display = (
+        "therapist",
+        "weekday",
+        "repeat_interval",
+        "start_date",
+        "start_time",
+        "end_time",
+        "repeat_until",
+        "is_active",
+    )
+    list_filter = ("weekday", "is_active")
+    search_fields = (
+        "therapist__nickname",
+        "therapist__first_name",
+        "therapist__last_name",
     )
     autocomplete_fields = ("therapist",)

@@ -30,6 +30,9 @@ class TherapistScheduleView(TherapistRoleRequiredMixin, TemplateView):
                 "current_url_name": getattr(request.resolver_match, "url_name", ""),
                 "appointments_api_url": reverse("api:appointments:appointment-list"),
                 "time_off_api_url": reverse("therapist_panel:api:time_off:time-off-list"),
+                "working_hours_api_url": reverse(
+                    "therapist_panel:api:working_hours:working-hours-list"
+                ),
             }
         )
         return context

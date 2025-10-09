@@ -41,6 +41,22 @@
       border-color: var(--bs-blue-200);
       color: var(--bs-gray-800);
     }
+
+    .fc-event.working-hours-event,
+    .fc-event.working-hours-event .fc-event-main {
+      background-color: var(--bs-success-bg-subtle);
+      border-color: var(--bs-success-border-subtle);
+      color: var(--bs-success-text);
+    }
+
+    .fc-event.working-hours-event {
+      opacity: 0.85;
+    }
+
+    .working-hours-label {
+      font-weight: 500;
+      font-size: 0.85rem;
+    }
     
     .time-off-label {
       font-weight: 600;
@@ -56,9 +72,14 @@
       <h1 class="h3 mb-1">本週預約行程</h1>
       <p class="text-body-secondary mb-0">檢視並管理您的按摩行程與營業時間。</p>
     </div>
-    <button type="button" class="btn btn-outline-primary" id="time-off-create-button">
-      <i class="bi bi-calendar-minus me-1"></i>新增休假
-    </button>
+    <div class="btn-group">
+      <button type="button" class="btn btn-outline-success" id="working-hours-create-button">
+        <i class="bi bi-clock-history me-1"></i>設定上班時間
+      </button>
+      <button type="button" class="btn btn-outline-primary" id="time-off-create-button">
+        <i class="bi bi-calendar-minus me-1"></i>新增休假
+      </button>
+    </div>
   </div>
   
   <div class="card shadow-sm">
@@ -148,6 +169,99 @@
           <button type="button" class="btn btn-primary" id="appointment-create-save">
             <span class="spinner-border spinner-border-sm me-1 d-none"></span>建立預約
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 上班時間 Modal -->
+  <div class="modal fade" id="workingHoursModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="workingHoursModalLabel">新增上班時間</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="working-hours-form" novalidate>
+            <div class="row g-2 mb-3">
+              <div class="col-md-6">
+                <label for="working-hours-start" class="form-label">開始時間</label>
+                <input type="datetime-local" class="form-control" id="working-hours-start" name="starts_at" step="1800" required>
+              </div>
+              <div class="col-md-6">
+                <label for="working-hours-end" class="form-label">結束時間</label>
+                <input type="datetime-local" class="form-control" id="working-hours-end" name="ends_at" step="1800" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="working-hours-note" class="form-label">備註</label>
+              <textarea class="form-control" id="working-hours-note" name="note" rows="3" placeholder="例如：早班、晚班..."></textarea>
+            </div>
+            <div class="border-top pt-3" id="working-hours-repeat-section">
+              <h6 class="mb-3">重複設定</h6>
+              <div class="mb-3">
+                <select class="form-select" id="working-hours-repeat-type" name="repeat_type">
+                  <option value="">不重複</option>
+                  <option value="weekly">每週</option>
+                </select>
+              </div>
+              <div class="row g-2 mb-3 d-none" data-working-repeat-settings>
+                <input type="hidden" id="working-hours-repeat-interval" name="repeat_interval" value="1">
+                <div class="col-12">
+                  <label class="form-label">重複星期</label>
+                  <div class="d-flex flex-wrap gap-2" id="working-hours-weekdays">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="0" id="working-hours-weekday-0" data-working-weekday-checkbox>
+                      <label class="form-check-label" for="working-hours-weekday-0">週一</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="1" id="working-hours-weekday-1" data-working-weekday-checkbox>
+                      <label class="form-check-label" for="working-hours-weekday-1">週二</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="2" id="working-hours-weekday-2" data-working-weekday-checkbox>
+                      <label class="form-check-label" for="working-hours-weekday-2">週三</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="3" id="working-hours-weekday-3" data-working-weekday-checkbox>
+                      <label class="form-check-label" for="working-hours-weekday-3">週四</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="4" id="working-hours-weekday-4" data-working-weekday-checkbox>
+                      <label class="form-check-label" for="working-hours-weekday-4">週五</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="5" id="working-hours-weekday-5" data-working-weekday-checkbox>
+                      <label class="form-check-label" for="working-hours-weekday-5">週六</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="6" id="working-hours-weekday-6" data-working-weekday-checkbox>
+                      <label class="form-check-label" for="working-hours-weekday-6">週日</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3 d-none" data-working-repeat-settings>
+                <label for="working-hours-repeat-until" class="form-label">重複至</label>
+                <input type="date" class="form-control" id="working-hours-repeat-until" name="repeat_until">
+              </div>
+              <div class="alert alert-info d-none" data-working-repeat-edit-warning>
+                編輯重複上班時段時無法調整重複設定。如需變更，請刪除後重新建立。
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-outline-danger d-none" id="working-hours-delete">
+            <i class="bi bi-trash"></i> 刪除
+          </button>
+          <div class="d-flex gap-2 ms-auto">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-success" id="working-hours-save">
+              <span class="spinner-border spinner-border-sm me-1 d-none"></span>建立上班時間
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -253,12 +367,15 @@
         this.calendar = null;
         this.activeEvent = null;
         this.activeTimeOffEvent = null;
+        this.activeWorkingHoursEvent = null;
         this.isEditingTimeOff = false;
+        this.isEditingWorkingHours = false;
         this.cachedTreatments = null;
         
         // API URLs
         this.appointmentsApiBase = '{{ appointments_api_url }}';
         this.timeOffApiBase = '{{ time_off_api_url }}';
+        this.workingHoursApiBase = '{{ working_hours_api_url }}';
         this.treatmentsApiUrl = '{% url "therapist_panel:api:treatments:treatment-list" %}';
         
         // DOM 元素快取
@@ -277,18 +394,23 @@
           // 模態框
           appointmentModal: new bootstrap.Modal(document.getElementById('appointmentModal')),
           appointmentCreateModal: new bootstrap.Modal(document.getElementById('appointmentCreateModal')),
+          workingHoursModal: new bootstrap.Modal(document.getElementById('workingHoursModal')),
           timeOffModal: new bootstrap.Modal(document.getElementById('timeOffModal')),
           timeOffDeleteConfirmModal: new bootstrap.Modal(document.getElementById('timeOffDeleteConfirmModal')),
           
           // 表單
           appointmentForm: document.getElementById('appointment-form'),
           appointmentCreateForm: document.getElementById('appointment-create-form'),
+          workingHoursForm: document.getElementById('working-hours-form'),
           timeOffForm: document.getElementById('time-off-form'),
           
           // 按鈕
           appointmentSave: document.getElementById('appointment-save'),
           appointmentCancel: document.getElementById('appointment-cancel'),
           appointmentCreateSave: document.getElementById('appointment-create-save'),
+          workingHoursCreateButton: document.getElementById('working-hours-create-button'),
+          workingHoursSave: document.getElementById('working-hours-save'),
+          workingHoursDelete: document.getElementById('working-hours-delete'),
           timeOffCreateButton: document.getElementById('time-off-create-button'),
           timeOffSave: document.getElementById('time-off-save'),
           timeOffDelete: document.getElementById('time-off-delete'),
@@ -300,12 +422,26 @@
             edit: document.getElementById('appointment-treatment'),
             create: document.getElementById('create-treatment')
           },
+          workingHoursModalTitle: document.getElementById('workingHoursModalLabel'),
+          workingHoursRepeatType: document.getElementById('working-hours-repeat-type'),
+          workingHoursRepeatSettings: Array.from(document.querySelectorAll('[data-working-repeat-settings]')),
+          workingHoursRepeatEditWarning: document.querySelector('[data-working-repeat-edit-warning]'),
+          workingHoursWeekdayCheckboxes: Array.from(document.querySelectorAll('[data-working-weekday-checkbox]')),
+          workingHoursRepeatInterval: document.getElementById('working-hours-repeat-interval'),
+          workingHoursRepeatUntil: document.getElementById('working-hours-repeat-until'),
+          workingHoursStart: document.getElementById('working-hours-start'),
+          workingHoursEnd: document.getElementById('working-hours-end'),
+          workingHoursNote: document.getElementById('working-hours-note'),
           timeOffModalTitle: document.getElementById('timeOffModalLabel'),
           repeatType: document.getElementById('time-off-repeat-type'),
           repeatSettings: document.querySelector('[data-repeat-settings]'),
           repeatIntervalLabel: document.querySelector('[data-repeat-interval-label]'),
           repeatEditWarning: document.querySelector('[data-repeat-edit-warning]')
         };
+
+        if (this.elements.workingHoursRepeatEditWarning && !this.elements.workingHoursRepeatEditWarning.dataset.defaultText) {
+          this.elements.workingHoursRepeatEditWarning.dataset.defaultText = this.elements.workingHoursRepeatEditWarning.textContent.trim();
+        }
       }
 
       // 主要初始化方法
@@ -446,6 +582,7 @@
           height: 'auto',
           
           eventSources: [
+            this.createWorkingHoursEventSource(),
             this.createAppointmentEventSource(),
             this.createTimeOffEventSource()
           ],
@@ -460,6 +597,44 @@
         
         // 響應式更新
         window.addEventListener('resize', () => this.calendar.updateSize());
+      }
+
+      createWorkingHoursEventSource() {
+        return {
+          events: async (info, successCallback, failureCallback) => {
+            try {
+              const url = new URL(this.workingHoursApiBase, window.location.origin);
+              url.searchParams.set('start', info.startStr);
+              url.searchParams.set('end', info.endStr);
+
+              const response = await this.apiRequest(url.toString());
+              if (!response.ok) throw new Error('Failed to load working hours');
+
+              const data = await response.json();
+              const events = data.map(item => ({
+                id: item.uuid,
+                title: item.note ? `上班：${item.note}` : '上班時間',
+                start: item.starts_at,
+                end: item.ends_at,
+                editable: false,
+                classNames: ['working-hours-event'],
+                extendedProps: {
+                  eventType: 'workingHours',
+                  note: item.note,
+                  seriesUuid: item.series_uuid || null,
+                  isRecurring: Boolean(item.series_uuid),
+                  isGenerated: Boolean(item.is_generated),
+                  weekday: item.weekday
+                }
+              }));
+
+              successCallback(events);
+            } catch (error) {
+              console.error(error);
+              failureCallback(error);
+            }
+          }
+        };
       }
 
       createAppointmentEventSource() {
@@ -537,6 +712,14 @@
       }
 
       renderEventContent(arg) {
+        if (arg.event.extendedProps.eventType === 'workingHours') {
+          const wrapper = document.createElement('div');
+          wrapper.classList.add('working-hours-label', 'text-body-secondary');
+          const base = arg.timeText ? `${arg.timeText} 上班` : '上班時間';
+          wrapper.textContent = arg.event.extendedProps.note ? `${base}｜${arg.event.extendedProps.note}` : base;
+          return { domNodes: [wrapper] };
+        }
+
         if (arg.event.extendedProps.eventType === 'timeOff') {
           const wrapper = document.createElement('div');
           wrapper.classList.add('time-off-label');
@@ -577,6 +760,8 @@
         
         if (info.event.extendedProps.eventType === 'timeOff') {
           await this.handleTimeOffEdit(info.event);
+        } else if (info.event.extendedProps.eventType === 'workingHours') {
+          await this.handleWorkingHoursEdit(info.event);
         } else {
           await this.handleAppointmentEdit(info.event);
         }
@@ -600,6 +785,392 @@
         
         this.elements.appointmentCancel.disabled = Boolean(event.extendedProps.isCancelled);
         this.elements.appointmentModal.show();
+      }
+
+      resetWorkingHoursModal() {
+        this.isEditingWorkingHours = false;
+        this.activeWorkingHoursEvent = null;
+
+        const form = this.elements.workingHoursForm;
+        form?.reset?.();
+
+        if (this.elements.workingHoursModalTitle) {
+          this.elements.workingHoursModalTitle.textContent = '新增上班時間';
+        }
+        if (this.elements.workingHoursSave) {
+          this.elements.workingHoursSave.textContent = '建立上班時間';
+        }
+        this.elements.workingHoursDelete?.classList.add('d-none');
+
+        if (this.elements.workingHoursRepeatType) {
+          this.elements.workingHoursRepeatType.disabled = false;
+          this.elements.workingHoursRepeatType.value = '';
+        }
+        if (this.elements.workingHoursRepeatInterval) {
+          this.elements.workingHoursRepeatInterval.value = '1';
+          this.elements.workingHoursRepeatInterval.removeAttribute('disabled');
+        }
+        if (this.elements.workingHoursRepeatUntil) {
+          this.elements.workingHoursRepeatUntil.value = '';
+          this.elements.workingHoursRepeatUntil.removeAttribute('disabled');
+        }
+        this.elements.workingHoursRepeatSettings?.forEach((el) => el?.classList.add('d-none'));
+
+        this.elements.workingHoursWeekdayCheckboxes?.forEach((checkbox) => {
+          checkbox.checked = false;
+          checkbox.removeAttribute('disabled');
+        });
+
+        if (this.elements.workingHoursRepeatEditWarning) {
+          const warningEl = this.elements.workingHoursRepeatEditWarning;
+          if (warningEl.dataset.defaultText) {
+            warningEl.textContent = warningEl.dataset.defaultText;
+          }
+          warningEl.classList.add('d-none');
+        }
+
+        this.elements.workingHoursStart?.removeAttribute('disabled');
+        this.elements.workingHoursEnd?.removeAttribute('disabled');
+
+        this.updateWorkingHoursRepeatControls();
+      }
+
+      updateWorkingHoursRepeatControls() {
+        const type = this.elements.workingHoursRepeatType?.value;
+        const show = type === 'weekly';
+        this.elements.workingHoursRepeatSettings?.forEach((el) => {
+          if (el) {
+            el.classList.toggle('d-none', !show);
+          }
+        });
+        if (show) {
+          this.syncWorkingHoursWeekday();
+        }
+      }
+
+      syncWorkingHoursWeekday() {
+        if (this.isEditingWorkingHours) return;
+        if (this.elements.workingHoursRepeatType?.value !== 'weekly') return;
+
+        const startInput = this.elements.workingHoursStart;
+        if (!startInput?.value) return;
+
+        const date = new Date(startInput.value);
+        if (Number.isNaN(date.getTime())) return;
+
+        const weekday = this.getWeekdayIndex(date);
+        const hasSelection = this.elements.workingHoursWeekdayCheckboxes?.some((checkbox) => checkbox.checked);
+        if (hasSelection) return;
+
+        this.elements.workingHoursWeekdayCheckboxes?.forEach((checkbox) => {
+          checkbox.checked = Number(checkbox.value) === weekday;
+        });
+      }
+
+      getWeekdayIndex(date) {
+        return (date.getDay() + 6) % 7;
+      }
+
+      getSelectedWorkingWeekdays() {
+        return this.elements.workingHoursWeekdayCheckboxes
+          ?.filter((checkbox) => checkbox.checked)
+          .map((checkbox) => Number(checkbox.value)) ?? [];
+      }
+
+      shiftDateToWeekday(baseDate, targetWeekday) {
+        const baseWeekday = this.getWeekdayIndex(baseDate);
+        let diff = targetWeekday - baseWeekday;
+        if (diff < 0) diff += 7;
+        const adjusted = new Date(baseDate.getTime());
+        adjusted.setDate(adjusted.getDate() + diff);
+        return adjusted;
+      }
+
+      showWorkingHoursModal() {
+        this.resetWorkingHoursModal();
+
+        const now = new Date();
+        const roundedStart = new Date(now);
+        const minutes = roundedStart.getMinutes();
+        const remainder = minutes % 30;
+        if (remainder !== 0) {
+          roundedStart.setMinutes(minutes + (30 - remainder), 0, 0);
+        } else {
+          roundedStart.setSeconds(0, 0);
+        }
+        const roundedEnd = new Date(roundedStart.getTime() + 60 * 60 * 1000);
+
+        if (this.elements.workingHoursStart) {
+          this.elements.workingHoursStart.value = this.toLocalInputValue(roundedStart);
+        }
+        if (this.elements.workingHoursEnd) {
+          this.elements.workingHoursEnd.value = this.toLocalInputValue(roundedEnd);
+        }
+
+        this.syncWorkingHoursWeekday();
+        this.elements.workingHoursModal?.show();
+      }
+
+      async saveWorkingHours() {
+        const button = this.elements.workingHoursSave;
+        this.toggleButtonLoading(button, true);
+
+        try {
+          const startValue = this.elements.workingHoursStart?.value;
+          const endValue = this.elements.workingHoursEnd?.value;
+
+          if (!startValue || !endValue) {
+            this.showFeedback('請填寫上班時間的開始與結束。', 'warning');
+            return;
+          }
+
+          const startDate = new Date(startValue);
+          const endDate = new Date(endValue);
+          if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+            this.showFeedback('請輸入有效的日期時間。', 'warning');
+            return;
+          }
+
+          if (endDate <= startDate) {
+            this.showFeedback('結束時間必須晚於開始時間。', 'warning');
+            return;
+          }
+
+          const isEditing = this.isEditingWorkingHours && this.activeWorkingHoursEvent;
+          const repeatTypeValue = this.elements.workingHoursRepeatType?.value;
+          const wantsRecurring = !isEditing && repeatTypeValue === 'weekly';
+
+          const note = (this.elements.workingHoursNote?.value || '').trim();
+          const durationMs = endDate.getTime() - startDate.getTime();
+
+          let selectedWeekdays = [];
+          let repeatInterval = 1;
+          let repeatUntilValue = null;
+          if (wantsRecurring) {
+            selectedWeekdays = this.getSelectedWorkingWeekdays();
+            if (!selectedWeekdays.length) {
+              this.showFeedback('請至少選擇一個重複的星期。', 'warning');
+              return;
+            }
+
+            const intervalValue = Number.parseInt(this.elements.workingHoursRepeatInterval?.value ?? '1', 10);
+            repeatInterval = Number.isNaN(intervalValue) ? 1 : Math.max(intervalValue, 1);
+
+            const repeatUntilRaw = this.elements.workingHoursRepeatUntil?.value || null;
+            repeatUntilValue = repeatUntilRaw;
+          }
+
+          const parseRepeatUntilDate = (value) => {
+            if (!value) return null;
+            const [yearStr, monthStr, dayStr] = value.split('-');
+            const year = Number.parseInt(yearStr ?? '', 10);
+            if (Number.isNaN(year)) return null;
+            const rawMonth = Number.parseInt(monthStr ?? '', 10);
+            const rawDay = Number.parseInt(dayStr ?? '', 10);
+            const monthIndex = Number.isNaN(rawMonth) ? 0 : Math.max(rawMonth - 1, 0);
+            const dayValue = Number.isNaN(rawDay) ? 1 : rawDay;
+            return new Date(year, monthIndex, dayValue, 23, 59, 59, 999);
+          };
+
+          const repeatUntilDate = wantsRecurring ? parseRepeatUntilDate(repeatUntilValue) : null;
+
+          const buildPayload = (start, end, weekday) => {
+            const body = {
+              starts_at: start.toISOString(),
+              ends_at: end.toISOString(),
+              note,
+            };
+            if (weekday !== undefined) {
+              body.weekday = weekday;
+              body.repeat_interval = repeatInterval;
+              if (repeatUntilValue) {
+                body.repeat_until = repeatUntilValue;
+              }
+            }
+            return body;
+          };
+
+          const requests = [];
+
+          if (isEditing || !wantsRecurring) {
+            const baseEndpoint = isEditing
+              ? `${this.workingHoursApiBase}${this.activeWorkingHoursEvent.id}/`
+              : this.workingHoursApiBase;
+            const method = isEditing ? 'PATCH' : 'POST';
+            requests.push({
+              endpoint: baseEndpoint,
+              method,
+              body: buildPayload(startDate, endDate, wantsRecurring ? selectedWeekdays[0] : undefined),
+            });
+          } else {
+            for (const weekday of selectedWeekdays) {
+              const occurrenceStart = this.shiftDateToWeekday(startDate, weekday);
+              if (repeatUntilDate && occurrenceStart > repeatUntilDate) {
+                this.showFeedback('重複結束日期不能早於所選星期的第一次上班日。', 'warning');
+                return;
+              }
+              const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs);
+              requests.push({
+                endpoint: this.workingHoursApiBase,
+                method: 'POST',
+                body: buildPayload(occurrenceStart, occurrenceEnd, weekday),
+              });
+            }
+          }
+
+          let successCount = 0;
+          for (const request of requests) {
+            const response = await this.apiRequest(request.endpoint, {
+              method: request.method,
+              body: JSON.stringify(request.body),
+            });
+
+            if (!response.ok) {
+              const fallback = request.method === 'PATCH' ? '上班時間更新失敗' : '上班時間建立失敗';
+              const message = await this.getErrorMessage(response, fallback);
+              if (successCount > 0) {
+                throw new Error(`${message}（部分時段已建立）`);
+              }
+              throw new Error(message);
+            }
+
+            successCount += 1;
+          }
+
+          this.elements.workingHoursModal?.hide();
+          if (isEditing) {
+            this.showFeedback('上班時間已更新。', 'info');
+          } else if (wantsRecurring && successCount > 1) {
+            this.showFeedback(`已建立 ${successCount} 個重複上班時段。`, 'success');
+          } else {
+            this.showFeedback('上班時間已建立。', 'success');
+          }
+          this.activeWorkingHoursEvent = null;
+          this.calendar?.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          this.showFeedback(error.message || '發生未知錯誤。', 'danger');
+        } finally {
+          this.toggleButtonLoading(button, false);
+        }
+      }
+
+      async deleteWorkingHours() {
+        if (!this.activeWorkingHoursEvent) return;
+
+        const isSeries = Boolean(this.activeWorkingHoursEvent.extendedProps?.seriesUuid);
+        const isGenerated = Boolean(this.activeWorkingHoursEvent.extendedProps?.isGenerated);
+
+        if (isGenerated) {
+          this.showFeedback('此上班時段由重複設定產生，僅能透過休假功能處理例外狀況。', 'warning');
+          return;
+        }
+
+        const confirmed = isSeries
+          ? confirm('這是重複上班時段，刪除將移除整個序列，確定要刪除嗎？')
+          : confirm('確定要刪除此上班時段嗎？');
+        if (!confirmed) return;
+
+        const button = this.elements.workingHoursDelete;
+        this.toggleButtonLoading(button, true);
+
+        try {
+          let endpoint = `${this.workingHoursApiBase}${this.activeWorkingHoursEvent.id}/`;
+          if (isSeries) {
+            endpoint += '?scope=series';
+          }
+
+          const response = await this.apiRequest(endpoint, { method: 'DELETE' });
+          if (!response.ok) {
+            const message = await this.getErrorMessage(response, '上班時間刪除失敗');
+            throw new Error(message);
+          }
+
+          this.elements.workingHoursModal?.hide();
+          this.showFeedback(isSeries ? '重複上班時段已刪除。' : '上班時間已刪除。', 'warning');
+          this.activeWorkingHoursEvent = null;
+          this.calendar?.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          this.showFeedback(error.message || '刪除失敗，請稍後再試。', 'danger');
+        } finally {
+          this.toggleButtonLoading(button, false);
+        }
+      }
+
+      async handleWorkingHoursEdit(event) {
+        this.resetWorkingHoursModal();
+        this.isEditingWorkingHours = true;
+        this.activeWorkingHoursEvent = event;
+
+        if (this.elements.workingHoursStart && event.start) {
+          this.elements.workingHoursStart.value = this.toLocalInputValue(event.start);
+        }
+        if (this.elements.workingHoursEnd && event.end) {
+          this.elements.workingHoursEnd.value = this.toLocalInputValue(event.end);
+        }
+        if (this.elements.workingHoursNote) {
+          this.elements.workingHoursNote.value = event.extendedProps.note || '';
+        }
+
+        const warningEl = this.elements.workingHoursRepeatEditWarning;
+        const hasSeries = Boolean(event.extendedProps.seriesUuid);
+        const isGenerated = Boolean(event.extendedProps.isGenerated);
+        const eventWeekday = typeof event.extendedProps.weekday === 'number'
+          ? event.extendedProps.weekday
+          : (event.start ? this.getWeekdayIndex(new Date(event.start)) : 0);
+
+        if (this.elements.workingHoursModalTitle) {
+          this.elements.workingHoursModalTitle.textContent = '編輯上班時間';
+        }
+        if (this.elements.workingHoursSave) {
+          this.elements.workingHoursSave.textContent = '儲存上班時間';
+        }
+
+        if (hasSeries) {
+          if (this.elements.workingHoursRepeatType) {
+            this.elements.workingHoursRepeatType.value = 'weekly';
+            this.elements.workingHoursRepeatType.disabled = true;
+          }
+          this.updateWorkingHoursRepeatControls();
+
+          this.elements.workingHoursWeekdayCheckboxes?.forEach((checkbox) => {
+            const isMatch = Number(checkbox.value) === eventWeekday;
+            checkbox.checked = isMatch;
+            checkbox.setAttribute('disabled', 'disabled');
+          });
+          this.elements.workingHoursRepeatInterval?.setAttribute('disabled', 'disabled');
+          this.elements.workingHoursRepeatUntil?.setAttribute('disabled', 'disabled');
+          this.elements.workingHoursStart?.setAttribute('disabled', 'disabled');
+          this.elements.workingHoursEnd?.setAttribute('disabled', 'disabled');
+
+          if (warningEl) {
+            warningEl.classList.remove('d-none');
+          }
+        } else {
+          if (this.elements.workingHoursRepeatType) {
+            this.elements.workingHoursRepeatType.value = '';
+            this.elements.workingHoursRepeatType.disabled = false;
+          }
+          this.updateWorkingHoursRepeatControls();
+        }
+
+        if (warningEl) {
+          if (isGenerated) {
+            warningEl.classList.remove('d-none');
+            warningEl.textContent = '此上班時段由重複設定產生，僅能調整備註。例外情況請建立休假。';
+          } else if (hasSeries) {
+            warningEl.classList.remove('d-none');
+          }
+        }
+
+        if (!isGenerated) {
+          this.elements.workingHoursDelete?.classList.remove('d-none');
+        } else {
+          this.elements.workingHoursDelete?.classList.add('d-none');
+        }
+
+        this.elements.workingHoursModal?.show();
       }
 
       async handleTimeOffEdit(event) {
@@ -627,7 +1198,7 @@
       }
 
       async handleEventDrop(info) {
-        if (info.event.extendedProps.eventType === 'timeOff') {
+        if (info.event.extendedProps.eventType === 'timeOff' || info.event.extendedProps.eventType === 'workingHours') {
           info.revert();
           return;
         }
@@ -686,18 +1257,26 @@
         this.elements.appointmentSave?.addEventListener('click', () => this.saveAppointment());
         this.elements.appointmentCancel?.addEventListener('click', () => this.cancelAppointment());
         this.elements.appointmentCreateSave?.addEventListener('click', () => this.createAppointment());
-        
+
+        // 上班時間相關
+        this.elements.workingHoursCreateButton?.addEventListener('click', () => this.showWorkingHoursModal());
+        this.elements.workingHoursSave?.addEventListener('click', () => this.saveWorkingHours());
+        this.elements.workingHoursDelete?.addEventListener('click', () => this.deleteWorkingHours());
+        this.elements.workingHoursRepeatType?.addEventListener('change', () => this.updateWorkingHoursRepeatControls());
+        this.elements.workingHoursStart?.addEventListener('change', () => this.syncWorkingHoursWeekday());
+
         // 休假相關
         this.elements.timeOffCreateButton?.addEventListener('click', () => this.showTimeOffModal());
         this.elements.timeOffSave?.addEventListener('click', () => this.saveTimeOff());
         this.elements.timeOffDelete?.addEventListener('click', () => this.showDeleteConfirm());
         this.elements.timeOffDeleteSingle?.addEventListener('click', () => this.deleteTimeOff());
         this.elements.timeOffDeleteSeries?.addEventListener('click', () => this.deleteTimeOff('series'));
-        
+
         // 重複設定
         this.elements.repeatType?.addEventListener('change', () => this.updateRepeatControls());
-        
+
         // 模態框重置
+        document.getElementById('workingHoursModal')?.addEventListener('hidden.bs.modal', () => this.resetWorkingHoursModal());
         document.getElementById('timeOffModal')?.addEventListener('hidden.bs.modal', () => this.resetTimeOffModal());
       }
 

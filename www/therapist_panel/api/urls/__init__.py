@@ -8,4 +8,5 @@ urlpatterns = [
     path("", include("therapist_panel.api.urls.therapists")),
     path("", include("therapist_panel.api.urls.treatments")),
     path("", include("therapist_panel.api.urls.time_off")),
+    path("", include("therapist_panel.api.urls.working_hours")),
 ]
