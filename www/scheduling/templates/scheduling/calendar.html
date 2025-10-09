@@ -5,52 +5,44 @@
 {% block extra_head %}
   {{ block.super }}
   <style>
-    #schedule-calendar { 
-      min-height: 720px; 
+    /* 使用 Bootstrap 的 min-height utilities 和自定義 CSS variables */
+    :root {
+      --calendar-height-desktop: 720px;
+      --calendar-height-mobile: 500px;
     }
     
-    /* FullCalendar 響應式調整 */
+    #schedule-calendar { 
+      min-height: var(--calendar-height-desktop);
+    }
+    
+    /* 簡化響應式設計 - 更多使用 Bootstrap utilities */
     @media (max-width: 767.98px) {
       #schedule-calendar { 
-        min-height: 500px; 
-      }
-      
-      .fc-toolbar {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      
-      .fc-toolbar-chunk {
-        display: flex;
-        justify-content: center;
-      }
-      
-      .fc-button-group .fc-button {
-        font-size: 0.875rem;
-        padding: 0.25rem 0.5rem;
-      }
-      
-      .fc-event-title {
-        font-size: 0.8rem;
+        min-height: var(--calendar-height-mobile);
       }
     }
     
+    /* FullCalendar 自定義樣式 - 保持必要的樣式 */
     .fc-event-title { font-weight: 600; }
     .fc-event-time { font-weight: 500; }
     .fc-event-customer { font-size: 0.85rem; }
-    .fc-event-phone { font-size: 0.8rem; color: #64748b; }
+    .fc-event-phone { font-size: 0.8rem; }
+    
+    /* 事件狀態樣式 */
     .fc-event.appointment-cancelled,
     .fc-event.appointment-cancelled .fc-event-main {
       opacity: 0.6;
       text-decoration: line-through;
     }
+    
     .fc-event.time-off-event,
     .fc-event.time-off-event .fc-event-main {
-      background-color: #e2e8f0;
-      border-color: #cbd5f5;
-      color: #1f2937;
+      background-color: var(--bs-gray-200);
+      border-color: var(--bs-blue-200);
+      color: var(--bs-gray-800);
     }
-    .fc-event.time-off-event .time-off-label {
+    
+    .time-off-label {
       font-weight: 600;
       font-size: 0.9rem;
     }
@@ -58,33 +50,33 @@
 {% endblock %}
 
 {% block content %}
-  <div class="row align-items-center mb-4">
-    <div class="col-12">
+  <!-- 使用 Bootstrap 的 d-flex 和 justify-content-between -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
       <h1 class="h3 mb-1">本週預約行程</h1>
       <p class="text-body-secondary mb-0">檢視並管理您的按摩行程與營業時間。</p>
     </div>
+    <button type="button" class="btn btn-outline-primary" id="time-off-create-button">
+      <i class="bi bi-calendar-minus me-1"></i>新增休假
+    </button>
   </div>
   
   <div class="card shadow-sm">
     <div class="card-body">
+      <!-- 使用 Bootstrap alert component -->
       <div id="schedule-feedback" class="alert d-none" role="alert"></div>
       <div id="schedule-calendar"></div>
     </div>
   </div>
 
-  <div class="d-flex justify-content-end mt-3">
-    <button type="button" class="btn btn-outline-primary" id="time-off-create-button">
-      <i class="bi bi-calendar-minus me-1"></i>新增休假
-    </button>
-  </div>
-
+  <!-- 模態框組件 - 簡化重複的結構 -->
   <!-- 編輯預約 Modal -->
-  <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="true">
+  <div class="modal fade" id="appointmentModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
       <div class="modal-content">
         <div class="modal-header">
-          <h1 class="modal-title fs-5" id="appointmentModalLabel">編輯預約</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h1 class="modal-title fs-5">編輯預約</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="appointment-form" novalidate>
@@ -106,11 +98,13 @@
             </div>
           </form>
         </div>
-        <div class="modal-footer flex-column flex-sm-row">
-          <button type="button" class="btn btn-outline-danger w-100 w-sm-auto order-sm-first me-sm-auto mb-2 mb-sm-0" id="appointment-cancel">取消預約</button>
-          <div class="d-flex gap-2 w-100 w-sm-auto">
-            <button type="button" class="btn btn-secondary flex-fill flex-sm-grow-0" data-bs-dismiss="modal">取消</button>
-            <button type="button" class="btn btn-primary flex-fill flex-sm-grow-0" id="appointment-save">儲存變更</button>
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-outline-danger" id="appointment-cancel">取消預約</button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-primary" id="appointment-save">
+              <span class="spinner-border spinner-border-sm me-1 d-none"></span>儲存變更
+            </button>
           </div>
         </div>
       </div>
@@ -118,12 +112,12 @@
   </div>
 
   <!-- 新增預約 Modal -->
-  <div class="modal fade" id="appointmentCreateModal" tabindex="-1" aria-labelledby="appointmentCreateModalLabel" aria-hidden="true">
+  <div class="modal fade" id="appointmentCreateModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
       <div class="modal-content">
         <div class="modal-header">
-          <h1 class="modal-title fs-5" id="appointmentCreateModalLabel">新增預約</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h1 class="modal-title fs-5">新增預約</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="appointment-create-form" novalidate>
@@ -151,91 +145,98 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-          <button type="button" class="btn btn-primary" id="appointment-create-save">建立預約</button>
+          <button type="button" class="btn btn-primary" id="appointment-create-save">
+            <span class="spinner-border spinner-border-sm me-1 d-none"></span>建立預約
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 新增休假 Modal -->
-  <div class="modal fade" id="timeOffModal" tabindex="-1" aria-labelledby="timeOffModalLabel" aria-hidden="true">
+  <!-- 休假 Modal -->
+  <div class="modal fade" id="timeOffModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
       <div class="modal-content">
         <div class="modal-header">
           <h1 class="modal-title fs-5" id="timeOffModalLabel">新增休假</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="time-off-form" novalidate>
-            <div class="mb-3">
-              <label for="time-off-start" class="form-label">開始時間</label>
-              <input type="datetime-local" class="form-control" id="time-off-start" name="starts_at" step="1800" required>
-            </div>
-            <div class="mb-3">
-              <label for="time-off-end" class="form-label">結束時間</label>
-              <input type="datetime-local" class="form-control" id="time-off-end" name="ends_at" step="1800" required>
+            <div class="row g-2 mb-3">
+              <div class="col-md-6">
+                <label for="time-off-start" class="form-label">開始時間</label>
+                <input type="datetime-local" class="form-control" id="time-off-start" name="starts_at" step="1800" required>
+              </div>
+              <div class="col-md-6">
+                <label for="time-off-end" class="form-label">結束時間</label>
+                <input type="datetime-local" class="form-control" id="time-off-end" name="ends_at" step="1800" required>
+              </div>
             </div>
             <div class="mb-3">
               <label for="time-off-note" class="form-label">備註</label>
               <textarea class="form-control" id="time-off-note" name="note" rows="3" placeholder="例如：請假、進修..."></textarea>
             </div>
-            <div class="border-top pt-3 mt-3" id="time-off-repeat-section">
+            
+            <!-- 重複設定區塊 -->
+            <div class="border-top pt-3" id="time-off-repeat-section">
+              <h6 class="mb-3">重複設定</h6>
               <div class="mb-3">
-                <label for="time-off-repeat-type" class="form-label">重複設定</label>
                 <select class="form-select" id="time-off-repeat-type" name="repeat_type">
                   <option value="">不重複</option>
                   <option value="daily">每天</option>
                   <option value="weekly">每週</option>
                 </select>
               </div>
-              <div class="row g-2 align-items-end mb-3 d-none" data-repeat-settings>
-                <div class="col-sm-6">
+              <div class="row g-2 mb-3 d-none" data-repeat-settings>
+                <div class="col-6">
                   <label for="time-off-repeat-interval" class="form-label">間隔</label>
                   <div class="input-group">
                     <input type="number" class="form-control" id="time-off-repeat-interval" name="repeat_interval" min="1" value="1">
                     <span class="input-group-text" data-repeat-interval-label>天</span>
                   </div>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-6">
                   <label for="time-off-repeat-until" class="form-label">重複至</label>
                   <input type="date" class="form-control" id="time-off-repeat-until" name="repeat_until">
-                  <div class="form-text">留白表示持續重複</div>
                 </div>
               </div>
-              <div class="alert alert-info d-none" role="status" data-repeat-edit-warning>
+              <div class="alert alert-info d-none" data-repeat-edit-warning>
                 編輯休假時無法調整重複設定。如需變更，請刪除後重新建立。
               </div>
             </div>
           </form>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-danger me-auto d-none" id="time-off-delete">
-            <i class="bi bi-trash"></i>
-            刪除
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-outline-danger d-none" id="time-off-delete">
+            <i class="bi bi-trash"></i> 刪除
           </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-          <button type="button" class="btn btn-primary" id="time-off-save">建立休假</button>
+          <div class="d-flex gap-2 ms-auto">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-primary" id="time-off-save">
+              <span class="spinner-border spinner-border-sm me-1 d-none"></span>建立休假
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="timeOffDeleteConfirmModal" tabindex="-1" aria-labelledby="timeOffDeleteConfirmLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm modal-fullscreen-sm-down">
+  <!-- 刪除確認 Modal -->
+  <div class="modal fade" id="timeOffDeleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
       <div class="modal-content">
         <div class="modal-header">
-          <h1 class="modal-title fs-5" id="timeOffDeleteConfirmLabel">刪除休假</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h1 class="modal-title fs-5">刪除休假</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <p class="mb-0" id="time-off-delete-message">確定要刪除此休假嗎？</p>
         </div>
-        <div class="modal-footer flex-column flex-sm-row">
-          <button type="button" class="btn btn-secondary w-100 w-sm-auto mb-2 mb-sm-0" data-bs-dismiss="modal">取消</button>
-          <div class="d-flex gap-2 w-100 w-sm-auto">
-            <button type="button" class="btn btn-outline-danger flex-fill flex-sm-grow-0" id="time-off-delete-single">刪除</button>
-            <button type="button" class="btn btn-danger flex-fill flex-sm-grow-0 d-none" id="time-off-delete-series">刪除整個序列</button>
-          </div>
+        <div class="modal-footer justify-content-end">
+          <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-outline-danger me-2" id="time-off-delete-single">刪除</button>
+          <button type="button" class="btn btn-danger d-none" id="time-off-delete-series">刪除整個序列</button>
         </div>
       </div>
     </div>
@@ -244,18 +245,80 @@
 
 {% block extra_scripts %}
   {{ block.super }}
-  <script
-    src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"
-    crossorigin="anonymous"
-  ></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
   <script>
-    (function() {
-      const calendarEl = document.getElementById('schedule-calendar');
-      if (!calendarEl) {
-        return;
+    // 重構後的模組化 JavaScript
+    class ScheduleManager {
+      constructor() {
+        this.calendar = null;
+        this.activeEvent = null;
+        this.activeTimeOffEvent = null;
+        this.isEditingTimeOff = false;
+        this.cachedTreatments = null;
+        
+        // API URLs
+        this.appointmentsApiBase = '{{ appointments_api_url }}';
+        this.timeOffApiBase = '{{ time_off_api_url }}';
+        this.treatmentsApiUrl = '{% url "therapist_panel:api:treatments:treatment-list" %}';
+        
+        // DOM 元素快取
+        this.initElements();
+        
+        // 初始化
+        this.init();
       }
 
-      const csrfToken = (function() {
+      // 初始化 DOM 元素
+      initElements() {
+        this.elements = {
+          calendar: document.getElementById('schedule-calendar'),
+          feedback: document.getElementById('schedule-feedback'),
+          
+          // 模態框
+          appointmentModal: new bootstrap.Modal(document.getElementById('appointmentModal')),
+          appointmentCreateModal: new bootstrap.Modal(document.getElementById('appointmentCreateModal')),
+          timeOffModal: new bootstrap.Modal(document.getElementById('timeOffModal')),
+          timeOffDeleteConfirmModal: new bootstrap.Modal(document.getElementById('timeOffDeleteConfirmModal')),
+          
+          // 表單
+          appointmentForm: document.getElementById('appointment-form'),
+          appointmentCreateForm: document.getElementById('appointment-create-form'),
+          timeOffForm: document.getElementById('time-off-form'),
+          
+          // 按鈕
+          appointmentSave: document.getElementById('appointment-save'),
+          appointmentCancel: document.getElementById('appointment-cancel'),
+          appointmentCreateSave: document.getElementById('appointment-create-save'),
+          timeOffCreateButton: document.getElementById('time-off-create-button'),
+          timeOffSave: document.getElementById('time-off-save'),
+          timeOffDelete: document.getElementById('time-off-delete'),
+          timeOffDeleteSingle: document.getElementById('time-off-delete-single'),
+          timeOffDeleteSeries: document.getElementById('time-off-delete-series'),
+          
+          // 其他
+          treatmentSelects: {
+            edit: document.getElementById('appointment-treatment'),
+            create: document.getElementById('create-treatment')
+          },
+          timeOffModalTitle: document.getElementById('timeOffModalLabel'),
+          repeatType: document.getElementById('time-off-repeat-type'),
+          repeatSettings: document.querySelector('[data-repeat-settings]'),
+          repeatIntervalLabel: document.querySelector('[data-repeat-interval-label]'),
+          repeatEditWarning: document.querySelector('[data-repeat-edit-warning]')
+        };
+      }
+
+      // 主要初始化方法
+      async init() {
+        if (!this.elements.calendar) return;
+        
+        this.initCalendar();
+        this.bindEvents();
+        await this.loadTreatments();
+      }
+
+      // 工具方法
+      getCsrfToken() {
         const name = 'csrftoken=';
         const cookies = document.cookie.split(';');
         for (const cookie of cookies) {
@@ -265,855 +328,651 @@
           }
         }
         return '';
-      })();
+      }
 
-      const feedbackEl = document.getElementById('schedule-feedback');
-      const showFeedback = (message, variant = 'success') => {
-        if (!feedbackEl) {
-          return;
-        }
-        feedbackEl.className = `alert alert-${variant}`;
-        feedbackEl.textContent = message;
-        feedbackEl.classList.remove('d-none');
+      showFeedback(message, variant = 'success') {
+        if (!this.elements.feedback) return;
+        
+        this.elements.feedback.className = `alert alert-${variant}`;
+        this.elements.feedback.textContent = message;
+        this.elements.feedback.classList.remove('d-none');
+        
         setTimeout(() => {
-          feedbackEl.classList.add('d-none');
+          this.elements.feedback.classList.add('d-none');
         }, 3000);
-      };
+      }
 
-      const modalEl = document.getElementById('appointmentModal');
-      const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
-      const formEl = document.getElementById('appointment-form');
-      const saveButton = document.getElementById('appointment-save');
-      const cancelButton = document.getElementById('appointment-cancel');
-      const editTreatmentSelect = document.getElementById('appointment-treatment');
-      const createModalEl = document.getElementById('appointmentCreateModal');
-      const createModal = createModalEl ? new bootstrap.Modal(createModalEl) : null;
-      const createFormEl = document.getElementById('appointment-create-form');
-      const createSaveButton = document.getElementById('appointment-create-save');
-      const createTreatmentSelect = document.getElementById('create-treatment');
-      const timeOffButton = document.getElementById('time-off-create-button');
-      const timeOffModalEl = document.getElementById('timeOffModal');
-      const timeOffModal = timeOffModalEl ? new bootstrap.Modal(timeOffModalEl) : null;
-      const timeOffFormEl = document.getElementById('time-off-form');
-      const timeOffSaveButton = document.getElementById('time-off-save');
-      const timeOffDeleteButton = document.getElementById('time-off-delete');
-      const timeOffModalTitle = document.getElementById('timeOffModalLabel');
-      const repeatSection = document.getElementById('time-off-repeat-section');
-      const repeatTypeSelect = timeOffFormEl ? timeOffFormEl.querySelector('[name="repeat_type"]') : null;
-      const repeatIntervalInput = timeOffFormEl ? timeOffFormEl.querySelector('[name="repeat_interval"]') : null;
-      const repeatUntilInput = timeOffFormEl ? timeOffFormEl.querySelector('[name="repeat_until"]') : null;
-      const repeatSettingsGroup = timeOffFormEl ? timeOffFormEl.querySelector('[data-repeat-settings]') : null;
-      const repeatIntervalLabel = timeOffFormEl ? timeOffFormEl.querySelector('[data-repeat-interval-label]') : null;
-      const repeatEditWarning = timeOffFormEl ? timeOffFormEl.querySelector('[data-repeat-edit-warning]') : null;
-      const timeOffDeleteConfirmModalEl = document.getElementById('timeOffDeleteConfirmModal');
-      const timeOffDeleteConfirmModal = timeOffDeleteConfirmModalEl ? new bootstrap.Modal(timeOffDeleteConfirmModalEl) : null;
-      const timeOffDeleteMessage = document.getElementById('time-off-delete-message');
-      const timeOffDeleteSingleButton = document.getElementById('time-off-delete-single');
-      const timeOffDeleteSeriesButton = document.getElementById('time-off-delete-series');
-
-      let activeEvent = null;
-      let cachedTreatments = null;
-      let activeTimeOffEvent = null;
-      let isEditingTimeOff = false;
-
-      const resetTimeOffModalState = () => {
-        isEditingTimeOff = false;
-        activeTimeOffEvent = null;
-        if (timeOffModalTitle) {
-          timeOffModalTitle.textContent = '新增休假';
-        }
-        if (timeOffSaveButton) {
-          timeOffSaveButton.textContent = '建立休假';
-        }
-        if (timeOffDeleteButton) {
-          timeOffDeleteButton.classList.add('d-none');
-          timeOffDeleteButton.removeAttribute('disabled');
-        }
-        if (repeatTypeSelect) {
-          repeatTypeSelect.value = '';
-          repeatTypeSelect.removeAttribute('disabled');
-        }
-        if (repeatIntervalInput) {
-          repeatIntervalInput.value = '1';
-          repeatIntervalInput.removeAttribute('disabled');
-        }
-        if (repeatUntilInput) {
-          repeatUntilInput.value = '';
-          repeatUntilInput.removeAttribute('disabled');
-        }
-        if (repeatIntervalLabel) {
-          repeatIntervalLabel.textContent = '天';
-        }
-        if (repeatSettingsGroup) {
-          repeatSettingsGroup.classList.add('d-none');
-        }
-        if (repeatEditWarning) {
-          repeatEditWarning.classList.add('d-none');
-        }
-        updateRepeatControls();
-      };
-
-      const prepareTimeOffDeleteModal = (isRecurring) => {
-        if (!timeOffDeleteMessage || !timeOffDeleteSingleButton) {
-          return;
-        }
-        if (isRecurring && timeOffDeleteSeriesButton) {
-          timeOffDeleteSeriesButton.classList.remove('d-none');
-          timeOffDeleteSeriesButton.textContent = '刪除整個序列';
-        } else if (timeOffDeleteSeriesButton) {
-          timeOffDeleteSeriesButton.classList.add('d-none');
-        }
-        timeOffDeleteMessage.textContent = isRecurring
-          ? '這筆休假屬於重複序列，請選擇刪除單次或整個序列。'
-          : '確定要刪除此休假嗎？';
-        timeOffDeleteSingleButton.textContent = isRecurring ? '只刪除此筆' : '刪除';
-      };
-
-      const deleteTimeOff = async (scope = null) => {
-        if (!activeTimeOffEvent) {
-          return;
-        }
-        const deletingSeries = scope === 'series';
-        const baseUrl = `${timeOffApiBase}${activeTimeOffEvent.id}/`;
-        const url = deletingSeries ? `${baseUrl}?scope=series` : baseUrl;
-        const toggleButtons = (disabled) => {
-          if (timeOffDeleteButton) {
-            timeOffDeleteButton.toggleAttribute('disabled', disabled);
-          }
-          if (timeOffDeleteSingleButton) {
-            timeOffDeleteSingleButton.toggleAttribute('disabled', disabled);
-          }
-          if (timeOffDeleteSeriesButton && !timeOffDeleteSeriesButton.classList.contains('d-none')) {
-            timeOffDeleteSeriesButton.toggleAttribute('disabled', disabled);
-          }
-        };
-
-        toggleButtons(true);
-
-        try {
-          const response = await fetch(url, {
-            method: 'DELETE',
-            headers: {
-              'X-CSRFToken': csrfToken,
-              'Accept': 'application/json',
-            },
-          });
-
-          if (!response.ok) {
-            let errorMessage = '休假刪除失敗';
-            try {
-              const errorData = await response.json();
-              if (errorData && typeof errorData.detail === 'string') {
-                errorMessage = errorData.detail;
-              }
-            } catch (parseError) {
-              // ignore parse errors
-            }
-            throw new Error(errorMessage);
-          }
-
-          if (timeOffDeleteConfirmModal) {
-            timeOffDeleteConfirmModal.hide();
-          }
-          if (timeOffModal) {
-            timeOffModal.hide();
-          }
-
-          showFeedback(deletingSeries ? '重複休假已刪除。' : '休假已刪除。', 'warning');
-          activeTimeOffEvent = null;
-          calendar.refetchEvents();
-        } catch (error) {
-          console.error(error);
-          showFeedback(error instanceof Error ? error.message : '刪除休假失敗，請稍後再試。', 'danger');
-        } finally {
-          toggleButtons(false);
-        }
-      };
-
-      const updateRepeatControls = () => {
-        if (!repeatTypeSelect || !repeatSettingsGroup || !repeatIntervalLabel) {
-          return;
-        }
-        const type = repeatTypeSelect.value;
-        if (!type) {
-          repeatSettingsGroup.classList.add('d-none');
-          repeatIntervalLabel.textContent = '天';
-          return;
-        }
-        repeatSettingsGroup.classList.remove('d-none');
-        repeatIntervalLabel.textContent = type === 'weekly' ? '週' : '天';
-        if (repeatIntervalInput) {
-          const numericValue = Number.parseInt(repeatIntervalInput.value, 10);
-          if (Number.isNaN(numericValue) || numericValue < 1) {
-            repeatIntervalInput.value = '1';
-          }
-        }
-      };
-
-      const appointmentsApiBase = '{{ appointments_api_url }}';
-      const appointmentDetailUrl = (uuid) => `${appointmentsApiBase}${uuid}/`;
-      const appointmentListUrl = () => appointmentsApiBase;
-      const timeOffApiBase = '{{ time_off_api_url }}';
-
-      const toLocalInputValue = (date) => {
-        if (!date) {
-          return '';
-        }
+      toLocalInputValue(date) {
+        if (!date) return '';
         const local = new Date(date);
         local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
         return local.toISOString().slice(0, 16);
-      };
+      }
 
-      const mapFriendlyMessage = (message, fallback) => {
-        if (!message) {
-          return fallback;
-        }
-        const normalized = message.toLowerCase();
-        if (normalized.includes('time off')) {
-          return '此時段與休假重疊，請選擇其他時間。';
-        }
-        return message;
-      };
-
-      const getErrorMessage = async (response, fallback) => {
-        if (!response || typeof response.json !== 'function') {
-          return fallback;
-        }
+      async getErrorMessage(response, fallback) {
         try {
           const data = await response.json();
-          if (!data) {
-            return fallback;
-          }
-          if (typeof data === 'string') {
-            return mapFriendlyMessage(data, fallback);
-          }
-          if (Array.isArray(data) && data.length > 0) {
-            return mapFriendlyMessage(typeof data[0] === 'string' ? data[0] : fallback, fallback);
-          }
-          if (typeof data.detail === 'string') {
-            return mapFriendlyMessage(data.detail, fallback);
-          }
+          if (typeof data === 'string') return data;
+          if (data?.detail) return data.detail;
+          
+          // 檢查第一個錯誤字段
           for (const value of Object.values(data)) {
-            if (Array.isArray(value) && value.length > 0) {
-              const candidate = value[0];
-              if (typeof candidate === 'string') {
-                return mapFriendlyMessage(candidate, fallback);
-              }
-            }
-            if (typeof value === 'string') {
-              return mapFriendlyMessage(value, fallback);
-            }
+            if (Array.isArray(value) && value[0]) return value[0];
+            if (typeof value === 'string') return value;
           }
-        } catch (error) {
-          console.debug('Failed to parse error response:', error);
+        } catch (e) {
+          console.debug('Error parsing response:', e);
         }
-        return mapFriendlyMessage(null, fallback);
-      };
+        return fallback;
+      }
 
-      const loadTreatments = async () => {
-        if (cachedTreatments) {
-          return cachedTreatments;
+      toggleButtonLoading(button, isLoading) {
+        if (!button) return;
+        
+        const spinner = button.querySelector('.spinner-border');
+        if (spinner) {
+          spinner.classList.toggle('d-none', !isLoading);
         }
-        try {
-          const response = await fetch('{% url "therapist_panel:api:treatments:treatment-list" %}', {
-            headers: { 'Accept': 'application/json' },
-          });
-          if (!response.ok) {
-            throw new Error('failed to load treatments');
+        button.disabled = isLoading;
+      }
+
+      // API 方法
+      async apiRequest(url, options = {}) {
+        const defaultOptions = {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': this.getCsrfToken(),
+            'Accept': 'application/json',
+            ...options.headers
           }
-          const data = await response.json();
-          cachedTreatments = data;
-          return data;
+        };
+
+        return fetch(url, { ...defaultOptions, ...options });
+      }
+
+      async loadTreatments() {
+        if (this.cachedTreatments) return this.cachedTreatments;
+        
+        try {
+          const response = await this.apiRequest(this.treatmentsApiUrl);
+          if (!response.ok) throw new Error('Failed to load treatments');
+          
+          this.cachedTreatments = await response.json();
+          return this.cachedTreatments;
         } catch (error) {
           console.error(error);
-          showFeedback('無法載入療程清單，請稍後再試。', 'danger');
+          this.showFeedback('無法載入療程清單，請稍後再試。', 'danger');
           return [];
         }
-      };
+      }
 
-      const populateTreatmentSelect = async (selectElement) => {
-        if (!selectElement) {
+      async populateTreatmentSelect(selectElement) {
+        if (!selectElement) return;
+        
+        const treatments = await this.loadTreatments();
+        selectElement.innerHTML = '';
+        
+        treatments
+          .filter(t => t.is_active)
+          .forEach(treatment => {
+            const option = document.createElement('option');
+            option.value = treatment.id;
+            option.textContent = `${treatment.name} (${treatment.duration_minutes} 分)`;
+            option.dataset.duration = treatment.duration_minutes;
+            selectElement.appendChild(option);
+          });
+      }
+
+      // 日曆初始化
+      initCalendar() {
+        const getInitialView = () => window.innerWidth < 768 ? 'listWeek' : 'timeGridWeek';
+        
+        this.calendar = new FullCalendar.Calendar(this.elements.calendar, {
+          initialView: getInitialView(),
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: window.innerWidth < 768 ? 'listWeek,timeGridDay' : 'timeGridWeek,timeGridDay,listWeek'
+          },
+          slotMinTime: '08:00:00',
+          slotMaxTime: '23:00:00',
+          nowIndicator: true,
+          locale: 'zh-tw',
+          firstDay: 1,
+          scrollTime: '09:00:00',
+          editable: true,
+          eventDurationEditable: false,
+          selectable: true,
+          height: 'auto',
+          
+          eventSources: [
+            this.createAppointmentEventSource(),
+            this.createTimeOffEventSource()
+          ],
+          
+          eventContent: (arg) => this.renderEventContent(arg),
+          eventClick: (info) => this.handleEventClick(info),
+          eventDrop: (info) => this.handleEventDrop(info),
+          select: (selectionInfo) => this.handleSelect(selectionInfo)
+        });
+
+        this.calendar.render();
+        
+        // 響應式更新
+        window.addEventListener('resize', () => this.calendar.updateSize());
+      }
+
+      createAppointmentEventSource() {
+        return {
+          events: async (info, successCallback, failureCallback) => {
+            try {
+              const url = new URL(this.appointmentsApiBase, window.location.origin);
+              url.searchParams.set('start', info.startStr);
+              url.searchParams.set('end', info.endStr);
+              
+              const response = await this.apiRequest(url.toString());
+              if (!response.ok) throw new Error('Failed to load appointments');
+              
+              const data = await response.json();
+              const events = data.map(item => ({
+                id: item.uuid,
+                title: item.treatment_name || '療程',
+                start: item.start_time,
+                end: item.end_time,
+                extendedProps: {
+                  eventType: 'appointment',
+                  therapistUuid: item.therapist_uuid,
+                  customerName: item.customer_name,
+                  customerPhone: item.customer_phone,
+                  note: item.note,
+                  isCancelled: item.is_cancelled,
+                  treatmentId: item.treatment
+                },
+                classNames: item.is_cancelled ? ['appointment-cancelled'] : []
+              }));
+              
+              successCallback(events);
+            } catch (error) {
+              console.error(error);
+              failureCallback(error);
+            }
+          }
+        };
+      }
+
+      createTimeOffEventSource() {
+        return {
+          events: async (info, successCallback, failureCallback) => {
+            try {
+              const url = new URL(this.timeOffApiBase, window.location.origin);
+              url.searchParams.set('start', info.startStr);
+              url.searchParams.set('end', info.endStr);
+              
+              const response = await this.apiRequest(url.toString());
+              if (!response.ok) throw new Error('Failed to load time off');
+              
+              const data = await response.json();
+              const events = data.map(item => ({
+                id: item.uuid,
+                title: item.note ? `休假：${item.note}` : '休假',
+                start: item.starts_at,
+                end: item.ends_at,
+                editable: false,
+                classNames: ['time-off-event'],
+                extendedProps: {
+                  eventType: 'timeOff',
+                  note: item.note,
+                  seriesUuid: item.series_uuid || null,
+                  isRecurring: Boolean(item.is_recurring)
+                }
+              }));
+              
+              successCallback(events);
+            } catch (error) {
+              console.error(error);
+              failureCallback(error);
+            }
+          }
+        };
+      }
+
+      renderEventContent(arg) {
+        if (arg.event.extendedProps.eventType === 'timeOff') {
+          const wrapper = document.createElement('div');
+          wrapper.classList.add('time-off-label');
+          wrapper.textContent = arg.event.extendedProps.note ? `休假：${arg.event.extendedProps.note}` : '休假';
+          return { domNodes: [wrapper] };
+        }
+
+        const container = document.createElement('div');
+        const props = arg.event.extendedProps;
+        
+        // 標題
+        const titleEl = document.createElement('div');
+        titleEl.classList.add('fc-event-title');
+        titleEl.textContent = props.isCancelled ? `${arg.event.title} (已取消)` : arg.event.title;
+        container.appendChild(titleEl);
+
+        // 顧客姓名
+        if (props.customerName) {
+          const customerEl = document.createElement('div');
+          customerEl.classList.add('fc-event-customer');
+          customerEl.textContent = props.customerName;
+          container.appendChild(customerEl);
+        }
+
+        // 電話（僅桌面版顯示）
+        if (props.customerPhone && window.innerWidth >= 768) {
+          const phoneEl = document.createElement('div');
+          phoneEl.classList.add('fc-event-phone', 'text-body-secondary');
+          phoneEl.textContent = `☎ ${props.customerPhone}`;
+          container.appendChild(phoneEl);
+        }
+
+        return { domNodes: [container] };
+      }
+
+      async handleEventClick(info) {
+        info.jsEvent.preventDefault();
+        
+        if (info.event.extendedProps.eventType === 'timeOff') {
+          await this.handleTimeOffEdit(info.event);
+        } else {
+          await this.handleAppointmentEdit(info.event);
+        }
+      }
+
+      async handleAppointmentEdit(event) {
+        this.activeEvent = event;
+        const form = this.elements.appointmentForm;
+        
+        form.reset();
+        await this.populateTreatmentSelect(this.elements.treatmentSelects.edit);
+        
+        // 填充表單
+        form.customer_name.value = event.extendedProps.customerName || '';
+        form.customer_phone.value = event.extendedProps.customerPhone || '';
+        form.note.value = event.extendedProps.note || '';
+        
+        if (this.elements.treatmentSelects.edit) {
+          this.elements.treatmentSelects.edit.value = event.extendedProps.treatmentId || '';
+        }
+        
+        this.elements.appointmentCancel.disabled = Boolean(event.extendedProps.isCancelled);
+        this.elements.appointmentModal.show();
+      }
+
+      async handleTimeOffEdit(event) {
+        this.isEditingTimeOff = true;
+        this.activeTimeOffEvent = event;
+        const form = this.elements.timeOffForm;
+        
+        form.reset();
+        
+        // 填充表單
+        if (event.start) form.starts_at.value = this.toLocalInputValue(event.start);
+        if (event.end) form.ends_at.value = this.toLocalInputValue(event.end);
+        form.note.value = event.extendedProps.note || '';
+        
+        // 更新界面
+        this.elements.timeOffModalTitle.textContent = '編輯休假';
+        this.elements.timeOffSave.textContent = '儲存休假';
+        this.elements.timeOffDelete.classList.remove('d-none');
+        
+        // 禁用重複設定
+        this.elements.repeatType.disabled = true;
+        this.elements.repeatEditWarning.classList.remove('d-none');
+        
+        this.elements.timeOffModal.show();
+      }
+
+      async handleEventDrop(info) {
+        if (info.event.extendedProps.eventType === 'timeOff') {
+          info.revert();
           return;
         }
-        const treatments = await loadTreatments();
-        selectElement.innerHTML = '';
-        for (const treatment of treatments) {
-          if (!treatment.is_active) {
-            continue;
-          }
-          const option = document.createElement('option');
-          option.value = treatment.id;
-          option.textContent = `${treatment.name} (${treatment.duration_minutes} 分)`;
-          option.dataset.duration = treatment.duration_minutes;
-          option.dataset.preparation = treatment.preparation_minutes;
-          selectElement.appendChild(option);
+        
+        if (info.event.extendedProps.isCancelled) {
+          this.showFeedback('已取消的預約無法調整時間。', 'warning');
+          info.revert();
+          return;
         }
-      };
 
-      // 檢測螢幕大小來調整行事曆視圖
-      const getInitialView = () => {
-        if (window.innerWidth < 768) {
-          return 'listWeek';
+        try {
+          const response = await this.apiRequest(
+            `${this.appointmentsApiBase}${info.event.id}/`,
+            {
+              method: 'PATCH',
+              body: JSON.stringify({ start_time: info.event.start.toISOString() })
+            }
+          );
+
+          if (!response.ok) {
+            const message = await this.getErrorMessage(response, '時間更新失敗');
+            throw new Error(message);
+          }
+          
+          this.showFeedback('預約時間已更新。');
+          this.calendar.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          this.showFeedback(error.message, 'danger');
+          info.revert();
         }
-        return 'timeGridWeek';
-      };
-
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: getInitialView(),
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: window.innerWidth < 768 ? 'listWeek,timeGridDay' : 'timeGridWeek,timeGridDay,listWeek'
-        },
-        slotMinTime: '08:00:00',
-        slotMaxTime: '23:00:00',
-        nowIndicator: true,
-        locale: 'zh-tw',
-        firstDay: 1,
-        scrollTime: '09:00:00',
-        editable: true,
-        eventDurationEditable: false,
-        selectable: true,
-        height: 'auto',
-        eventSources: [
-          {
-            events: async function(info, successCallback, failureCallback) {
-              const url = new URL('{{ appointments_api_url }}', window.location.origin);
-              url.searchParams.set('start', info.startStr);
-              url.searchParams.set('end', info.endStr);
-              try {
-                const response = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
-                if (!response.ok) {
-                  throw new Error('Failed to load appointments');
-                }
-                const data = await response.json();
-                const events = data.map((item) => ({
-                  id: item.uuid,
-                  title: item.treatment_name || '療程',
-                  start: item.start_time,
-                  end: item.end_time,
-                  extendedProps: {
-                    therapistUuid: item.therapist_uuid,
-                    customerName: item.customer_name,
-                    customerPhone: item.customer_phone,
-                    note: item.note,
-                    isCancelled: item.is_cancelled,
-                    treatmentId: item.treatment,
-                    eventType: 'appointment',
-                  },
-                  classNames: item.is_cancelled ? ['appointment-cancelled'] : [],
-                }));
-                successCallback(events);
-              } catch (error) {
-                console.error(error);
-                failureCallback(error);
-              }
-            },
-          },
-          {
-            events: async function(info, successCallback, failureCallback) {
-              const url = new URL(timeOffApiBase, window.location.origin);
-              url.searchParams.set('start', info.startStr);
-              url.searchParams.set('end', info.endStr);
-              try {
-                const response = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
-                if (!response.ok) {
-                  throw new Error('Failed to load time off');
-                }
-                const data = await response.json();
-                const events = data.map((item) => ({
-                  id: item.uuid,
-                  title: item.note ? `休假：${item.note}` : '休假',
-                  start: item.starts_at,
-                  end: item.ends_at,
-                  editable: false,
-                  classNames: ['time-off-event'],
-                  extendedProps: {
-                    eventType: 'timeOff',
-                    note: item.note,
-                    seriesUuid: item.series_uuid || null,
-                    isRecurring: Boolean(item.is_recurring),
-                  },
-                }));
-                successCallback(events);
-              } catch (error) {
-                console.error(error);
-                failureCallback(error);
-              }
-            },
-          },
-        ],
-        eventContent: function(arg) {
-          if (arg.event.extendedProps.eventType === 'timeOff') {
-            const wrapper = document.createElement('div');
-            wrapper.classList.add('time-off-label');
-            wrapper.textContent = arg.event.extendedProps.note
-              ? `休假：${arg.event.extendedProps.note}`
-              : '休假';
-            return { domNodes: [wrapper] };
-          }
-          const container = document.createElement('div');
-
-          const titleEl = document.createElement('div');
-          titleEl.classList.add('fc-event-title');
-          const baseTitle = arg.event.title;
-          const isCancelled = Boolean(arg.event.extendedProps.isCancelled);
-          titleEl.textContent = isCancelled ? `${baseTitle} (已取消)` : baseTitle;
-          container.appendChild(titleEl);
-
-          const customerName = arg.event.extendedProps.customerName;
-          if (customerName) {
-            const customerEl = document.createElement('div');
-            customerEl.classList.add('fc-event-customer');
-            customerEl.textContent = customerName;
-            container.appendChild(customerEl);
-          }
-
-          const phone = arg.event.extendedProps.customerPhone;
-          if (phone && window.innerWidth >= 768) { // 只在較大螢幕顯示電話
-            const phoneEl = document.createElement('div');
-            phoneEl.classList.add('fc-event-phone');
-            phoneEl.textContent = `☎ ${phone}`;
-            container.appendChild(phoneEl);
-          }
-
-          return { domNodes: [container] };
-        },
-        eventClick: async function(info) {
-          info.jsEvent.preventDefault();
-          if (info.event.extendedProps.eventType === 'timeOff') {
-            if (!timeOffModal || !timeOffFormEl) {
-              return;
-            }
-            isEditingTimeOff = true;
-            activeTimeOffEvent = info.event;
-            timeOffFormEl.reset();
-            const startField = timeOffFormEl.querySelector('[name="starts_at"]');
-            const endField = timeOffFormEl.querySelector('[name="ends_at"]');
-            const noteField = timeOffFormEl.querySelector('[name="note"]');
-            if (startField && info.event.start) {
-              startField.value = toLocalInputValue(info.event.start);
-            }
-            if (endField && info.event.end) {
-              endField.value = toLocalInputValue(info.event.end);
-            }
-            if (noteField) {
-              noteField.value = info.event.extendedProps.note || '';
-            }
-            if (timeOffModalTitle) {
-              timeOffModalTitle.textContent = '編輯休假';
-            }
-            if (timeOffSaveButton) {
-              timeOffSaveButton.textContent = '儲存休假';
-            }
-            if (timeOffDeleteButton) {
-              timeOffDeleteButton.classList.remove('d-none');
-            }
-            if (repeatTypeSelect) {
-              repeatTypeSelect.value = '';
-              repeatTypeSelect.setAttribute('disabled', 'disabled');
-            }
-            if (repeatIntervalInput) {
-              repeatIntervalInput.value = '1';
-              repeatIntervalInput.setAttribute('disabled', 'disabled');
-            }
-            if (repeatUntilInput) {
-              repeatUntilInput.value = '';
-              repeatUntilInput.setAttribute('disabled', 'disabled');
-            }
-            if (repeatEditWarning) {
-              repeatEditWarning.classList.remove('d-none');
-            }
-            updateRepeatControls();
-            timeOffModal.show();
-            return;
-          }
-          activeEvent = info.event;
-          if (!formEl || !modal) {
-            return;
-          }
-          formEl.reset();
-          await populateTreatmentSelect(editTreatmentSelect);
-          if (editTreatmentSelect) {
-            editTreatmentSelect.value = activeEvent.extendedProps.treatmentId || '';
-          }
-          formEl.querySelector('[name="customer_name"]').value = activeEvent.extendedProps.customerName || '';
-          formEl.querySelector('[name="customer_phone"]').value = activeEvent.extendedProps.customerPhone || '';
-          formEl.querySelector('[name="note"]').value = activeEvent.extendedProps.note || '';
-          if (cancelButton) {
-            cancelButton.disabled = Boolean(activeEvent.extendedProps.isCancelled);
-          }
-          modal.show();
-        },
-        eventDrop: async function(info) {
-          if (info.event.extendedProps.eventType === 'timeOff') {
-            info.revert();
-            return;
-          }
-          if (!info.event.start) {
-            return;
-          }
-          if (info.event.extendedProps.isCancelled) {
-            showFeedback('已取消的預約無法調整時間。', 'warning');
-            info.revert();
-            return;
-          }
-          try {
-            const response = await fetch(appointmentDetailUrl(info.event.id), {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify({ start_time: info.event.start.toISOString() }),
-            });
-
-            if (!response.ok) {
-              const message = await getErrorMessage(response, '時間更新失敗，請稍後再試。');
-              throw new Error(message);
-            }
-            showFeedback('預約時間已更新。');
-            calendar.refetchEvents();
-          } catch (error) {
-            console.error(error);
-            showFeedback(error instanceof Error ? error.message : '更新失敗，請稍後再試。', 'danger');
-            info.revert();
-          }
-        },
-        select: async function(selectionInfo) {
-          if (!createModal || !createFormEl || !createTreatmentSelect) {
-            return;
-          }
-
-          await populateTreatmentSelect(createTreatmentSelect);
-          if (!createTreatmentSelect.options.length) {
-            showFeedback('目前沒有可用的療程，請先建立療程。', 'warning');
-            return;
-          }
-
-          createFormEl.reset();
-          const startLocal = toLocalInputValue(selectionInfo.start);
-          createFormEl.querySelector('[name="start_time"]').value = startLocal;
-          if (createTreatmentSelect && createTreatmentSelect.options.length) {
-            createTreatmentSelect.selectedIndex = 0;
-          }
-          createModal.show();
-          calendar.unselect();
-        },
-      });
-
-      calendar.render();
-
-      // 視窗大小改變時重新渲染
-      window.addEventListener('resize', function() {
-        calendar.updateSize();
-      });
-
-      if (saveButton && formEl && modal) {
-        saveButton.addEventListener('click', async () => {
-          if (!activeEvent) {
-            return;
-          }
-
-          const payload = {
-            customer_name: formEl.querySelector('[name="customer_name"]').value.trim(),
-            customer_phone: formEl.querySelector('[name="customer_phone"]').value.trim(),
-            note: formEl.querySelector('[name="note"]').value.trim(),
-          };
-
-          if (editTreatmentSelect && editTreatmentSelect.value) {
-            payload.treatment = Number(editTreatmentSelect.value);
-          }
-
-          try {
-            const response = await fetch(appointmentDetailUrl(activeEvent.id), {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-              const message = await getErrorMessage(response, '預約更新失敗');
-              throw new Error(message);
-            }
-
-            modal.hide();
-            showFeedback('預約資訊已更新。');
-            activeEvent = null;
-            calendar.refetchEvents();
-          } catch (error) {
-            console.error(error);
-            showFeedback(error instanceof Error ? error.message : '更新失敗，請確認資料後再試。', 'danger');
-          }
-        });
       }
 
-      if (cancelButton && modal) {
-        cancelButton.addEventListener('click', async () => {
-          if (!activeEvent) {
-            return;
-          }
+      async handleSelect(selectionInfo) {
+        await this.populateTreatmentSelect(this.elements.treatmentSelects.create);
+        
+        if (!this.elements.treatmentSelects.create.options.length) {
+          this.showFeedback('目前沒有可用的療程，請先建立療程。', 'warning');
+          return;
+        }
 
-          if (activeEvent.extendedProps.isCancelled) {
-            modal.hide();
-            return;
-          }
-
-          if (!window.confirm('確認要取消這筆預約嗎？')) {
-            return;
-          }
-
-          try {
-            const response = await fetch(appointmentDetailUrl(activeEvent.id), {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify({ is_cancelled: true }),
-            });
-
-            if (!response.ok) {
-              throw new Error('預約取消失敗');
-            }
-
-            modal.hide();
-            showFeedback('預約已取消。', 'warning');
-            activeEvent = null;
-            calendar.refetchEvents();
-          } catch (error) {
-            console.error(error);
-            showFeedback('取消失敗，請稍後再試。', 'danger');
-          }
-        });
+        this.elements.appointmentCreateForm.reset();
+        this.elements.appointmentCreateForm.start_time.value = this.toLocalInputValue(selectionInfo.start);
+        
+        if (this.elements.treatmentSelects.create.options.length) {
+          this.elements.treatmentSelects.create.selectedIndex = 0;
+        }
+        
+        this.elements.appointmentCreateModal.show();
+        this.calendar.unselect();
       }
 
-      if (createSaveButton && createFormEl && createModal) {
-        createSaveButton.addEventListener('click', async () => {
-          const startInput = createFormEl.querySelector('[name="start_time"]');
-          const treatmentOption = createTreatmentSelect && createTreatmentSelect.options[createTreatmentSelect.selectedIndex];
-          if (!startInput || !treatmentOption) {
-            return;
-          }
-
-          const payload = {
-            start_time: new Date(startInput.value).toISOString(),
-            treatment: Number(treatmentOption.value),
-            customer_name: createFormEl.querySelector('[name="customer_name"]').value.trim(),
-            customer_phone: createFormEl.querySelector('[name="customer_phone"]').value.trim(),
-            note: createFormEl.querySelector('[name="note"]').value.trim(),
-          };
-
-          try {
-            const response = await fetch(appointmentListUrl(), {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-              const message = await getErrorMessage(response, '預約建立失敗');
-              throw new Error(message);
-            }
-
-            createModal.hide();
-            showFeedback('預約已建立。', 'success');
-            calendar.refetchEvents();
-          } catch (error) {
-            console.error(error);
-            showFeedback(error instanceof Error ? error.message : '建立預約失敗，請確認資料後再試。', 'danger');
-          }
-        });
+      // 事件綁定
+      bindEvents() {
+        // 預約相關
+        this.elements.appointmentSave?.addEventListener('click', () => this.saveAppointment());
+        this.elements.appointmentCancel?.addEventListener('click', () => this.cancelAppointment());
+        this.elements.appointmentCreateSave?.addEventListener('click', () => this.createAppointment());
+        
+        // 休假相關
+        this.elements.timeOffCreateButton?.addEventListener('click', () => this.showTimeOffModal());
+        this.elements.timeOffSave?.addEventListener('click', () => this.saveTimeOff());
+        this.elements.timeOffDelete?.addEventListener('click', () => this.showDeleteConfirm());
+        this.elements.timeOffDeleteSingle?.addEventListener('click', () => this.deleteTimeOff());
+        this.elements.timeOffDeleteSeries?.addEventListener('click', () => this.deleteTimeOff('series'));
+        
+        // 重複設定
+        this.elements.repeatType?.addEventListener('change', () => this.updateRepeatControls());
+        
+        // 模態框重置
+        document.getElementById('timeOffModal')?.addEventListener('hidden.bs.modal', () => this.resetTimeOffModal());
       }
 
-      if (timeOffButton && timeOffModal && timeOffFormEl) {
-        timeOffButton.addEventListener('click', () => {
-          resetTimeOffModalState();
-          timeOffFormEl.reset();
-          const startField = timeOffFormEl.querySelector('[name="starts_at"]');
-          const endField = timeOffFormEl.querySelector('[name="ends_at"]');
-          const now = new Date();
-          const roundedStart = new Date(now.getTime());
-          const minutes = roundedStart.getMinutes();
-          const remainder = minutes % 30;
-          if (remainder !== 0) {
-            roundedStart.setMinutes(minutes + (30 - remainder), 0, 0);
-          } else {
-            roundedStart.setSeconds(0, 0);
+      async saveAppointment() {
+        if (!this.activeEvent) return;
+        
+        this.toggleButtonLoading(this.elements.appointmentSave, true);
+        
+        const form = this.elements.appointmentForm;
+        const payload = {
+          customer_name: form.customer_name.value.trim(),
+          customer_phone: form.customer_phone.value.trim(),
+          note: form.note.value.trim()
+        };
+
+        if (this.elements.treatmentSelects.edit.value) {
+          payload.treatment = Number(this.elements.treatmentSelects.edit.value);
+        }
+
+        try {
+          const response = await this.apiRequest(
+            `${this.appointmentsApiBase}${this.activeEvent.id}/`,
+            { method: 'PATCH', body: JSON.stringify(payload) }
+          );
+
+          if (!response.ok) {
+            const message = await this.getErrorMessage(response, '預約更新失敗');
+            throw new Error(message);
           }
-          const roundedEnd = new Date(roundedStart.getTime() + 60 * 60 * 1000);
-          if (startField) {
-            startField.value = toLocalInputValue(roundedStart);
-          }
-          if (endField) {
-            endField.value = toLocalInputValue(roundedEnd);
-          }
-          timeOffModal.show();
-        });
+
+          this.elements.appointmentModal.hide();
+          this.showFeedback('預約資訊已更新。');
+          this.activeEvent = null;
+          this.calendar.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          this.showFeedback(error.message, 'danger');
+        } finally {
+          this.toggleButtonLoading(this.elements.appointmentSave, false);
+        }
       }
 
-      if (repeatTypeSelect) {
-        repeatTypeSelect.addEventListener('change', () => {
-          if (repeatTypeSelect.disabled) {
-            return;
-          }
-          updateRepeatControls();
-        });
+      async cancelAppointment() {
+        if (!this.activeEvent || this.activeEvent.extendedProps.isCancelled) {
+          this.elements.appointmentModal.hide();
+          return;
+        }
+
+        if (!confirm('確認要取消這筆預約嗎？')) return;
+
+        try {
+          const response = await this.apiRequest(
+            `${this.appointmentsApiBase}${this.activeEvent.id}/`,
+            { method: 'PATCH', body: JSON.stringify({ is_cancelled: true }) }
+          );
+
+          if (!response.ok) throw new Error('預約取消失敗');
+
+          this.elements.appointmentModal.hide();
+          this.showFeedback('預約已取消。', 'warning');
+          this.activeEvent = null;
+          this.calendar.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          this.showFeedback('取消失敗，請稍後再試。', 'danger');
+        }
       }
 
-      if (timeOffSaveButton && timeOffFormEl && timeOffModal) {
-        timeOffSaveButton.addEventListener('click', async () => {
-          const startInput = timeOffFormEl.querySelector('[name="starts_at"]');
-          const endInput = timeOffFormEl.querySelector('[name="ends_at"]');
-          const noteInput = timeOffFormEl.querySelector('[name="note"]');
-          if (!startInput || !endInput) {
-            return;
-          }
-          if (!startInput.value || !endInput.value) {
-            showFeedback('請填寫開始與結束時間。', 'warning');
-            return;
-          }
-          const startDate = new Date(startInput.value);
-          const endDate = new Date(endInput.value);
-          if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-            showFeedback('時間格式不正確，請重新輸入。', 'warning');
-            return;
-          }
-          if (endDate <= startDate) {
-            showFeedback('結束時間必須晚於開始時間。', 'warning');
-            return;
-          }
+      async createAppointment() {
+        this.toggleButtonLoading(this.elements.appointmentCreateSave, true);
+        
+        const form = this.elements.appointmentCreateForm;
+        const treatmentOption = this.elements.treatmentSelects.create.options[this.elements.treatmentSelects.create.selectedIndex];
+        
+        const payload = {
+          start_time: new Date(form.start_time.value).toISOString(),
+          treatment: Number(treatmentOption.value),
+          customer_name: form.customer_name.value.trim(),
+          customer_phone: form.customer_phone.value.trim(),
+          note: form.note.value.trim()
+        };
 
-          const payload = {
-            starts_at: startDate.toISOString(),
-            ends_at: endDate.toISOString(),
-            note: noteInput ? noteInput.value.trim() : '',
-          };
+        try {
+          const response = await this.apiRequest(
+            this.appointmentsApiBase,
+            { method: 'POST', body: JSON.stringify(payload) }
+          );
 
-          const isEditingCurrent = Boolean(isEditingTimeOff && activeTimeOffEvent);
-
-          if (!isEditingCurrent && repeatTypeSelect && !repeatTypeSelect.disabled && repeatTypeSelect.value) {
-            payload.repeat_type = repeatTypeSelect.value;
-            if (repeatIntervalInput && !repeatIntervalInput.disabled) {
-              const intervalValue = Number.parseInt(repeatIntervalInput.value, 10);
-              payload.repeat_interval = Number.isNaN(intervalValue) || intervalValue < 1 ? 1 : intervalValue;
-            }
-            if (repeatUntilInput && !repeatUntilInput.disabled && repeatUntilInput.value) {
-              payload.repeat_until = repeatUntilInput.value;
-            }
+          if (!response.ok) {
+            const message = await this.getErrorMessage(response, '預約建立失敗');
+            throw new Error(message);
           }
 
-          try {
-            const endpoint = isEditingCurrent ? `${timeOffApiBase}${activeTimeOffEvent.id}/` : timeOffApiBase;
-            const method = isEditingCurrent ? 'PATCH' : 'POST';
-            const response = await fetch(endpoint, {
-              method,
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-              let errorMessage = isEditingCurrent ? '休假更新失敗' : '休假建立失敗';
-              try {
-                const errorData = await response.json();
-                if (errorData && typeof errorData === 'object') {
-                  if (typeof errorData.detail === 'string') {
-                    errorMessage = errorData.detail;
-                  } else {
-                    const firstKey = Object.keys(errorData)[0];
-                    const firstValue = firstKey ? errorData[firstKey] : null;
-                    if (Array.isArray(firstValue) && firstValue.length > 0) {
-                      errorMessage = firstValue[0];
-                    } else if (typeof firstValue === 'string') {
-                      errorMessage = firstValue;
-                    }
-                  }
-                }
-              } catch (parseError) {
-                // ignore parse error and keep default message
-              }
-              throw new Error(errorMessage);
-            }
-
-            timeOffModal.hide();
-            timeOffFormEl.reset();
-            showFeedback(isEditingCurrent ? '休假已更新。' : '休假已建立。', isEditingCurrent ? 'info' : 'success');
-            calendar.refetchEvents();
-          } catch (error) {
-            console.error(error);
-            const fallback = isEditingCurrent ? '更新休假失敗，請稍後再試。' : '建立休假失敗，請稍後再試。';
-            showFeedback(error instanceof Error ? error.message : fallback, 'danger');
-          }
-        });
+          this.elements.appointmentCreateModal.hide();
+          this.showFeedback('預約已建立。');
+          this.calendar.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          this.showFeedback(error.message, 'danger');
+        } finally {
+          this.toggleButtonLoading(this.elements.appointmentCreateSave, false);
+        }
       }
 
-      if (timeOffDeleteButton) {
-        timeOffDeleteButton.addEventListener('click', () => {
-          if (!activeTimeOffEvent) {
-            return;
-          }
-          const hasSeries = Boolean(activeTimeOffEvent.extendedProps && activeTimeOffEvent.extendedProps.seriesUuid);
-          if (timeOffDeleteConfirmModal) {
-            prepareTimeOffDeleteModal(hasSeries);
-            timeOffDeleteConfirmModal.show();
-            return;
-          }
-
-          if (hasSeries) {
-            const deleteSeries = window.confirm('這筆休假屬於重複序列，要刪除整個序列嗎？按「取消」則僅刪除此筆。');
-            if (deleteSeries) {
-              deleteTimeOff('series');
-              return;
-            }
-          }
-
-          const confirmSingle = window.confirm('確認要刪除此休假嗎？');
-          if (confirmSingle) {
-            deleteTimeOff();
-          }
-        });
+      showTimeOffModal() {
+        this.resetTimeOffModal();
+        this.elements.timeOffForm.reset();
+        
+        // 設定預設時間
+        const now = new Date();
+        const roundedStart = new Date(now);
+        const minutes = roundedStart.getMinutes();
+        const remainder = minutes % 30;
+        
+        if (remainder !== 0) {
+          roundedStart.setMinutes(minutes + (30 - remainder), 0, 0);
+        } else {
+          roundedStart.setSeconds(0, 0);
+        }
+        
+        const roundedEnd = new Date(roundedStart.getTime() + 60 * 60 * 1000);
+        
+        this.elements.timeOffForm.starts_at.value = this.toLocalInputValue(roundedStart);
+        this.elements.timeOffForm.ends_at.value = this.toLocalInputValue(roundedEnd);
+        
+        this.elements.timeOffModal.show();
       }
 
-      if (timeOffDeleteSingleButton) {
-        timeOffDeleteSingleButton.addEventListener('click', () => {
-          deleteTimeOff();
-        });
-      }
+      async saveTimeOff() {
+        this.toggleButtonLoading(this.elements.timeOffSave, true);
+        
+        const form = this.elements.timeOffForm;
+        const startDate = new Date(form.starts_at.value);
+        const endDate = new Date(form.ends_at.value);
+        
+        // 驗證
+        if (!form.starts_at.value || !form.ends_at.value) {
+          this.showFeedback('請填寫開始與結束時間。', 'warning');
+          this.toggleButtonLoading(this.elements.timeOffSave, false);
+          return;
+        }
+        
+        if (endDate <= startDate) {
+          this.showFeedback('結束時間必須晚於開始時間。', 'warning');
+          this.toggleButtonLoading(this.elements.timeOffSave, false);
+          return;
+        }
 
-      if (timeOffDeleteSeriesButton) {
-        timeOffDeleteSeriesButton.addEventListener('click', () => {
-          deleteTimeOff('series');
-        });
-      }
+        const payload = {
+          starts_at: startDate.toISOString(),
+          ends_at: endDate.toISOString(),
+          note: form.note.value.trim()
+        };
 
-      if (timeOffDeleteConfirmModalEl) {
-        timeOffDeleteConfirmModalEl.addEventListener('hidden.bs.modal', () => {
-          prepareTimeOffDeleteModal(false);
-        });
-      }
-
-      if (timeOffModalEl) {
-        timeOffModalEl.addEventListener('hidden.bs.modal', () => {
-          resetTimeOffModalState();
-          if (timeOffFormEl) {
-            timeOffFormEl.reset();
+        // 重複設定
+        if (!this.isEditingTimeOff && this.elements.repeatType.value) {
+          payload.repeat_type = this.elements.repeatType.value;
+          
+          const interval = Number.parseInt(form.repeat_interval?.value, 10);
+          payload.repeat_interval = isNaN(interval) || interval < 1 ? 1 : interval;
+          
+          if (form.repeat_until?.value) {
+            payload.repeat_until = form.repeat_until.value;
           }
-        });
+        }
+
+        try {
+          const isEditing = this.isEditingTimeOff && this.activeTimeOffEvent;
+          const endpoint = isEditing ? `${this.timeOffApiBase}${this.activeTimeOffEvent.id}/` : this.timeOffApiBase;
+          const method = isEditing ? 'PATCH' : 'POST';
+          
+          const response = await this.apiRequest(endpoint, {
+            method,
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            const message = await this.getErrorMessage(response, isEditing ? '休假更新失敗' : '休假建立失敗');
+            throw new Error(message);
+          }
+
+          this.elements.timeOffModal.hide();
+          this.showFeedback(isEditing ? '休假已更新。' : '休假已建立。', isEditing ? 'info' : 'success');
+          this.calendar.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          this.showFeedback(error.message, 'danger');
+        } finally {
+          this.toggleButtonLoading(this.elements.timeOffSave, false);
+        }
       }
-    })();
+
+      showDeleteConfirm() {
+        if (!this.activeTimeOffEvent) return;
+        
+        const hasRecurring = Boolean(this.activeTimeOffEvent.extendedProps?.seriesUuid);
+        
+        if (hasRecurring) {
+          this.elements.timeOffDeleteSeries.classList.remove('d-none');
+          document.getElementById('time-off-delete-message').textContent = 
+            '這筆休假屬於重複序列，請選擇刪除單次或整個序列。';
+          this.elements.timeOffDeleteSingle.textContent = '只刪除此筆';
+        } else {
+          this.elements.timeOffDeleteSeries.classList.add('d-none');
+          document.getElementById('time-off-delete-message').textContent = '確定要刪除此休假嗎？';
+          this.elements.timeOffDeleteSingle.textContent = '刪除';
+        }
+        
+        this.elements.timeOffDeleteConfirmModal.show();
+      }
+
+      async deleteTimeOff(scope = null) {
+        if (!this.activeTimeOffEvent) return;
+        
+        const deletingSeries = scope === 'series';
+        const url = deletingSeries 
+          ? `${this.timeOffApiBase}${this.activeTimeOffEvent.id}/?scope=series`
+          : `${this.timeOffApiBase}${this.activeTimeOffEvent.id}/`;
+
+        try {
+          const response = await this.apiRequest(url, { method: 'DELETE' });
+
+          if (!response.ok) {
+            const message = await this.getErrorMessage(response, '休假刪除失敗');
+            throw new Error(message);
+          }
+
+          this.elements.timeOffDeleteConfirmModal.hide();
+          this.elements.timeOffModal.hide();
+          this.showFeedback(deletingSeries ? '重複休假已刪除。' : '休假已刪除。', 'warning');
+          this.activeTimeOffEvent = null;
+          this.calendar.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          this.showFeedback(error.message, 'danger');
+        }
+      }
+
+      updateRepeatControls() {
+        const type = this.elements.repeatType?.value;
+        
+        if (!type) {
+          this.elements.repeatSettings?.classList.add('d-none');
+          return;
+        }
+        
+        this.elements.repeatSettings?.classList.remove('d-none');
+        
+        if (this.elements.repeatIntervalLabel) {
+          this.elements.repeatIntervalLabel.textContent = type === 'weekly' ? '週' : '天';
+        }
+      }
+
+      resetTimeOffModal() {
+        this.isEditingTimeOff = false;
+        this.activeTimeOffEvent = null;
+        
+        this.elements.timeOffModalTitle.textContent = '新增休假';
+        this.elements.timeOffSave.textContent = '建立休假';
+        this.elements.timeOffDelete?.classList.add('d-none');
+        
+        // 重置重複設定
+        if (this.elements.repeatType) {
+          this.elements.repeatType.disabled = false;
+          this.elements.repeatType.value = '';
+        }
+        
+        this.elements.repeatEditWarning?.classList.add('d-none');
+        this.updateRepeatControls();
+      }
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      new ScheduleManager();
+    });
   </script>
 {% endblock %}
