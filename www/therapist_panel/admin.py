@@ -3,7 +3,7 @@
 from django.contrib import admin
 
 from .models import Therapist, TherapistTreatment
-from scheduling.models import TherapistTimeOff
+from scheduling.models import TherapistTimeOff, TherapistTimeOffSeries
 
 
 class TherapistTreatmentInline(admin.TabularInline):
@@ -57,8 +57,16 @@ class TherapistTreatmentAdmin(admin.ModelAdmin):
 
 @admin.register(TherapistTimeOff)
 class TherapistTimeOffAdmin(admin.ModelAdmin):
-    list_display = ("therapist", "get_local_starts_at", "get_local_ends_at", "note", "created_at")
-    list_filter = ("therapist",)
+    list_display = (
+        "therapist",
+        "get_local_starts_at",
+        "get_local_ends_at",
+        "series",
+        "is_skipped",
+        "note",
+        "created_at",
+    )
+    list_filter = ("therapist", "is_skipped")
     search_fields = (
         "therapist__nickname",
         "therapist__first_name",
@@ -80,3 +88,25 @@ class TherapistTimeOffAdmin(admin.ModelAdmin):
         from scheduling.utils import from_utc
 
         return from_utc(obj.ends_at, obj.therapist.timezone).strftime("%Y-%m-%d %H:%M")
+
+
+@admin.register(TherapistTimeOffSeries)
+class TherapistTimeOffSeriesAdmin(admin.ModelAdmin):
+    list_display = (
+        "therapist",
+        "repeat_type",
+        "repeat_interval",
+        "start_date",
+        "start_time",
+        "end_time",
+        "repeat_until",
+        "is_active",
+    )
+    list_filter = ("repeat_type", "is_active")
+    search_fields = (
+        "therapist__nickname",
+        "therapist__first_name",
+        "therapist__last_name",
+        "note",
+    )
+    autocomplete_fields = ("therapist",)

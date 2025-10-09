@@ -75,6 +75,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
             conflict_exists = TherapistTimeOff.objects.filter(
                 therapist=therapist,
+                is_skipped=False,
                 ends_at__gt=planned_start,
                 starts_at__lt=planned_end,
             ).exists()

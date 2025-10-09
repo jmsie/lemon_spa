@@ -36,6 +36,15 @@ def to_utc(value: datetime, tz_name: str | None) -> datetime:
     return localized.astimezone(dt_timezone.utc)
 
 
+def to_local(value: datetime, tz_name: str | None) -> datetime:
+    """Convert a datetime to the supplied timezone without losing wall-clock information."""
+
+    tzinfo = ensure_timezone(tz_name)
+    if timezone.is_naive(value):
+        return value.replace(tzinfo=tzinfo)
+    return value.astimezone(tzinfo)
+
+
 def from_utc(value: datetime, tz_name: str | None) -> datetime:
     """Return the datetime converted from UTC into the supplied timezone."""
 
@@ -43,4 +52,4 @@ def from_utc(value: datetime, tz_name: str | None) -> datetime:
     return timezone.localtime(value, timezone=tzinfo)
 
 
-__all__ = ["ensure_timezone", "to_utc", "from_utc"]
+__all__ = ["ensure_timezone", "to_utc", "to_local", "from_utc"]

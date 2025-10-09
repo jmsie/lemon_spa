@@ -12,7 +12,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from appointments.models import Appointment
-from scheduling.models import TherapistTimeOff
+from scheduling.models import TherapistTimeOff, TherapistTimeOffSeries
 from therapist_panel.constants import DEFAULT_THERAPIST_TIMEZONE
 from therapist_panel.models import Therapist, TherapistTreatment
 
@@ -52,6 +52,8 @@ class TherapistTimeOffAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["therapist_uuid"], str(self.therapist.uuid))
         self.assertEqual(response.data["therapist_timezone"], DEFAULT_THERAPIST_TIMEZONE)
+        self.assertFalse(response.data["is_recurring"])
+        self.assertIsNone(response.data["series_uuid"])
         self.assertTrue(response.data["starts_at"].endswith("+08:00"))
         self.assertTrue(response.data["ends_at"].endswith("+08:00"))
 
@@ -143,3 +145,97 @@ class TherapistTimeOffAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(TherapistTimeOff.objects.filter(uuid=record.uuid).exists())
+
+    def test_create_recurring_time_off_creates_series(self):
+        payload = {
+            "starts_at": "2024-03-01T09:00:00",
+            "ends_at": "2024-03-01T11:00:00",
+            "note": "Weekly break",
+            "repeat_type": TherapistTimeOffSeries.REPEAT_WEEKLY,
+            "repeat_interval": 1,
+            "repeat_until": "2024-03-29",
+        }
+
+        response = self.client.post(self.time_off_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["is_recurring"])
+        self.assertIsNotNone(response.data["series_uuid"])
+
+        series = TherapistTimeOffSeries.objects.get(uuid=response.data["series_uuid"])
+        self.assertEqual(series.repeat_type, TherapistTimeOffSeries.REPEAT_WEEKLY)
+        self.assertEqual(series.repeat_interval, 1)
+        self.assertTrue(series.is_active)
+
+        occurrence = TherapistTimeOff.objects.get(uuid=response.data["uuid"])
+        self.assertEqual(occurrence.series_id, series.id)
+        self.assertFalse(occurrence.is_skipped)
+
+    def test_delete_single_occurrence_marks_skipped(self):
+        payload = {
+            "starts_at": "2024-03-01T09:00:00",
+            "ends_at": "2024-03-01T11:00:00",
+            "note": "Daily break",
+            "repeat_type": TherapistTimeOffSeries.REPEAT_DAILY,
+            "repeat_interval": 1,
+            "repeat_until": "2024-03-05",
+        }
+
+        response = self.client.post(self.time_off_url, payload, format="json")
+        occurrence_uuid = response.data["uuid"]
+
+        detail_url = reverse("therapist_panel:api:time_off:time-off-detail", args=[occurrence_uuid])
+        delete_response = self.client.delete(detail_url)
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        occurrence = TherapistTimeOff.objects.get(uuid=occurrence_uuid)
+        self.assertTrue(occurrence.is_skipped)
+
+    def test_delete_series_deactivates_recurring_series(self):
+        payload = {
+            "starts_at": "2024-03-01T09:00:00",
+            "ends_at": "2024-03-01T11:00:00",
+            "note": "Daily break",
+            "repeat_type": TherapistTimeOffSeries.REPEAT_DAILY,
+            "repeat_interval": 1,
+            "repeat_until": "2024-03-05",
+        }
+
+        response = self.client.post(self.time_off_url, payload, format="json")
+        occurrence_uuid = response.data["uuid"]
+        series_uuid = response.data["series_uuid"]
+
+        detail_url = reverse("therapist_panel:api:time_off:time-off-detail", args=[occurrence_uuid])
+        delete_response = self.client.delete(f"{detail_url}?scope=series")
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        series = TherapistTimeOffSeries.objects.get(uuid=series_uuid)
+        self.assertFalse(series.is_active)
+        self.assertEqual(TherapistTimeOff.objects.filter(series=series).count(), 0)
+
+    def test_list_materializes_future_occurrences(self):
+        payload = {
+            "starts_at": "2024-03-01T09:00:00",
+            "ends_at": "2024-03-01T11:00:00",
+            "note": "Daily break",
+            "repeat_type": TherapistTimeOffSeries.REPEAT_DAILY,
+            "repeat_interval": 1,
+            "repeat_until": "2024-03-03",
+        }
+
+        response = self.client.post(self.time_off_url, payload, format="json")
+        series_uuid = response.data["series_uuid"]
+
+        series = TherapistTimeOffSeries.objects.get(uuid=series_uuid)
+        self.assertEqual(TherapistTimeOff.objects.filter(series=series, is_skipped=False).count(), 1)
+
+        list_response = self.client.get(
+            self.time_off_url,
+            {
+                "start": "2024-03-01T00:00:00",
+                "end": "2024-03-05T00:00:00",
+            },
+        )
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(TherapistTimeOff.objects.filter(series=series, is_skipped=False).count(), 3)

@@ -179,6 +179,33 @@
               <label for="time-off-note" class="form-label">備註</label>
               <textarea class="form-control" id="time-off-note" name="note" rows="3" placeholder="例如：請假、進修..."></textarea>
             </div>
+            <div class="border-top pt-3 mt-3" id="time-off-repeat-section">
+              <div class="mb-3">
+                <label for="time-off-repeat-type" class="form-label">重複設定</label>
+                <select class="form-select" id="time-off-repeat-type" name="repeat_type">
+                  <option value="">不重複</option>
+                  <option value="daily">每天</option>
+                  <option value="weekly">每週</option>
+                </select>
+              </div>
+              <div class="row g-2 align-items-end mb-3 d-none" data-repeat-settings>
+                <div class="col-sm-6">
+                  <label for="time-off-repeat-interval" class="form-label">間隔</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" id="time-off-repeat-interval" name="repeat_interval" min="1" value="1">
+                    <span class="input-group-text" data-repeat-interval-label>天</span>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <label for="time-off-repeat-until" class="form-label">重複至</label>
+                  <input type="date" class="form-control" id="time-off-repeat-until" name="repeat_until">
+                  <div class="form-text">留白表示持續重複</div>
+                </div>
+              </div>
+              <div class="alert alert-info d-none" role="status" data-repeat-edit-warning>
+                編輯休假時無法調整重複設定。如需變更，請刪除後重新建立。
+              </div>
+            </div>
           </form>
         </div>
         <div class="modal-footer">
@@ -188,6 +215,27 @@
           </button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
           <button type="button" class="btn btn-primary" id="time-off-save">建立休假</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="timeOffDeleteConfirmModal" tabindex="-1" aria-labelledby="timeOffDeleteConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="timeOffDeleteConfirmLabel">刪除休假</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" id="time-off-delete-message">確定要刪除此休假嗎？</p>
+        </div>
+        <div class="modal-footer flex-column flex-sm-row">
+          <button type="button" class="btn btn-secondary w-100 w-sm-auto mb-2 mb-sm-0" data-bs-dismiss="modal">取消</button>
+          <div class="d-flex gap-2 w-100 w-sm-auto">
+            <button type="button" class="btn btn-outline-danger flex-fill flex-sm-grow-0" id="time-off-delete-single">刪除</button>
+            <button type="button" class="btn btn-danger flex-fill flex-sm-grow-0 d-none" id="time-off-delete-series">刪除整個序列</button>
+          </div>
         </div>
       </div>
     </div>
@@ -250,6 +298,18 @@
       const timeOffSaveButton = document.getElementById('time-off-save');
       const timeOffDeleteButton = document.getElementById('time-off-delete');
       const timeOffModalTitle = document.getElementById('timeOffModalLabel');
+      const repeatSection = document.getElementById('time-off-repeat-section');
+      const repeatTypeSelect = timeOffFormEl ? timeOffFormEl.querySelector('[name="repeat_type"]') : null;
+      const repeatIntervalInput = timeOffFormEl ? timeOffFormEl.querySelector('[name="repeat_interval"]') : null;
+      const repeatUntilInput = timeOffFormEl ? timeOffFormEl.querySelector('[name="repeat_until"]') : null;
+      const repeatSettingsGroup = timeOffFormEl ? timeOffFormEl.querySelector('[data-repeat-settings]') : null;
+      const repeatIntervalLabel = timeOffFormEl ? timeOffFormEl.querySelector('[data-repeat-interval-label]') : null;
+      const repeatEditWarning = timeOffFormEl ? timeOffFormEl.querySelector('[data-repeat-edit-warning]') : null;
+      const timeOffDeleteConfirmModalEl = document.getElementById('timeOffDeleteConfirmModal');
+      const timeOffDeleteConfirmModal = timeOffDeleteConfirmModalEl ? new bootstrap.Modal(timeOffDeleteConfirmModalEl) : null;
+      const timeOffDeleteMessage = document.getElementById('time-off-delete-message');
+      const timeOffDeleteSingleButton = document.getElementById('time-off-delete-single');
+      const timeOffDeleteSeriesButton = document.getElementById('time-off-delete-series');
 
       let activeEvent = null;
       let cachedTreatments = null;
@@ -267,6 +327,126 @@
         }
         if (timeOffDeleteButton) {
           timeOffDeleteButton.classList.add('d-none');
+          timeOffDeleteButton.removeAttribute('disabled');
+        }
+        if (repeatTypeSelect) {
+          repeatTypeSelect.value = '';
+          repeatTypeSelect.removeAttribute('disabled');
+        }
+        if (repeatIntervalInput) {
+          repeatIntervalInput.value = '1';
+          repeatIntervalInput.removeAttribute('disabled');
+        }
+        if (repeatUntilInput) {
+          repeatUntilInput.value = '';
+          repeatUntilInput.removeAttribute('disabled');
+        }
+        if (repeatIntervalLabel) {
+          repeatIntervalLabel.textContent = '天';
+        }
+        if (repeatSettingsGroup) {
+          repeatSettingsGroup.classList.add('d-none');
+        }
+        if (repeatEditWarning) {
+          repeatEditWarning.classList.add('d-none');
+        }
+        updateRepeatControls();
+      };
+
+      const prepareTimeOffDeleteModal = (isRecurring) => {
+        if (!timeOffDeleteMessage || !timeOffDeleteSingleButton) {
+          return;
+        }
+        if (isRecurring && timeOffDeleteSeriesButton) {
+          timeOffDeleteSeriesButton.classList.remove('d-none');
+          timeOffDeleteSeriesButton.textContent = '刪除整個序列';
+        } else if (timeOffDeleteSeriesButton) {
+          timeOffDeleteSeriesButton.classList.add('d-none');
+        }
+        timeOffDeleteMessage.textContent = isRecurring
+          ? '這筆休假屬於重複序列，請選擇刪除單次或整個序列。'
+          : '確定要刪除此休假嗎？';
+        timeOffDeleteSingleButton.textContent = isRecurring ? '只刪除此筆' : '刪除';
+      };
+
+      const deleteTimeOff = async (scope = null) => {
+        if (!activeTimeOffEvent) {
+          return;
+        }
+        const deletingSeries = scope === 'series';
+        const baseUrl = `${timeOffApiBase}${activeTimeOffEvent.id}/`;
+        const url = deletingSeries ? `${baseUrl}?scope=series` : baseUrl;
+        const toggleButtons = (disabled) => {
+          if (timeOffDeleteButton) {
+            timeOffDeleteButton.toggleAttribute('disabled', disabled);
+          }
+          if (timeOffDeleteSingleButton) {
+            timeOffDeleteSingleButton.toggleAttribute('disabled', disabled);
+          }
+          if (timeOffDeleteSeriesButton && !timeOffDeleteSeriesButton.classList.contains('d-none')) {
+            timeOffDeleteSeriesButton.toggleAttribute('disabled', disabled);
+          }
+        };
+
+        toggleButtons(true);
+
+        try {
+          const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+              'X-CSRFToken': csrfToken,
+              'Accept': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            let errorMessage = '休假刪除失敗';
+            try {
+              const errorData = await response.json();
+              if (errorData && typeof errorData.detail === 'string') {
+                errorMessage = errorData.detail;
+              }
+            } catch (parseError) {
+              // ignore parse errors
+            }
+            throw new Error(errorMessage);
+          }
+
+          if (timeOffDeleteConfirmModal) {
+            timeOffDeleteConfirmModal.hide();
+          }
+          if (timeOffModal) {
+            timeOffModal.hide();
+          }
+
+          showFeedback(deletingSeries ? '重複休假已刪除。' : '休假已刪除。', 'warning');
+          activeTimeOffEvent = null;
+          calendar.refetchEvents();
+        } catch (error) {
+          console.error(error);
+          showFeedback(error instanceof Error ? error.message : '刪除休假失敗，請稍後再試。', 'danger');
+        } finally {
+          toggleButtons(false);
+        }
+      };
+
+      const updateRepeatControls = () => {
+        if (!repeatTypeSelect || !repeatSettingsGroup || !repeatIntervalLabel) {
+          return;
+        }
+        const type = repeatTypeSelect.value;
+        if (!type) {
+          repeatSettingsGroup.classList.add('d-none');
+          repeatIntervalLabel.textContent = '天';
+          return;
+        }
+        repeatSettingsGroup.classList.remove('d-none');
+        repeatIntervalLabel.textContent = type === 'weekly' ? '週' : '天';
+        if (repeatIntervalInput) {
+          const numericValue = Number.parseInt(repeatIntervalInput.value, 10);
+          if (Number.isNaN(numericValue) || numericValue < 1) {
+            repeatIntervalInput.value = '1';
+          }
         }
       };
 
@@ -451,6 +631,8 @@
                   extendedProps: {
                     eventType: 'timeOff',
                     note: item.note,
+                    seriesUuid: item.series_uuid || null,
+                    isRecurring: Boolean(item.is_recurring),
                   },
                 }));
                 successCallback(events);
@@ -527,6 +709,22 @@
             if (timeOffDeleteButton) {
               timeOffDeleteButton.classList.remove('d-none');
             }
+            if (repeatTypeSelect) {
+              repeatTypeSelect.value = '';
+              repeatTypeSelect.setAttribute('disabled', 'disabled');
+            }
+            if (repeatIntervalInput) {
+              repeatIntervalInput.value = '1';
+              repeatIntervalInput.setAttribute('disabled', 'disabled');
+            }
+            if (repeatUntilInput) {
+              repeatUntilInput.value = '';
+              repeatUntilInput.setAttribute('disabled', 'disabled');
+            }
+            if (repeatEditWarning) {
+              repeatEditWarning.classList.remove('d-none');
+            }
+            updateRepeatControls();
             timeOffModal.show();
             return;
           }
@@ -764,6 +962,15 @@
         });
       }
 
+      if (repeatTypeSelect) {
+        repeatTypeSelect.addEventListener('change', () => {
+          if (repeatTypeSelect.disabled) {
+            return;
+          }
+          updateRepeatControls();
+        });
+      }
+
       if (timeOffSaveButton && timeOffFormEl && timeOffModal) {
         timeOffSaveButton.addEventListener('click', async () => {
           const startInput = timeOffFormEl.querySelector('[name="starts_at"]');
@@ -794,6 +1001,17 @@
           };
 
           const isEditingCurrent = Boolean(isEditingTimeOff && activeTimeOffEvent);
+
+          if (!isEditingCurrent && repeatTypeSelect && !repeatTypeSelect.disabled && repeatTypeSelect.value) {
+            payload.repeat_type = repeatTypeSelect.value;
+            if (repeatIntervalInput && !repeatIntervalInput.disabled) {
+              const intervalValue = Number.parseInt(repeatIntervalInput.value, 10);
+              payload.repeat_interval = Number.isNaN(intervalValue) || intervalValue < 1 ? 1 : intervalValue;
+            }
+            if (repeatUntilInput && !repeatUntilInput.disabled && repeatUntilInput.value) {
+              payload.repeat_until = repeatUntilInput.value;
+            }
+          }
 
           try {
             const endpoint = isEditingCurrent ? `${timeOffApiBase}${activeTimeOffEvent.id}/` : timeOffApiBase;
@@ -843,41 +1061,48 @@
         });
       }
 
-      if (timeOffDeleteButton && timeOffModal) {
-        timeOffDeleteButton.addEventListener('click', async () => {
+      if (timeOffDeleteButton) {
+        timeOffDeleteButton.addEventListener('click', () => {
           if (!activeTimeOffEvent) {
             return;
           }
-          if (!window.confirm('確認要刪除此休假區間嗎？')) {
+          const hasSeries = Boolean(activeTimeOffEvent.extendedProps && activeTimeOffEvent.extendedProps.seriesUuid);
+          if (timeOffDeleteConfirmModal) {
+            prepareTimeOffDeleteModal(hasSeries);
+            timeOffDeleteConfirmModal.show();
             return;
           }
-          try {
-            const response = await fetch(`${timeOffApiBase}${activeTimeOffEvent.id}/`, {
-              method: 'DELETE',
-              headers: {
-                'X-CSRFToken': csrfToken,
-                'Accept': 'application/json',
-              },
-            });
-            if (!response.ok) {
-              let errorMessage = '休假刪除失敗';
-              try {
-                const errorData = await response.json();
-                if (errorData && typeof errorData.detail === 'string') {
-                  errorMessage = errorData.detail;
-                }
-              } catch (parseError) {
-                // ignore
-              }
-              throw new Error(errorMessage);
+
+          if (hasSeries) {
+            const deleteSeries = window.confirm('這筆休假屬於重複序列，要刪除整個序列嗎？按「取消」則僅刪除此筆。');
+            if (deleteSeries) {
+              deleteTimeOff('series');
+              return;
             }
-            timeOffModal.hide();
-            showFeedback('休假已刪除。', 'warning');
-            calendar.refetchEvents();
-          } catch (error) {
-            console.error(error);
-            showFeedback(error instanceof Error ? error.message : '刪除休假失敗，請稍後再試。', 'danger');
           }
+
+          const confirmSingle = window.confirm('確認要刪除此休假嗎？');
+          if (confirmSingle) {
+            deleteTimeOff();
+          }
+        });
+      }
+
+      if (timeOffDeleteSingleButton) {
+        timeOffDeleteSingleButton.addEventListener('click', () => {
+          deleteTimeOff();
+        });
+      }
+
+      if (timeOffDeleteSeriesButton) {
+        timeOffDeleteSeriesButton.addEventListener('click', () => {
+          deleteTimeOff('series');
+        });
+      }
+
+      if (timeOffDeleteConfirmModalEl) {
+        timeOffDeleteConfirmModalEl.addEventListener('hidden.bs.modal', () => {
+          prepareTimeOffDeleteModal(false);
         });
       }
 
