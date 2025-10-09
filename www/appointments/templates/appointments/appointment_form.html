@@ -13,6 +13,31 @@
     label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: #1e293b; }
     input, select, textarea { width: 100%; padding: 0.75rem 0.85rem; border-radius: 0.6rem; border: 1px solid #cbd5f5; font-size: 1rem; background: #f8fafc; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); background: #fff; }
+    
+    /* 讓整個日期輸入框都可以點擊 */
+    input[type="date"] {
+      position: relative;
+      cursor: pointer;
+    }
+    
+    /* 讓日期輸入框的整個區域都可以觸發日曆 */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: auto;
+      color: transparent;
+      background: transparent;
+      cursor: pointer;
+    }
+    
+    /* Firefox 的處理 */
+    input[type="date"]::-moz-focus-inner {
+      border: 0;
+    }
     .actions { text-align: center; }
     button { background: #0ea5e9; border: none; color: #f8fafc; border-radius: 9999px; padding: 0.75rem 2.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s ease, transform 0.1s ease; }
     button:hover { background: #0284c7; }
@@ -38,7 +63,6 @@
   <main>
     <section class="card">
       <h1>按摩預約</h1>
-      <p class="lead">留下聯絡資訊，我們會協助安排合適的時段。</p>
 
       {% if messages %}
         <ul class="messages">
@@ -95,6 +119,7 @@
             id="appointment-date"
             name="appointment-date"
             value="{{ appointment_selected_date }}"
+            min="{{ appointment_min_date }}"
             required
           >
         </div>
@@ -231,40 +256,128 @@
         return aligned.second(0).millisecond(0);
       }
 
+      // 合併重疊的時間段
+      function mergeOverlappingWindows(windows) {
+        if (!windows || windows.length === 0) {
+          return [];
+        }
+
+        // 轉換為 dayjs 物件並按開始時間排序
+        const convertedWindows = windows
+          .map(window => ({
+            start: dayjs(window.start),
+            end: dayjs(window.end),
+            original: window
+          }))
+          .sort((a, b) => a.start.valueOf() - b.start.valueOf());
+
+        const merged = [];
+        let current = convertedWindows[0];
+
+        for (let i = 1; i < convertedWindows.length; i++) {
+          const next = convertedWindows[i];
+          
+          // 檢查是否重疊或相鄰 (current.end >= next.start)
+          if (current.end.isAfter(next.start) || current.end.isSame(next.start)) {
+            // 合併：擴展當前窗口的結束時間，取較晚的結束時間
+            const laterEnd = current.end.isAfter(next.end) ? current.end : next.end;
+            current = {
+              start: current.start,
+              end: laterEnd,
+              original: current.original
+            };
+          } else {
+            // 沒有重疊，將當前窗口加入結果並移到下一個
+            merged.push(current);
+            current = next;
+          }
+        }
+
+        // 加入最後一個窗口
+        merged.push(current);
+
+        return merged.map(window => ({
+          start: window.start.toISOString(),
+          end: window.end.toISOString()
+        }));
+      }
+
       function generateSlotsForAvailability(availability, blocked, durationMinutes, timezone) {
         const slots = [];
         if (!Array.isArray(availability) || availability.length === 0) {
+          console.log('🚫 沒有available時間段');
           return slots;
         }
 
+        console.log('📊 原始資料:', {
+          availability,
+          blocked,
+          durationMinutes,
+          timezone
+        });
+
+        // 先合併重疊的 available 時間段
+        const mergedAvailability = mergeOverlappingWindows(availability);
+        console.log('🔄 合併後的available:', mergedAvailability);
+
         // 將 blocked 時間轉換為 dayjs 物件
         const blockedWindows = (blocked || []).map((window) => ({
-          start: dayjs(window.start), // 直接使用 dayjs() 而不是 dayjs.tz()
+          start: dayjs(window.start),
           end: dayjs(window.end),
+          originalStart: window.start,
+          originalEnd: window.end
         }));
 
-        for (const window of availability) {
+        console.log('⛔ blocked時間段:', blockedWindows.map(bw => ({
+          start: bw.start.format('HH:mm'),
+          end: bw.end.format('HH:mm'),
+          original: `${bw.originalStart} - ${bw.originalEnd}`
+        })));
+
+        for (const window of mergedAvailability) {
+          console.log(`\n🎯 處理available時間段: ${window.start} - ${window.end}`);
+          
           // 直接使用 dayjs() 解析時間，因為 API 已經包含時區資訊
           const windowStart = dayjs(window.start);
           const windowEnd = dayjs(window.end);
 
+          console.log(`   轉換後: ${windowStart.format('HH:mm')} - ${windowEnd.format('HH:mm')}`);
+
           let cursor = alignToHalfHour(windowStart);
+          console.log(`   對齊後起始時間: ${cursor.format('HH:mm')}`);
+          
+          let processedSlots = 0;
+          const maxSlots = 50; // 防止無限循環
           
           // 修正循環條件，避免邊界問題
-          while (cursor.isBefore(windowEnd)) {
+          while (cursor.isBefore(windowEnd) && processedSlots < maxSlots) {
             const candidateEnd = cursor.add(durationMinutes, "minute");
+            
+            console.log(`     檢查時間段: ${cursor.format('HH:mm')} - ${candidateEnd.format('HH:mm')}`);
             
             // 檢查療程結束時間是否超出可用時間窗口
             if (candidateEnd.isAfter(windowEnd)) {
+              console.log(`       ❌ 超出available範圍 (${windowEnd.format('HH:mm')})`);
               break;
             }
             
             // 檢查是否與 blocked 時間重疊
-            const overlapsBlocked = blockedWindows.some(
-              (bw) => cursor.isBefore(bw.end) && candidateEnd.isAfter(bw.start)
-            );
+            let overlapsBlocked = false;
+            let blockingWindow = null;
+            
+            for (const bw of blockedWindows) {
+              const overlaps = cursor.isBefore(bw.end) && candidateEnd.isAfter(bw.start);
+              if (overlaps) {
+                overlapsBlocked = true;
+                blockingWindow = bw;
+                break;
+              }
+            }
 
-            if (!overlapsBlocked) {
+            if (overlapsBlocked) {
+              console.log(`       ❌ 與blocked時間重疊: ${blockingWindow.start.format('HH:mm')}-${blockingWindow.end.format('HH:mm')}`);
+            } else {
+              console.log(`       ✅ 可用時間段: ${cursor.format('HH:mm')}`);
               slots.push({
                 start: cursor.clone(),
                 end: candidateEnd,
@@ -272,8 +385,16 @@
             }
 
             cursor = cursor.add(30, "minute");
+            processedSlots++;
+          }
+          
+          if (processedSlots >= maxSlots) {
+            console.log('⚠️ 達到最大處理數量限制，停止處理');
           }
         }
+
+        console.log(`\n📈 總共生成 ${slots.length} 個時間段:`, 
+          slots.map(slot => slot.start.format('HH:mm')));
 
         return slots;
       }

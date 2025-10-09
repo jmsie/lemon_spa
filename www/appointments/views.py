@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.utils import timezone
+
 from django.contrib.messages.views import SuccessMessageMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -108,4 +110,6 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
             context["appointment_selected_date"] = self.request.POST.get("appointment-date", "")
         else:
             context["appointment_selected_date"] = ""
+        today = timezone.localdate()
+        context["appointment_min_date"] = today.isoformat()
         return context
