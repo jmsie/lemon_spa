@@ -21,6 +21,14 @@
     .field-errors { margin-top: 0.35rem; color: #dc2626; font-size: 0.9rem; }
     .field-errors li { margin-left: 1rem; }
     .selected-therapist { background: #eff6ff; border: 1px solid rgba(59, 130, 246, 0.35); padding: 0.85rem 1rem; border-radius: 0.75rem; color: #1d4ed8; margin-bottom: 1rem; font-weight: 600; text-align: center; }
+    .time-slot-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 0; }
+    .time-slot-container .slot-message { color: #64748b; margin: 0; }
+    .time-slot-button { border: 1px solid #cbd5f5; border-radius: 9999px; background: #fff; color: #0f172a; padding: 0.45rem 0.9rem; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; }
+    .time-slot-button:hover { border-color: #3b82f6; color: #1d4ed8; }
+    .time-slot-button.active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; box-shadow: 0 10px 18px rgba(29, 78, 216, 0.25); }
+    .time-slot-button:disabled { cursor: not-allowed; opacity: 0.5; }
+    .time-slot-loading { color: #475569; }
+    .visually-hidden { display: none !important; }
     @media (max-width: 640px) {
       .card { padding: 1.75rem; }
     }
@@ -49,7 +57,9 @@
       <form method="post">
         {% csrf_token %}
         {% for hidden_field in form.hidden_fields %}
-          {{ hidden_field }}
+          {% if hidden_field.name != "start_time" %}
+            {{ hidden_field }}
+          {% endif %}
         {% endfor %}
         {% if form.non_field_errors %}
           <div class="field-errors">
@@ -61,21 +71,62 @@
           </div>
         {% endif %}
 
-        {% for field in form.visible_fields %}
+        {% if form.treatment %}
           <div class="form-field">
-            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-            {{ field }}
-            {% if field.help_text %}
-              <small>{{ field.help_text }}</small>
+            <label for="{{ form.treatment.id_for_label }}">{{ form.treatment.label }}{% if form.treatment.field.required %} *{% endif %}</label>
+            {{ form.treatment }}
+            {% if form.treatment.help_text %}
+              <small>{{ form.treatment.help_text }}</small>
             {% endif %}
-            {% if field.errors %}
+            {% if form.treatment.errors %}
               <ul class="field-errors">
-                {% for error in field.errors %}
+                {% for error in form.treatment.errors %}
                   <li>{{ error }}</li>
                 {% endfor %}
               </ul>
             {% endif %}
           </div>
+        {% endif %}
+                
+        <div class="form-field">
+          <label for="appointment-date">預約日期 *</label>
+          <input type="date" id="appointment-date" name="appointment-date" required>
+        </div>
+
+        <div class="form-field">
+          <label>可預約時間</label>
+          <div id="time-slot-container" class="time-slot-container" role="group" aria-label="可預約時間">
+            <p id="time-slot-message" class="slot-message">請先選擇日期與療程。</p>
+          </div>
+          {% if form.start_time.errors %}
+            <ul class="field-errors">
+              {% for error in form.start_time.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+        <div class="visually-hidden">
+          {{ form.start_time }}
+        </div>
+
+        {% for field in form.visible_fields %}
+          {% if field.name != "start_time" and field.name != "treatment" %}
+            <div class="form-field">
+              <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+              {{ field }}
+              {% if field.help_text %}
+                <small>{{ field.help_text }}</small>
+              {% endif %}
+              {% if field.errors %}
+                <ul class="field-errors">
+                  {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          {% endif %}
         {% endfor %}
 
         <div class="actions">
@@ -84,5 +135,311 @@
       </form>
     </section>
   </main>
+  {{ appointment_config|json_script:"appointment-config-data" }}
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/timezone.js"></script>
+  <script>
+    dayjs.extend(dayjs_plugin_utc);
+    dayjs.extend(dayjs_plugin_timezone);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const configElement = document.getElementById("appointment-config-data");
+      const config = configElement ? JSON.parse(configElement.textContent) : {};
+      const form = document.querySelector("form");
+      const dateInput = document.getElementById("appointment-date");
+      const treatmentSelect = document.getElementById("id_treatment");
+      const therapistSelect = document.getElementById("id_therapist");
+      const startTimeInput = document.getElementById("id_start_time");
+      const slotContainer = document.getElementById("time-slot-container");
+
+      if (!form || !dateInput || !treatmentSelect || !startTimeInput || !slotContainer) {
+        return;
+      }
+
+      let latestAvailability = null;
+
+      function getTherapistContext() {
+        const selectedFromConfig = config.selectedTherapist;
+        if (selectedFromConfig && (!therapistSelect || therapistSelect.value === "" || therapistSelect.value === selectedFromConfig.pk)) {
+          return {
+            uuid: selectedFromConfig.uuid,
+            timezone: selectedFromConfig.timezone,
+          };
+        }
+
+        if (!therapistSelect || !therapistSelect.value) {
+          return null;
+        }
+
+        const therapistMeta = config.therapists ? config.therapists[therapistSelect.value] : null;
+        if (!therapistMeta) {
+          return null;
+        }
+
+        return {
+          uuid: therapistMeta.uuid,
+          timezone: therapistMeta.timezone,
+        };
+      }
+
+      function getTreatmentDuration() {
+        if (!treatmentSelect || !treatmentSelect.value) {
+          return null;
+        }
+        const treatmentMeta = config.treatments ? config.treatments[treatmentSelect.value] : null;
+        return treatmentMeta ? Number(treatmentMeta.duration_minutes) : null;
+      }
+
+      function clearSlots(messageText, cssClass = "slot-message", options = {}) {
+        const { resetSelection = true } = options;
+        slotContainer.innerHTML = "";
+        const info = document.createElement("p");
+        info.className = cssClass;
+        info.textContent = messageText;
+        slotContainer.appendChild(info);
+        if (resetSelection) {
+          startTimeInput.value = "";
+        }
+      }
+
+      function setLoadingState() {
+        clearSlots("讀取可預約時段中…", "slot-message time-slot-loading", { resetSelection: false });
+      }
+
+      function alignToHalfHour(moment) {
+        const minutes = moment.minute();
+        let aligned;
+        
+        if (minutes === 0 || minutes === 30) {
+          // 已經對齊，直接返回
+          aligned = moment.clone();
+        } else if (minutes < 30) {
+          // 向上對齊到 30 分
+          aligned = moment.minute(30);
+        } else {
+          // 向上對齊到下一個小時
+          aligned = moment.add(1, 'hour').minute(0);
+        }
+        
+        return aligned.second(0).millisecond(0);
+      }
+
+      function generateSlotsForAvailability(availability, blocked, durationMinutes, timezone) {
+        const slots = [];
+        if (!Array.isArray(availability) || availability.length === 0) {
+          return slots;
+        }
+
+        // 將 blocked 時間轉換為 dayjs 物件
+        const blockedWindows = (blocked || []).map((window) => ({
+          start: dayjs(window.start), // 直接使用 dayjs() 而不是 dayjs.tz()
+          end: dayjs(window.end),
+        }));
+
+        for (const window of availability) {
+          // 直接使用 dayjs() 解析時間，因為 API 已經包含時區資訊
+          const windowStart = dayjs(window.start);
+          const windowEnd = dayjs(window.end);
+
+          let cursor = alignToHalfHour(windowStart);
+          
+          // 修正循環條件，避免邊界問題
+          while (cursor.isBefore(windowEnd)) {
+            const candidateEnd = cursor.add(durationMinutes, "minute");
+            
+            // 檢查療程結束時間是否超出可用時間窗口
+            if (candidateEnd.isAfter(windowEnd)) {
+              break;
+            }
+            
+            // 檢查是否與 blocked 時間重疊
+            const overlapsBlocked = blockedWindows.some(
+              (bw) => cursor.isBefore(bw.end) && candidateEnd.isAfter(bw.start)
+            );
+
+            if (!overlapsBlocked) {
+              slots.push({
+                start: cursor.clone(),
+                end: candidateEnd,
+              });
+            }
+
+            cursor = cursor.add(30, "minute");
+          }
+        }
+
+        return slots;
+      }
+
+      function renderSlots(slots, timezone, existingSelection = "") {
+        slotContainer.innerHTML = "";
+        if (!slots.length) {
+          clearSlots("當天預約額滿，請選其他天。");
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        let hasMatch = false;
+
+        slots.sort((a, b) => a.start.valueOf() - b.start.valueOf());
+        slots.forEach((slot) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "time-slot-button";
+          button.dataset.start = slot.start.toISOString();
+          button.dataset.end = slot.end.toISOString();
+          button.textContent = slot.start.tz(timezone).format("HH:mm");
+          if (existingSelection && dayjs(existingSelection).isSame(slot.start, "minute")) {
+            button.classList.add("active");
+            hasMatch = true;
+          }
+          button.addEventListener("click", () => selectSlot(slot, button));
+          fragment.appendChild(button);
+        });
+
+        slotContainer.appendChild(fragment);
+        if (!hasMatch) {
+          startTimeInput.value = "";
+        }
+      }
+
+      function selectSlot(slot, button) {
+        const buttons = slotContainer.querySelectorAll(".time-slot-button");
+        buttons.forEach((btn) => btn.classList.remove("active"));
+        button.classList.add("active");
+        startTimeInput.value = slot.start.utc().format("YYYY-MM-DDTHH:mm:ss[Z]");
+      }
+
+      async function refreshAvailability() {
+        const therapist = getTherapistContext();
+        const duration = getTreatmentDuration();
+        const selectedDate = dateInput.value;
+
+        if (!therapist) {
+          clearSlots("請先選擇按摩師。");
+          return;
+        }
+
+        if (!selectedDate) {
+          clearSlots("請先選擇日期。");
+          return;
+        }
+
+        if (!duration || Number.isNaN(duration)) {
+          clearSlots("請先選擇療程。");
+          return;
+        }
+
+        if (!config.availabilityUrlTemplate || !config.availabilityPlaceholder) {
+          clearSlots("暫時無法取得可預約時段，請稍後再試。");
+          return;
+        }
+
+        const previousSelection = startTimeInput.value;
+        setLoadingState();
+        const dayStart = dayjs.tz(selectedDate, therapist.timezone).startOf("day");
+        const dayEnd = dayStart.add(1, "day");
+        const params = new URLSearchParams({
+          start: dayStart.format("YYYY-MM-DD[T]HH:mm:ss"),
+          end: dayEnd.format("YYYY-MM-DD[T]HH:mm:ss"),
+        });
+
+        const url = config.availabilityUrlTemplate.replace(
+          config.availabilityPlaceholder,
+          therapist.uuid
+        );
+
+        try {
+          const response = await fetch(`${url}?${params.toString()}`);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          latestAvailability = await response.json();
+          const slots = generateSlotsForAvailability(
+            latestAvailability.available,
+            latestAvailability.blocked,
+            duration,
+            therapist.timezone
+          );
+          renderSlots(slots, therapist.timezone, previousSelection);
+        } catch (error) {
+          console.error("Failed to load availability", error);
+          clearSlots("暫時無法取得可預約時段，請稍後再試。");
+        }
+      }
+
+      function reRenderWithExistingAvailability() {
+        const therapist = getTherapistContext();
+        const duration = getTreatmentDuration();
+
+        if (!latestAvailability || !therapist || !duration) {
+          return;
+        }
+
+        const slots = generateSlotsForAvailability(
+          latestAvailability.available,
+          latestAvailability.blocked,
+          duration,
+          therapist.timezone
+        );
+        renderSlots(slots, therapist.timezone, startTimeInput.value);
+      }
+
+      dateInput.addEventListener("change", () => {
+        latestAvailability = null;
+        startTimeInput.value = "";
+        refreshAvailability();
+      });
+
+      if (treatmentSelect) {
+        treatmentSelect.addEventListener("change", () => {
+          startTimeInput.value = "";
+          if (latestAvailability) {
+            reRenderWithExistingAvailability();
+          } else if (dateInput.value) {
+            refreshAvailability();
+          } else {
+            clearSlots("請先選擇日期與療程。");
+          }
+        });
+      }
+
+      if (therapistSelect) {
+        therapistSelect.addEventListener("change", () => {
+          latestAvailability = null;
+          startTimeInput.value = "";
+          if (dateInput.value) {
+            refreshAvailability();
+          } else {
+            clearSlots("請先選擇日期與療程。");
+          }
+        });
+      }
+
+      if (config.selectedTherapist && !therapistSelect) {
+        form.dataset.therapistUuid = config.selectedTherapist.uuid;
+        form.dataset.therapistTimezone = config.selectedTherapist.timezone;
+      }
+
+      const initialStart = startTimeInput.value;
+      if (initialStart) {
+        const therapist = getTherapistContext();
+        if (therapist) {
+          const startMoment = dayjs(initialStart).tz(therapist.timezone);
+          if (startMoment.isValid()) {
+            dateInput.value = startMoment.format("YYYY-MM-DD");
+            refreshAvailability();
+          } else {
+            clearSlots("請先選擇日期與療程。");
+          }
+        } else {
+          clearSlots("請先選擇日期與療程。");
+        }
+      } else {
+        clearSlots("請先選擇日期與療程。");
+      }
+    });
+  </script>
 </body>
 </html>

@@ -61,4 +61,47 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["selected_therapist"] = self.selected_therapist
+        form: AppointmentForm | None = context.get("form")
+        placeholder_uuid = "00000000-0000-0000-0000-000000000000"
+        appointment_config: dict[str, Any] = {
+            "availabilityUrlTemplate": reverse("api:appointments:availability", args=[placeholder_uuid]),
+            "availabilityPlaceholder": placeholder_uuid,
+            "selectedTherapist": None,
+            "therapists": {},
+            "treatments": {},
+        }
+
+        if form:
+            therapist_field = form.fields.get("therapist")
+            treatment_field = form.fields.get("treatment")
+
+            if therapist_field:
+                therapists_qs = therapist_field.queryset
+                appointment_config["therapists"] = {
+                    str(therapist.pk): {
+                        "uuid": str(therapist.uuid),
+                        "timezone": therapist.timezone,
+                        "display_name": therapist.nickname,
+                    }
+                    for therapist in therapists_qs
+                }
+
+            if treatment_field:
+                treatments_qs = treatment_field.queryset.select_related("therapist")
+                appointment_config["treatments"] = {
+                    str(treatment.pk): {
+                        "duration_minutes": treatment.duration_minutes,
+                        "therapist_id": treatment.therapist_id,
+                    }
+                    for treatment in treatments_qs
+                }
+
+            if self.selected_therapist:
+                appointment_config["selectedTherapist"] = {
+                    "uuid": str(self.selected_therapist.uuid),
+                    "timezone": self.selected_therapist.timezone,
+                    "pk": str(self.selected_therapist.pk),
+                }
+
+        context["appointment_config"] = appointment_config
         return context

@@ -13,7 +13,12 @@ class AppointmentForm(forms.ModelForm):
 
     start_time = forms.DateTimeField(
         label="開始時間",
-        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        widget=forms.HiddenInput(),
+        input_formats=[
+            "%Y-%m-%dT%H:%M:%S%z",
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%dT%H:%M:%S",
+        ],
     )
 
     class Meta:
