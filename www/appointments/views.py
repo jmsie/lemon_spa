@@ -20,7 +20,7 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
     model = Appointment
     form_class = AppointmentForm
     template_name = "appointments/appointment_form.html"
-    success_message = "預約已送出，我們會儘快與您聯繫確認。"
+    success_message = "預約已成立"
 
     selected_therapist: Therapist | None = None
 
@@ -104,4 +104,8 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
                 }
 
         context["appointment_config"] = appointment_config
+        if self.request.method == "POST":
+            context["appointment_selected_date"] = self.request.POST.get("appointment-date", "")
+        else:
+            context["appointment_selected_date"] = ""
         return context

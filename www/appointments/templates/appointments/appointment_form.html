@@ -90,7 +90,13 @@
                 
         <div class="form-field">
           <label for="appointment-date">預約日期 *</label>
-          <input type="date" id="appointment-date" name="appointment-date" required>
+          <input
+            type="date"
+            id="appointment-date"
+            name="appointment-date"
+            value="{{ appointment_selected_date }}"
+            required
+          >
         </div>
 
         <div class="form-field">
@@ -436,6 +442,8 @@
         } else {
           clearSlots("請先選擇日期與療程。");
         }
+      } else if (dateInput.value) {
+        refreshAvailability();
       } else {
         clearSlots("請先選擇日期與療程。");
       }
