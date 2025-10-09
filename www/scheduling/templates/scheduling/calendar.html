@@ -52,7 +52,7 @@
     .fc-event.working-hours-event {
       opacity: 0.85;
     }
-
+    
     .working-hours-label {
       font-weight: 500;
       font-size: 0.85rem;
@@ -61,6 +61,15 @@
     .time-off-label {
       font-weight: 600;
       font-size: 0.9rem;
+    }
+
+    .calendar-background-event {
+      pointer-events: none;
+    }
+
+    #calendar-mode-toggle.btn-secondary.active {
+      background-color: var(--bs-primary);
+      border-color: var(--bs-primary);
     }
   </style>
 {% endblock %}
@@ -73,6 +82,9 @@
       <p class="text-body-secondary mb-0">檢視並管理您的按摩行程與營業時間。</p>
     </div>
     <div class="btn-group">
+      <button type="button" class="btn btn-outline-secondary" id="calendar-mode-toggle">
+        <i class="bi bi-pencil-square me-1"></i>開啟編輯模式
+      </button>
       <button type="button" class="btn btn-outline-success" id="working-hours-create-button">
         <i class="bi bi-clock-history me-1"></i>設定上班時間
       </button>
@@ -370,6 +382,7 @@
         this.activeWorkingHoursEvent = null;
         this.isEditingTimeOff = false;
         this.isEditingWorkingHours = false;
+        this.isEditMode = false;
         this.cachedTreatments = null;
         
         // API URLs
@@ -411,6 +424,7 @@
           workingHoursCreateButton: document.getElementById('working-hours-create-button'),
           workingHoursSave: document.getElementById('working-hours-save'),
           workingHoursDelete: document.getElementById('working-hours-delete'),
+          calendarModeToggle: document.getElementById('calendar-mode-toggle'),
           timeOffCreateButton: document.getElementById('time-off-create-button'),
           timeOffSave: document.getElementById('time-off-save'),
           timeOffDelete: document.getElementById('time-off-delete'),
@@ -451,6 +465,7 @@
         this.initCalendar();
         this.bindEvents();
         await this.loadTreatments();
+        this.updateCalendarModeButton();
       }
 
       // 工具方法
@@ -611,24 +626,33 @@
               if (!response.ok) throw new Error('Failed to load working hours');
 
               const data = await response.json();
-              const events = data.map(item => ({
-                id: item.uuid,
-                title: item.note ? `上班：${item.note}` : '上班時間',
-                start: item.starts_at,
-                end: item.ends_at,
-                editable: false,
-                classNames: ['working-hours-event'],
-                extendedProps: {
-                  eventType: 'workingHours',
-                  note: item.note,
-                  seriesUuid: item.series_uuid || null,
-                  isRecurring: Boolean(item.series_uuid),
-                  isGenerated: Boolean(item.is_generated),
-                  weekday: item.weekday
-                }
-              }));
+              const events = data.map(item => {
+                const baseClassNames = ['working-hours-event'];
+                const eventType = 'workingHours';
+                return {
+                  id: item.uuid,
+                  title: item.note ? `上班：${item.note}` : '上班時間',
+                  start: item.starts_at,
+                  end: item.ends_at,
+                  editable: false,
+                  display: this.getEventDisplay(eventType),
+                  classNames: this.getEventClassNames(eventType, baseClassNames),
+                  backgroundColor: this.getEventBackgroundColor(eventType),
+                  borderColor: this.getEventBackgroundColor(eventType),
+                  extendedProps: {
+                    eventType,
+                    note: item.note,
+                    seriesUuid: item.series_uuid || null,
+                    isRecurring: Boolean(item.series_uuid),
+                    isGenerated: Boolean(item.is_generated),
+                    weekday: item.weekday,
+                    baseClassNames,
+                  }
+                };
+              });
 
               successCallback(events);
+              this.applyCalendarMode();
             } catch (error) {
               console.error(error);
               failureCallback(error);
@@ -667,6 +691,7 @@
               }));
               
               successCallback(events);
+              this.applyCalendarMode();
             } catch (error) {
               console.error(error);
               failureCallback(error);
@@ -687,20 +712,28 @@
               if (!response.ok) throw new Error('Failed to load time off');
               
               const data = await response.json();
-              const events = data.map(item => ({
-                id: item.uuid,
-                title: item.note ? `休假：${item.note}` : '休假',
-                start: item.starts_at,
-                end: item.ends_at,
-                editable: false,
-                classNames: ['time-off-event'],
-                extendedProps: {
-                  eventType: 'timeOff',
-                  note: item.note,
-                  seriesUuid: item.series_uuid || null,
-                  isRecurring: Boolean(item.is_recurring)
-                }
-              }));
+              const events = data.map(item => {
+                const baseClassNames = ['time-off-event'];
+                const eventType = 'timeOff';
+                return {
+                  id: item.uuid,
+                  title: item.note ? `休假：${item.note}` : '休假',
+                  start: item.starts_at,
+                  end: item.ends_at,
+                  editable: false,
+                  display: this.getEventDisplay(eventType),
+                  classNames: this.getEventClassNames(eventType, baseClassNames),
+                  backgroundColor: this.getEventBackgroundColor(eventType),
+                  borderColor: this.getEventBackgroundColor(eventType),
+                  extendedProps: {
+                    eventType,
+                    note: item.note,
+                    seriesUuid: item.series_uuid || null,
+                    isRecurring: Boolean(item.is_recurring),
+                    baseClassNames,
+                  }
+                };
+              });
               
               successCallback(events);
             } catch (error) {
@@ -712,6 +745,10 @@
       }
 
       renderEventContent(arg) {
+        if (!this.isEditMode && ['workingHours', 'timeOff'].includes(arg.event.extendedProps.eventType)) {
+          return { domNodes: [] };
+        }
+
         if (arg.event.extendedProps.eventType === 'workingHours') {
           const wrapper = document.createElement('div');
           wrapper.classList.add('working-hours-label', 'text-body-secondary');
@@ -758,6 +795,10 @@
       async handleEventClick(info) {
         info.jsEvent.preventDefault();
         
+        if (!this.isEditMode && ['timeOff', 'workingHours'].includes(info.event.extendedProps.eventType)) {
+          return;
+        }
+
         if (info.event.extendedProps.eventType === 'timeOff') {
           await this.handleTimeOffEdit(info.event);
         } else if (info.event.extendedProps.eventType === 'workingHours') {
@@ -1197,6 +1238,74 @@
         this.elements.timeOffModal.show();
       }
 
+      toggleEditMode() {
+        this.isEditMode = !this.isEditMode;
+        this.updateCalendarModeButton();
+        this.applyCalendarMode();
+        if (!this.isEditMode) {
+          this.elements.workingHoursModal?.hide();
+          this.elements.timeOffModal?.hide();
+          this.resetWorkingHoursModal();
+          this.resetTimeOffModal();
+        }
+      }
+
+      updateCalendarModeButton() {
+        const button = this.elements.calendarModeToggle;
+        if (!button) return;
+
+        if (this.isEditMode) {
+          button.classList.remove('btn-outline-secondary');
+          button.classList.add('btn-secondary', 'active');
+          button.innerHTML = '<i class="bi bi-eye me-1"></i>返回檢視模式';
+        } else {
+          button.classList.remove('btn-secondary', 'active');
+          button.classList.add('btn-outline-secondary');
+          button.innerHTML = '<i class="bi bi-pencil-square me-1"></i>開啟編輯模式';
+        }
+      }
+
+      applyCalendarMode() {
+        if (!this.calendar) return;
+
+        this.calendar.batchRendering(() => {
+          this.calendar.getEvents().forEach((event) => {
+            const eventType = event.extendedProps.eventType;
+            if (!['workingHours', 'timeOff'].includes(eventType)) return;
+
+            const baseClassNames = event.extendedProps.baseClassNames || [];
+            event.setProp('display', this.getEventDisplay(eventType));
+            event.setProp('classNames', this.getEventClassNames(eventType, baseClassNames));
+            event.setProp('backgroundColor', this.getEventBackgroundColor(eventType));
+            event.setProp('borderColor', this.getEventBackgroundColor(eventType));
+          });
+        });
+      }
+
+      getEventDisplay(eventType) {
+        if (!this.isEditMode && ['workingHours', 'timeOff'].includes(eventType)) {
+          return 'background';
+        }
+        return 'auto';
+      }
+
+      getEventClassNames(eventType, baseClassNames = []) {
+        if (!this.isEditMode && ['workingHours', 'timeOff'].includes(eventType)) {
+          return [...baseClassNames, 'calendar-background-event'];
+        }
+        return baseClassNames;
+      }
+
+      getEventBackgroundColor(eventType) {
+        if (eventType === 'workingHours') {
+          return '#d1e7dd';
+        }
+        if (eventType === 'timeOff') {
+          return '#e2e3e5';
+        }
+        return '';
+      }
+
       async handleEventDrop(info) {
         if (info.event.extendedProps.eventType === 'timeOff' || info.event.extendedProps.eventType === 'workingHours') {
           info.revert();
@@ -1264,6 +1373,7 @@
         this.elements.workingHoursDelete?.addEventListener('click', () => this.deleteWorkingHours());
         this.elements.workingHoursRepeatType?.addEventListener('change', () => this.updateWorkingHoursRepeatControls());
         this.elements.workingHoursStart?.addEventListener('change', () => this.syncWorkingHoursWeekday());
+        this.elements.calendarModeToggle?.addEventListener('click', () => this.toggleEditMode());
 
         // 休假相關
         this.elements.timeOffCreateButton?.addEventListener('click', () => this.showTimeOffModal());
