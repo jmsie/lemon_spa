@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.utils import timezone
-
 from django.contrib.messages.views import SuccessMessageMixin
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils import timezone
 from django.views.generic import CreateView
 
 from appointments.forms import AppointmentForm
@@ -53,7 +53,48 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
     def form_valid(self, form: AppointmentForm):
         if self.selected_therapist:
             form.instance.therapist = self.selected_therapist
+        if self._wants_json():
+            self.object = form.save()
+            appointment = self.object
+            therapist = appointment.therapist
+            treatment = appointment.treatment
+            payload = {
+                "success": True,
+                "message": self.get_success_message(form.cleaned_data),
+                "appointment": {
+                    "uuid": str(appointment.uuid),
+                    "start_time": appointment.start_time.isoformat(),
+                    "therapist": {
+                        "id": therapist.pk,
+                        "uuid": str(therapist.uuid),
+                        "nickname": therapist.nickname,
+                        "phone_number": therapist.phone_number,
+                        "address": therapist.address,
+                        "timezone": therapist.timezone,
+                    },
+                    "treatment": {
+                        "id": treatment.pk,
+                        "name": treatment.name,
+                        "duration_minutes": treatment.duration_minutes,
+                    },
+                    "customer": {
+                        "name": appointment.customer_name,
+                        "phone": appointment.customer_phone,
+                    },
+                },
+            }
+            return JsonResponse(payload, status=201)
         return super().form_valid(form)
+
+    def form_invalid(self, form: AppointmentForm):
+        if self._wants_json():
+            errors_json = form.errors.get_json_data()
+            errors = {
+                field: [entry["message"] for entry in messages]
+                for field, messages in errors_json.items()
+            }
+            return JsonResponse({"success": False, "errors": errors}, status=400)
+        return super().form_invalid(form)
 
     def get_success_url(self) -> str:
         if self.selected_therapist:
@@ -113,3 +154,8 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
         today = timezone.localdate()
         context["appointment_min_date"] = today.isoformat()
         return context
+
+    def _wants_json(self) -> bool:
+        accept_header = self.request.headers.get("Accept", "")
+        requested_with = self.request.headers.get("X-Requested-With", "")
+        return requested_with.lower() == "xmlhttprequest" or "application/json" in accept_header.lower()

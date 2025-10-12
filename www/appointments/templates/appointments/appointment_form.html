@@ -45,6 +45,9 @@
     .messages { list-style: none; padding: 0.75rem 1rem; margin: 0 0 1.25rem; border-radius: 0.75rem; background: #ecfdf5; color: #047857; border: 1px solid rgba(5, 150, 105, 0.35); }
     .field-errors { margin-top: 0.35rem; color: #dc2626; font-size: 0.9rem; }
     .field-errors li { margin-left: 1rem; }
+    .form-alert { margin-bottom: 1.25rem; padding: 0.85rem 1rem; border-radius: 0.75rem; border: 1px solid; }
+    .form-alert.error { background: #fef2f2; border-color: rgba(248, 113, 113, 0.45); color: #b91c1c; }
+    .form-alert.success { background: #ecfdf5; border-color: rgba(16, 185, 129, 0.45); color: #047857; }
     .selected-therapist { background: #eff6ff; border: 1px solid rgba(59, 130, 246, 0.35); padding: 0.85rem 1rem; border-radius: 0.75rem; color: #1d4ed8; margin-bottom: 1rem; font-weight: 600; text-align: center; }
     .time-slot-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 0; }
     .time-slot-container .slot-message { color: #64748b; margin: 0; }
@@ -54,14 +57,26 @@
     .time-slot-button:disabled { cursor: not-allowed; opacity: 0.5; }
     .time-slot-loading { color: #475569; }
     .visually-hidden { display: none !important; }
+    .success-card { text-align: center; }
+    .success-title { font-size: 2rem; margin: 0 0 0.75rem; color: #0f172a; }
+    .success-subtitle { margin: 0 0 1.75rem; color: #475569; font-size: 1.05rem; }
+    .success-details { list-style: none; padding: 0; margin: 0 0 1.75rem; text-align: left; }
+    .success-details li { background: #f8fafc; border-radius: 0.75rem; padding: 0.85rem 1rem; border: 1px solid rgba(15, 23, 42, 0.08); }
+    .success-details li + li { margin-top: 0.75rem; }
+    .success-label { display: block; color: #64748b; font-size: 0.95rem; margin-bottom: 0.35rem; }
+    .success-value { font-weight: 600; color: #0f172a; font-size: 1.05rem; }
+    .success-line-invite { background: #ebf5ff; border: 1px dashed rgba(59, 130, 246, 0.35); padding: 1.1rem 1.25rem; border-radius: 0.85rem; margin-bottom: 1.75rem; }
+    .success-line-invite p { margin: 0 0 0.75rem; color: #1d4ed8; font-weight: 600; }
+    .success-line-invite img { display: inline-block; }
     @media (max-width: 640px) {
       .card { padding: 1.75rem; }
+      .success-details li { padding: 0.75rem 0.85rem; }
     }
   </style>
 </head>
 <body>
   <main>
-    <section class="card">
+    <section id="appointment-form-card" class="card">
       <h1>按摩預約</h1>
 
       {% if messages %}
@@ -71,6 +86,8 @@
           {% endfor %}
         </ul>
       {% endif %}
+
+      <div id="form-alert" class="form-alert error visually-hidden" role="alert"></div>
 
       {% if selected_therapist %}
         <div class="selected-therapist">
@@ -165,6 +182,46 @@
         </div>
       </form>
     </section>
+
+    <section id="appointment-success-card" class="card success-card visually-hidden" aria-live="polite">
+      <h2 class="success-title">預約成功！</h2>
+      <p class="success-subtitle" id="success-subtitle">您的預約已成立，我們期待在療程中與您相見。</p>
+      <ul class="success-details">
+        <li>
+          <span class="success-label">預約日期</span>
+          <span class="success-value" id="success-date">-</span>
+        </li>
+        <li>
+          <span class="success-label">療程開始時間</span>
+          <span class="success-value" id="success-time">-</span>
+        </li>
+        <li>
+          <span class="success-label">按摩師</span>
+          <span class="success-value" id="success-therapist">-</span>
+        </li>
+        <li>
+          <span class="success-label">療程內容</span>
+          <span class="success-value" id="success-treatment">-</span>
+        </li>
+        <li>
+          <span class="success-label">療程地點</span>
+          <span class="success-value" id="success-address">-</span>
+        </li>
+        <li>
+          <span class="success-label">連絡電話</span>
+          <span class="success-value" id="success-phone">-</span>
+        </li>
+      </ul>
+      <div class="success-line-invite">
+        <p>加入 LINE 官方好友，按摩預約提醒與預約管理</p>
+        <a id="line-invite-link" href="https://lin.ee/PWRS6h6" target="_blank" rel="noopener">
+          <img src="https://scdn.line-apps.com/n/line_add_friends/btn/zh-Hant.png" alt="加入好友" height="36" border="0">
+        </a>
+      </div>
+      <div class="actions">
+        <button type="button" id="book-another">再預約一個時段</button>
+      </div>
+    </section>
   </main>
   {{ appointment_config|json_script:"appointment-config-data" }}
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
@@ -183,12 +240,233 @@
       const therapistSelect = document.getElementById("id_therapist");
       const startTimeInput = document.getElementById("id_start_time");
       const slotContainer = document.getElementById("time-slot-container");
+      const formCard = document.getElementById("appointment-form-card");
+      const successCard = document.getElementById("appointment-success-card");
+      const formAlert = document.getElementById("form-alert");
+      const successSubtitle = document.getElementById("success-subtitle");
+      const successDate = document.getElementById("success-date");
+      const successTime = document.getElementById("success-time");
+      const successTherapist = document.getElementById("success-therapist");
+      const successTreatment = document.getElementById("success-treatment");
+      const successAddress = document.getElementById("success-address");
+      const successPhone = document.getElementById("success-phone");
+      const bookAnotherButton = document.getElementById("book-another");
+      const submitButton = form ? form.querySelector('button[type="submit"]') : null;
+      if (submitButton) {
+        submitButton.dataset.defaultText = submitButton.textContent;
+      }
 
       if (!form || !dateInput || !treatmentSelect || !startTimeInput || !slotContainer) {
         return;
       }
 
       let latestAvailability = null;
+
+      function hideFormAlert() {
+        if (!formAlert) {
+          return;
+        }
+        formAlert.classList.add("visually-hidden");
+        formAlert.classList.remove("success", "error");
+        formAlert.classList.add("error");
+        formAlert.textContent = "";
+      }
+
+      function showFormAlert(message, variant = "error") {
+        if (!formAlert) {
+          return;
+        }
+        formAlert.textContent = message;
+        formAlert.classList.remove("visually-hidden");
+        formAlert.classList.remove("success", "error");
+        formAlert.classList.add(variant);
+      }
+
+      function clearFieldErrors() {
+        const errorLists = form.querySelectorAll(".field-errors");
+        errorLists.forEach((list) => list.remove());
+      }
+
+      function renderFieldErrors(errors) {
+        if (!errors) {
+          return;
+        }
+        const combinedGeneralErrors = [
+          ...(errors.__all__ || []),
+          ...(errors.non_field_errors || []),
+        ];
+        if (combinedGeneralErrors.length) {
+          showFormAlert(combinedGeneralErrors.join("、"));
+        }
+        Object.entries(errors).forEach(([fieldName, messages]) => {
+          if (fieldName === "__all__" || fieldName === "non_field_errors") {
+            return;
+          }
+          if (!messages || !messages.length) {
+            return;
+          }
+          let fieldElement = form.querySelector(`[name="${fieldName}"]`);
+          if (!fieldElement && fieldName === "appointment-date") {
+            fieldElement = dateInput;
+          }
+          let targetContainer = fieldElement ? fieldElement.closest(".form-field") : null;
+          if (fieldName === "start_time") {
+            targetContainer = slotContainer ? slotContainer.parentElement : null;
+          }
+          if (!targetContainer) {
+            showFormAlert(messages.join("、"));
+            return;
+          }
+          const list = document.createElement("ul");
+          list.className = "field-errors";
+          messages.forEach((message) => {
+            const item = document.createElement("li");
+            item.textContent = message;
+            list.appendChild(item);
+          });
+          targetContainer.appendChild(list);
+        });
+      }
+
+      function toggleSubmitting(isSubmitting) {
+        if (!submitButton) {
+          return;
+        }
+        const defaultText = submitButton.dataset.defaultText || "送出預約";
+        submitButton.disabled = isSubmitting;
+        submitButton.textContent = isSubmitting ? "送出中..." : defaultText;
+      }
+
+      function switchToSuccess() {
+        if (formCard) {
+          formCard.classList.add("visually-hidden");
+        }
+        if (successCard) {
+          successCard.classList.remove("visually-hidden");
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function switchToForm() {
+        if (successCard) {
+          successCard.classList.add("visually-hidden");
+        }
+        if (formCard) {
+          formCard.classList.remove("visually-hidden");
+        }
+        hideFormAlert();
+      }
+
+      function showSuccess(payload) {
+        if (!payload || !payload.appointment) {
+          showFormAlert("預約已送出，但無法取得確認資訊，請與客服聯繫。");
+          return;
+        }
+        const appointment = payload.appointment;
+        const therapist = appointment.therapist || {};
+        const treatment = appointment.treatment || {};
+        const guessedTimezone = therapist.timezone || dayjs.tz.guess();
+        let sessionStart = dayjs(appointment.start_time);
+        if (guessedTimezone) {
+          sessionStart = sessionStart.tz(guessedTimezone);
+        }
+        if (!sessionStart.isValid()) {
+          sessionStart = dayjs(appointment.start_time);
+        }
+
+        if (successDate) {
+          successDate.textContent = sessionStart.isValid()
+            ? sessionStart.format("YYYY 年 M 月 D 日")
+            : "-";
+        }
+        if (successTime) {
+          successTime.textContent = sessionStart.isValid()
+            ? sessionStart.format("HH:mm")
+            : "-";
+        }
+        if (successTherapist) {
+          successTherapist.textContent = therapist.nickname
+            ? `${therapist.nickname} 按摩師`
+            : "按摩師";
+        }
+        if (successTreatment) {
+          successTreatment.textContent = treatment.name || "療程內容";
+        }
+        if (successAddress) {
+          successAddress.textContent = therapist.address || "-";
+        }
+        if (successPhone) {
+          successPhone.textContent = therapist.phone_number || "-";
+        }
+        if (successSubtitle) {
+          if (sessionStart.isValid() && therapist.nickname) {
+            successSubtitle.textContent = `${therapist.nickname} 按摩師將在 ${sessionStart.format("M 月 D 日 HH:mm")} 為您服務。`;
+          } else {
+            successSubtitle.textContent = "您的預約已成立，我們期待在療程中與您相見。";
+          }
+        }
+
+        form.reset();
+        startTimeInput.value = "";
+        latestAvailability = null;
+        clearSlots("請先選擇日期與療程。");
+        clearFieldErrors();
+        hideFormAlert();
+        switchToSuccess();
+      }
+
+      if (bookAnotherButton) {
+        bookAnotherButton.addEventListener("click", () => {
+          switchToForm();
+          form.reset();
+          startTimeInput.value = "";
+          latestAvailability = null;
+          clearFieldErrors();
+          clearSlots("請先選擇日期與療程。");
+          setTimeout(() => dateInput.focus(), 100);
+        });
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        hideFormAlert();
+        clearFieldErrors();
+        toggleSubmitting(true);
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              Accept: "application/json",
+            },
+            body: new FormData(form),
+          });
+
+          let data = null;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            data = null;
+          }
+
+          if (response.ok && data && data.success) {
+            showSuccess(data);
+          } else if (response.status === 400 && data && data.errors) {
+            renderFieldErrors(data.errors);
+          } else {
+            console.error("Unexpected response when submitting appointment", response.status, data);
+            const fallbackMessage =
+              (data && data.message) || "送出時發生錯誤，請稍後再試。";
+            showFormAlert(fallbackMessage);
+          }
+        } catch (error) {
+          console.error("Failed to submit appointment", error);
+          showFormAlert("暫時無法送出預約，請檢查網路連線或稍後再試。");
+        } finally {
+          toggleSubmitting(false);
+        }
+      });
 
       function getTherapistContext() {
         const selectedFromConfig = config.selectedTherapist;
