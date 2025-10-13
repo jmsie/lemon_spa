@@ -5,6 +5,8 @@ from __future__ import annotations
 from django import forms
 
 from appointments.models import Appointment
+from phone_verification.exceptions import InvalidPhoneNumber
+from phone_verification.utils import normalize_phone_number
 from therapist_panel.models import Therapist, TherapistTreatment
 
 
@@ -59,3 +61,10 @@ class AppointmentForm(forms.ModelForm):
             self.add_error("treatment", "選擇的療程不屬於此按摩師。")
 
         return cleaned_data
+
+    def clean_customer_phone(self) -> str:
+        phone = self.cleaned_data.get("customer_phone", "")
+        try:
+            return normalize_phone_number(phone)
+        except InvalidPhoneNumber as exc:
+            raise forms.ValidationError("請輸入正確的國際電話格式。") from exc

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from django.contrib.messages.views import SuccessMessageMixin
@@ -13,7 +14,11 @@ from django.views.generic import CreateView
 
 from appointments.forms import AppointmentForm
 from appointments.models import Appointment
+from phone_verification.exceptions import PhoneVerificationError
+from phone_verification.services import PhoneVerificationService
 from therapist_panel.models import Therapist
+
+logger = logging.getLogger(__name__)
 
 
 class AppointmentCreateView(SuccessMessageMixin, CreateView):
@@ -25,6 +30,8 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
     success_message = "預約已成立"
 
     selected_therapist: Therapist | None = None
+    verification_service_class = PhoneVerificationService
+    _verification_service: PhoneVerificationService | None = None
 
     def dispatch(self, request, *args, **kwargs):
         therapist_uuid = kwargs.get("therapist_uuid")
@@ -53,6 +60,9 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
     def form_valid(self, form: AppointmentForm):
         if self.selected_therapist:
             form.instance.therapist = self.selected_therapist
+
+        verification_info = self._handle_phone_verification(form)
+
         if self._wants_json():
             self.object = form.save()
             appointment = self.object
@@ -83,6 +93,8 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
                     },
                 },
             }
+            if verification_info:
+                payload["verification"] = verification_info
             return JsonResponse(payload, status=201)
         return super().form_valid(form)
 
@@ -159,3 +171,38 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
         accept_header = self.request.headers.get("Accept", "")
         requested_with = self.request.headers.get("X-Requested-With", "")
         return requested_with.lower() == "xmlhttprequest" or "application/json" in accept_header.lower()
+
+    def get_verification_service(self) -> PhoneVerificationService:
+        if self._verification_service is None:
+            self._verification_service = self.verification_service_class()
+        return self._verification_service
+
+    def _handle_phone_verification(self, form: AppointmentForm) -> dict[str, Any] | None:
+        phone = form.cleaned_data.get("customer_phone")
+        if not phone:
+            return None
+
+        # Only trigger verification for first-time customers.
+        existing = Appointment.objects.filter(customer_phone=phone).exists()
+        if existing:
+            return None
+
+        service = self.get_verification_service()
+        try:
+            result = service.request_code(phone)
+        except PhoneVerificationError as exc:
+            logger.warning("Phone verification failed for %s: %s", phone, exc)
+            return {
+                "required": True,
+                "status": "error",
+                "message": str(exc),
+            }
+
+        verification = result.verification
+        return {
+            "required": True,
+            "status": "sent",
+            "phone_number": verification.phone_number,
+            "expires_at": verification.expires_at.isoformat(),
+            "send_count": verification.send_count,
+        }

@@ -121,6 +121,7 @@ INSTALLED_APPS = [
     "therapist_panel",
     "questionnaires",
     "appointments",
+    "phone_verification",
     "scheduling",
 ]
 
@@ -200,6 +201,24 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0 and _env_bool(
 SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0 and _env_bool(
     "DJANGO_SECURE_HSTS_PRELOAD", default=True
 )
+
+PHONE_VERIFICATION = {
+    "CODE_LENGTH": 4,
+    "CODE_TTL_SECONDS": 5 * 60,
+    "RESEND_INTERVAL_SECONDS": 60,
+    "MAX_VERIFICATION_ATTEMPTS": 3,
+    "MAX_SEND_COUNT": 3,
+    "MESSAGE_TEMPLATE": "Your Lemon Spa verification code is {code}. It expires in 5 minutes.",
+}
+PHONE_VERIFICATION_SMS_BACKEND = os.environ.get(
+    "PHONE_VERIFICATION_SMS_BACKEND",
+    "phone_verification.sms.dummy.DummySmsProvider",
+)
+PHONE_VERIFICATION_TWILIO = {
+    "ACCOUNT_SID": os.environ.get("TWILIO_ACCOUNT_SID"),
+    "AUTH_TOKEN": os.environ.get("TWILIO_AUTH_TOKEN"),
+    "FROM_NUMBER": os.environ.get("TWILIO_FROM_NUMBER"),
+}
 
 USE_X_FORWARDED_HOST = _env_bool("DJANGO_USE_X_FORWARDED_HOST")
 SECURE_PROXY_SSL_HEADER = (
