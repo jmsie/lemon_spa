@@ -28,6 +28,7 @@ class SendCodeResult:
     sent: bool
     reason: str | None = None
     wait_seconds: int | None = None
+    resend_available_in: int | None = None
 
 
 @dataclass(slots=True)
@@ -73,9 +74,12 @@ class PhoneVerificationService:
                 self._apply_new_code(verification, code=code, now=now, reset_counters=True)
                 self._log_event(verification, PhoneVerificationAuditLog.EVENT_SEND, {"created": True})
                 self._queue_sms(normalized, code)
-                return SendCodeResult(verification=verification, sent=True)
-
-            if verification.is_verified:
+                send_result = SendCodeResult(
+                    verification=verification,
+                    sent=True,
+                    resend_available_in=self.resend_interval_seconds,
+                )
+            elif verification.is_verified:
                 error = exceptions.VerificationAlreadyConfirmed("Phone number already verified.")
             else:
                 expired = verification.expires_at <= now
@@ -92,7 +96,10 @@ class PhoneVerificationService:
                             "max_send_count": self.max_send_count,
                         },
                     )
-                    error = exceptions.SendLimitReached("Maximum number of verification messages sent.")
+                    error = exceptions.SendLimitReached(
+                        "Maximum number of verification messages sent.",
+                        max_send_count=self.max_send_count,
+                    )
                 elif verification.last_sent_at and not expired:
                     delta = now - verification.last_sent_at
                     if delta < timedelta(seconds=self.resend_interval_seconds):
@@ -103,7 +110,8 @@ class PhoneVerificationService:
                             {"reason": "rate_limited", "wait_seconds": wait_seconds},
                         )
                         error = exceptions.SendRateLimited(
-                            f"Please wait {wait_seconds} seconds before requesting another code."
+                            f"Please wait {wait_seconds} seconds before requesting another code.",
+                            wait_seconds=wait_seconds,
                         )
 
                 if error is None:
@@ -120,7 +128,11 @@ class PhoneVerificationService:
                         {"created": False, "send_count": verification.send_count},
                     )
                     self._queue_sms(normalized, code)
-                    send_result = SendCodeResult(verification=verification, sent=True)
+                    send_result = SendCodeResult(
+                        verification=verification,
+                        sent=True,
+                        resend_available_in=self.resend_interval_seconds,
+                    )
 
         if error:
             raise error
@@ -144,7 +156,7 @@ class PhoneVerificationService:
                     .get(phone_number=normalized)
                 )
             except PhoneVerification.DoesNotExist as exc:
-                error = exceptions.VerificationExpired("No verification code found.")
+                error = exceptions.VerificationExpired("No verification code found.", code="missing")
                 verification = None  # type: ignore[assignment]
 
             if verification is not None:
@@ -156,18 +168,27 @@ class PhoneVerificationService:
                         PhoneVerificationAuditLog.EVENT_CODE_EXPIRED,
                         {"expired_at": verification.expires_at.isoformat()},
                     )
-                    error = exceptions.VerificationExpired("Verification code expired.")
+                    error = exceptions.VerificationExpired(
+                        "Verification code expired.",
+                        expires_at=verification.expires_at,
+                    )
                 elif verification.attempt_count >= self.max_attempts:
                     self._log_event(
                         verification,
                         PhoneVerificationAuditLog.EVENT_ATTEMPTS_EXCEEDED,
                         {"attempt_count": verification.attempt_count},
                     )
-                    error = exceptions.VerificationAttemptsExceeded("Maximum verification attempts exceeded.")
+                    error = exceptions.VerificationAttemptsExceeded(
+                        "Maximum verification attempts exceeded.",
+                        attempt_count=verification.attempt_count,
+                        max_attempts=self.max_attempts,
+                        attempts_remaining=0,
+                    )
                 else:
                     if not check_password(submitted_code, verification.code_hash):
                         verification.attempt_count += 1
                         verification.save(update_fields=["attempt_count", "updated_at"])
+                        attempts_remaining = max(self.max_attempts - verification.attempt_count, 0)
                         self._log_event(
                             verification,
                             PhoneVerificationAuditLog.EVENT_CODE_INVALID,
@@ -179,9 +200,17 @@ class PhoneVerificationService:
                                 PhoneVerificationAuditLog.EVENT_ATTEMPTS_EXCEEDED,
                                 {"attempt_count": verification.attempt_count},
                             )
-                            error = exceptions.VerificationAttemptsExceeded("Maximum verification attempts exceeded.")
+                            error = exceptions.VerificationAttemptsExceeded(
+                                "Maximum verification attempts exceeded.",
+                                attempt_count=verification.attempt_count,
+                                max_attempts=self.max_attempts,
+                                attempts_remaining=0,
+                            )
                         else:
-                            error = exceptions.InvalidVerificationCode("The verification code is incorrect.")
+                            error = exceptions.InvalidVerificationCode(
+                                "The verification code is incorrect.",
+                                attempts_remaining=attempts_remaining,
+                            )
                     else:
                         verification.is_verified = True
                         verification.verified_at = now

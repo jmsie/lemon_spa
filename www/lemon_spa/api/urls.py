@@ -3,6 +3,7 @@
 from django.urls import include, path
 
 from appointments.api import urls as appointments_urls
+from phone_verification.api import urls as phone_verification_urls
 from therapist_panel.api import urls as therapist_panel_urls
 from questionnaires.api import urls as questionnaires_urls
 
@@ -20,5 +21,9 @@ urlpatterns = [
     path(
         "appointments/",
         include((appointments_urls.urlpatterns, appointments_urls.app_name), namespace="appointments"),
+    ),
+    path(
+        "phone_verification/",
+        include((phone_verification_urls.urlpatterns, phone_verification_urls.app_name), namespace="phone_verification"),
     ),
 ]

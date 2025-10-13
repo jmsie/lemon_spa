@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 
 class PhoneVerificationError(Exception):
     """Base exception for phone verification issues."""
+
+    def __init__(self, message: str = "", **context: Any):
+        super().__init__(message)
+        self.context: dict[str, Any] = context
 
 
 class InvalidPhoneNumber(PhoneVerificationError):
@@ -33,4 +39,3 @@ class InvalidVerificationCode(PhoneVerificationError):
 
 class VerificationAlreadyConfirmed(PhoneVerificationError):
     """Raised when verification is attempted on an already verified number."""
-

@@ -5,8 +5,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -14,7 +15,16 @@ from django.views.generic import CreateView
 
 from appointments.forms import AppointmentForm
 from appointments.models import Appointment
-from phone_verification.exceptions import PhoneVerificationError
+from appointments.utils import serialize_public_appointment
+from phone_verification.exceptions import (
+    PhoneVerificationError,
+    SendLimitReached,
+    SendRateLimited,
+)
+from phone_verification.payloads import (
+    build_verification_error_payload,
+    build_verification_success_payload,
+)
 from phone_verification.services import PhoneVerificationService
 from therapist_panel.models import Therapist
 
@@ -61,42 +71,76 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
         if self.selected_therapist:
             form.instance.therapist = self.selected_therapist
 
-        verification_info = self._handle_phone_verification(form)
+        self.object = form.save()
+        appointment = self.object
+
+        verification_required = False
+        verification_payload: dict[str, Any] | None = None
+        verification_message: str | None = None
+        verification_status_code = 202
+
+        phone_number = appointment.customer_phone
+        service = self.get_verification_service() if phone_number else None
+
+        if service and phone_number:
+            status = service.get_status(phone_number)
+            if not status.get("is_verified", False):
+                verification_required = True
+                try:
+                    result = service.request_code(phone_number)
+                except PhoneVerificationError as exc:
+                    logger.warning("Phone verification failed for %s: %s", phone_number, exc)
+                    verification_payload = build_verification_error_payload(
+                        phone_number=phone_number,
+                        status=status,
+                        error=exc,
+                        service=service,
+                    )
+                    verification_message = verification_payload.get(
+                        "message", "手機驗證失敗，請稍後再試或聯絡客服。"
+                    )
+                    verification_status_code = (
+                        429
+                        if isinstance(exc, (SendRateLimited, SendLimitReached))
+                        else 400
+                    )
+                else:
+                    verification_payload = build_verification_success_payload(
+                        result=result,
+                        service=service,
+                    )
+                    verification_message = "手機尚未驗證，請輸入收到的驗證碼完成預約。"
+                    verification_status_code = 202
 
         if self._wants_json():
-            self.object = form.save()
-            appointment = self.object
-            therapist = appointment.therapist
-            treatment = appointment.treatment
+            if verification_required:
+                payload = {
+                    "success": False,
+                    "verification_required": True,
+                    "message": verification_message
+                    or "手機尚未驗證，請輸入收到的驗證碼完成預約。",
+                    "appointment": {"uuid": str(appointment.uuid)},
+                    "verification": verification_payload or {},
+                }
+                return JsonResponse(payload, status=verification_status_code)
+
             payload = {
                 "success": True,
                 "message": self.get_success_message(form.cleaned_data),
-                "appointment": {
-                    "uuid": str(appointment.uuid),
-                    "start_time": appointment.start_time.isoformat(),
-                    "therapist": {
-                        "id": therapist.pk,
-                        "uuid": str(therapist.uuid),
-                        "nickname": therapist.nickname,
-                        "phone_number": therapist.phone_number,
-                        "address": therapist.address,
-                        "timezone": therapist.timezone,
-                    },
-                    "treatment": {
-                        "id": treatment.pk,
-                        "name": treatment.name,
-                        "duration_minutes": treatment.duration_minutes,
-                    },
-                    "customer": {
-                        "name": appointment.customer_name,
-                        "phone": appointment.customer_phone,
-                    },
-                },
+                "appointment": self._serialize_appointment(appointment),
             }
-            if verification_info:
-                payload["verification"] = verification_info
             return JsonResponse(payload, status=201)
-        return super().form_valid(form)
+
+        if verification_required:
+            messages.warning(
+                self.request,
+                verification_message
+                or "手機尚未驗證，請輸入收到的驗證碼完成預約。",
+            )
+            return HttpResponseRedirect(self.get_success_url())
+
+        messages.success(self.request, self.get_success_message(form.cleaned_data))
+        return HttpResponseRedirect(self.get_success_url())
 
     def form_invalid(self, form: AppointmentForm):
         if self._wants_json():
@@ -177,32 +221,5 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
             self._verification_service = self.verification_service_class()
         return self._verification_service
 
-    def _handle_phone_verification(self, form: AppointmentForm) -> dict[str, Any] | None:
-        phone = form.cleaned_data.get("customer_phone")
-        if not phone:
-            return None
-
-        # Only trigger verification for first-time customers.
-        existing = Appointment.objects.filter(customer_phone=phone).exists()
-        if existing:
-            return None
-
-        service = self.get_verification_service()
-        try:
-            result = service.request_code(phone)
-        except PhoneVerificationError as exc:
-            logger.warning("Phone verification failed for %s: %s", phone, exc)
-            return {
-                "required": True,
-                "status": "error",
-                "message": str(exc),
-            }
-
-        verification = result.verification
-        return {
-            "required": True,
-            "status": "sent",
-            "phone_number": verification.phone_number,
-            "expires_at": verification.expires_at.isoformat(),
-            "send_count": verification.send_count,
-        }
+    def _serialize_appointment(self, appointment: Appointment) -> dict[str, Any]:
+        return serialize_public_appointment(appointment)

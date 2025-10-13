@@ -36,6 +36,7 @@ class PhoneVerificationServiceTests(TestCase):
         result = self._request_code(self.base_time)
 
         self.assertTrue(result.sent)
+        self.assertEqual(result.resend_available_in, self.service.resend_interval_seconds)
         self.assertEqual(PhoneVerification.objects.count(), 1)
         verification = PhoneVerification.objects.first()
         assert verification is not None
@@ -121,4 +122,3 @@ class PhoneVerificationServiceTests(TestCase):
         match = re.search(r"\b(\d{4})\b", message)
         self.assertIsNotNone(match, "Verification SMS did not contain a 4-digit code.")
         return match.group(1)
-

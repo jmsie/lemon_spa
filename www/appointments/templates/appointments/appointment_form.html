@@ -68,9 +68,25 @@
     .success-line-invite { background: #ebf5ff; border: 1px dashed rgba(59, 130, 246, 0.35); padding: 1.1rem 1.25rem; border-radius: 0.85rem; margin-bottom: 1.75rem; }
     .success-line-invite p { margin: 0 0 0.75rem; color: #1d4ed8; font-weight: 600; }
     .success-line-invite img { display: inline-block; }
+    .verification-panel { margin-top: 1.5rem; padding: 1.5rem; border-radius: 0.9rem; border: 1px solid rgba(14, 165, 233, 0.3); background: #f0f9ff; }
+    .verification-panel h2 { margin: 0 0 0.75rem; font-size: 1.2rem; color: #0f172a; }
+    .verification-panel p { margin: 0 0 0.75rem; color: #0f172a; }
+    .verification-status { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .verification-status-item { flex: 1 1 160px; background: #fff; border-radius: 0.75rem; padding: 0.75rem 1rem; border: 1px solid rgba(14, 165, 233, 0.25); }
+    .verification-status-label { display: block; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.25rem; }
+    .verification-status-value { font-weight: 700; color: #0369a1; font-size: 1.05rem; }
+    .verification-form { display: grid; gap: 0.75rem; }
+    .verification-input-row { display: flex; gap: 0.75rem; align-items: center; }
+    .verification-input-row input { flex: 1; text-align: center; font-size: 1.5rem; letter-spacing: 0.35rem; padding: 0.6rem 0.75rem; background: #fff; border: 1px solid rgba(14, 165, 233, 0.35); border-radius: 0.65rem; }
+    .verification-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; margin-top: 0.75rem; }
+    .verification-error { flex: 1 1 100%; color: #b91c1c; margin: 0; font-size: 0.95rem; }
+    button.secondary { background: #ffffff; color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.6); }
+    button.secondary:hover { background: rgba(14, 165, 233, 0.08); }
+    button:disabled { cursor: not-allowed; opacity: 0.6; }
     @media (max-width: 640px) {
       .card { padding: 1.75rem; }
       .success-details li { padding: 0.75rem 0.85rem; }
+      .verification-status { flex-direction: column; }
     }
   </style>
 </head>
@@ -181,6 +197,42 @@
           <button type="submit">送出預約</button>
         </div>
       </form>
+
+      <section id="verification-panel" class="verification-panel visually-hidden" aria-live="polite">
+        <h2>手機驗證</h2>
+        <p id="verification-message">手機尚未驗證，請輸入簡訊中的 4 位數驗證碼。</p>
+        <div class="verification-status">
+          <div class="verification-status-item">
+            <span class="verification-status-label">驗證碼有效時間</span>
+            <span class="verification-status-value" id="verification-expiry-countdown">--:--</span>
+          </div>
+          <div class="verification-status-item">
+            <span class="verification-status-label">重新寄送倒數</span>
+            <span class="verification-status-value" id="verification-resend-countdown">--:--</span>
+          </div>
+        </div>
+        <form id="verification-form" class="verification-form" novalidate>
+          <label for="verification-code">輸入手機驗證碼</label>
+          <div class="verification-input-row">
+            <input
+              type="text"
+              id="verification-code"
+              name="code"
+              inputmode="numeric"
+              pattern="[0-9]{4}"
+              maxlength="4"
+              autocomplete="one-time-code"
+              placeholder="＿ ＿ ＿ ＿"
+              required
+            >
+            <button type="submit" id="verify-code-button">確認</button>
+          </div>
+        </form>
+        <div class="verification-actions">
+          <button type="button" id="resend-code-button" class="secondary">重新寄送驗證碼</button>
+          <p id="verification-error" class="verification-error visually-hidden"></p>
+        </div>
+      </section>
     </section>
 
     <section id="appointment-success-card" class="card success-card visually-hidden" aria-live="polite">
@@ -243,6 +295,16 @@
       const formCard = document.getElementById("appointment-form-card");
       const successCard = document.getElementById("appointment-success-card");
       const formAlert = document.getElementById("form-alert");
+      const phoneInput = document.getElementById("id_customer_phone");
+      const verificationPanel = document.getElementById("verification-panel");
+      const verificationMessage = document.getElementById("verification-message");
+      const verificationExpiryCountdown = document.getElementById("verification-expiry-countdown");
+      const verificationResendCountdown = document.getElementById("verification-resend-countdown");
+      const verificationForm = document.getElementById("verification-form");
+      const verificationCodeInput = document.getElementById("verification-code");
+      const verifyCodeButton = document.getElementById("verify-code-button");
+      const resendCodeButton = document.getElementById("resend-code-button");
+      const verificationError = document.getElementById("verification-error");
       const successSubtitle = document.getElementById("success-subtitle");
       const successDate = document.getElementById("success-date");
       const successTime = document.getElementById("success-time");
@@ -255,6 +317,22 @@
       if (submitButton) {
         submitButton.dataset.defaultText = submitButton.textContent;
       }
+      if (verifyCodeButton) {
+        verifyCodeButton.dataset.defaultText = verifyCodeButton.textContent;
+      }
+      if (resendCodeButton) {
+        resendCodeButton.dataset.defaultText = resendCodeButton.textContent;
+      }
+
+      const verificationState = {
+        active: false,
+        appointmentUuid: null,
+        phoneNumber: null,
+        expiresAt: null,
+        resendAvailableAt: null,
+        expireTimer: null,
+        resendTimer: null,
+      };
 
       if (!form || !dateInput || !treatmentSelect || !startTimeInput || !slotContainer) {
         return;
@@ -337,6 +415,323 @@
         submitButton.textContent = isSubmitting ? "送出中..." : defaultText;
       }
 
+      function getCsrfToken() {
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+      }
+
+      function formatDuration(totalSeconds) {
+        const safeSeconds = Math.max(Number(totalSeconds) || 0, 0);
+        const minutes = Math.floor(safeSeconds / 60);
+        const seconds = safeSeconds % 60;
+        return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      }
+
+      function clearVerificationError() {
+        if (!verificationError) {
+          return;
+        }
+        verificationError.textContent = "";
+        verificationError.classList.add("visually-hidden");
+      }
+
+      function showVerificationError(message) {
+        if (!verificationError) {
+          return;
+        }
+        verificationError.textContent = message;
+        verificationError.classList.remove("visually-hidden");
+      }
+
+      function clearVerificationTimers() {
+        if (verificationState.expireTimer) {
+          clearInterval(verificationState.expireTimer);
+          verificationState.expireTimer = null;
+        }
+        if (verificationState.resendTimer) {
+          clearInterval(verificationState.resendTimer);
+          verificationState.resendTimer = null;
+        }
+      }
+
+      function unlockSubmitButton() {
+        if (!submitButton) {
+          return;
+        }
+        submitButton.disabled = false;
+        submitButton.textContent = submitButton.dataset.defaultText || "送出預約";
+      }
+
+      function setSubmitLocked() {
+        if (!submitButton) {
+          return;
+        }
+        submitButton.disabled = true;
+        submitButton.textContent = "等待手機驗證";
+      }
+
+      function resetVerificationFlow() {
+        verificationState.active = false;
+        verificationState.appointmentUuid = null;
+        verificationState.phoneNumber = null;
+        verificationState.expiresAt = null;
+        verificationState.resendAvailableAt = null;
+        clearVerificationTimers();
+        if (verificationPanel) {
+          verificationPanel.classList.add("visually-hidden");
+        }
+        if (verificationMessage) {
+          verificationMessage.textContent = "手機尚未驗證，請輸入簡訊中的 4 位數驗證碼。";
+        }
+        if (verificationCodeInput) {
+          verificationCodeInput.value = "";
+          verificationCodeInput.disabled = false;
+        }
+        if (verifyCodeButton) {
+          verifyCodeButton.disabled = false;
+          verifyCodeButton.textContent = verifyCodeButton.dataset.defaultText || "確認";
+        }
+        if (resendCodeButton) {
+          resendCodeButton.disabled = false;
+          resendCodeButton.textContent = resendCodeButton.dataset.defaultText || "重新寄送驗證碼";
+        }
+        if (verificationExpiryCountdown) {
+          verificationExpiryCountdown.textContent = "--:--";
+        }
+        if (verificationResendCountdown) {
+          verificationResendCountdown.textContent = "--:--";
+        }
+        clearVerificationError();
+        unlockSubmitButton();
+      }
+
+      function startExpiryCountdown(targetMoment) {
+        if (!verificationExpiryCountdown) {
+          return;
+        }
+        clearInterval(verificationState.expireTimer);
+        const isValidMoment =
+          targetMoment && typeof targetMoment.isValid === "function" && targetMoment.isValid();
+        if (!isValidMoment) {
+          verificationExpiryCountdown.textContent = "--:--";
+          if (verifyCodeButton) {
+            verifyCodeButton.disabled = false;
+          }
+          return;
+        }
+        const update = () => {
+          const remainingSeconds = Math.max(targetMoment.diff(dayjs(), "second"), 0);
+          verificationExpiryCountdown.textContent = formatDuration(remainingSeconds);
+          if (remainingSeconds <= 0) {
+            if (verifyCodeButton) {
+              verifyCodeButton.disabled = true;
+            }
+            if (verificationMessage && verificationState.active) {
+              verificationMessage.textContent = "驗證碼已過期，請點擊重新寄送驗證碼。";
+            }
+            clearInterval(verificationState.expireTimer);
+            verificationState.expireTimer = null;
+          } else if (verifyCodeButton) {
+            verifyCodeButton.disabled = false;
+          }
+        };
+        update();
+        verificationState.expireTimer = setInterval(update, 1000);
+      }
+
+      function startResendCountdown(targetMoment, fallbackSeconds) {
+        if (!verificationResendCountdown || !resendCodeButton) {
+          return;
+        }
+        clearInterval(verificationState.resendTimer);
+        let target = null;
+        if (
+          targetMoment &&
+          typeof targetMoment.isValid === "function" &&
+          targetMoment.isValid()
+        ) {
+          target = targetMoment;
+        } else if (typeof fallbackSeconds === "number" && fallbackSeconds > 0) {
+          target = dayjs().add(fallbackSeconds, "second");
+        }
+        verificationState.resendAvailableAt = target;
+
+        if (!target) {
+          verificationResendCountdown.textContent = "可重新寄送";
+          resendCodeButton.disabled = false;
+          return;
+        }
+
+        const update = () => {
+          const diffSeconds = Math.ceil(target.diff(dayjs(), "second"));
+          if (diffSeconds > 0) {
+            verificationResendCountdown.textContent = formatDuration(diffSeconds);
+            resendCodeButton.disabled = true;
+          } else {
+            verificationResendCountdown.textContent = "可重新寄送";
+            resendCodeButton.disabled = false;
+            clearInterval(verificationState.resendTimer);
+            verificationState.resendTimer = null;
+          }
+        };
+
+        update();
+        verificationState.resendTimer = setInterval(update, 1000);
+      }
+
+      function setResendBusy(isBusy) {
+        if (!resendCodeButton) {
+          return;
+        }
+        if (isBusy) {
+          resendCodeButton.disabled = true;
+          resendCodeButton.textContent = "重新寄送中...";
+        } else {
+          resendCodeButton.textContent = resendCodeButton.dataset.defaultText || "重新寄送驗證碼";
+        }
+      }
+
+      function setVerifyBusy(isBusy) {
+        if (!verifyCodeButton) {
+          return;
+        }
+        if (isBusy) {
+          verifyCodeButton.disabled = true;
+          verifyCodeButton.textContent = "確認中...";
+        } else {
+          verifyCodeButton.disabled = false;
+          verifyCodeButton.textContent = verifyCodeButton.dataset.defaultText || "確認";
+        }
+      }
+
+      function applyVerificationState(payload) {
+        if (!payload) {
+          return;
+        }
+        const verification = payload.verification || {};
+        verificationState.active = true;
+        if (payload.appointment && payload.appointment.uuid) {
+          verificationState.appointmentUuid = payload.appointment.uuid;
+        }
+        if (verification.phone_number) {
+          verificationState.phoneNumber = verification.phone_number;
+        } else if (!verificationState.phoneNumber && phoneInput) {
+          verificationState.phoneNumber = phoneInput.value || null;
+        }
+
+        const expiresAt = verification.expires_at ? dayjs(verification.expires_at) : null;
+        let resendTarget = null;
+        if (verification.resend_available_at) {
+          resendTarget = dayjs(verification.resend_available_at);
+        } else if (typeof verification.resend_available_in === "number") {
+          resendTarget = dayjs().add(verification.resend_available_in, "second");
+        }
+
+        verificationState.expiresAt = expiresAt;
+        verificationState.resendAvailableAt = resendTarget;
+
+        if (verificationPanel) {
+          verificationPanel.classList.remove("visually-hidden");
+        }
+        setSubmitLocked();
+        clearVerificationError();
+
+        if (verificationMessage) {
+          verificationMessage.textContent =
+            payload.message ||
+            verification.message ||
+            "手機尚未驗證，請輸入簡訊中的 4 位數驗證碼。";
+        }
+
+        if (verificationCodeInput && verification.error_code !== "VerificationAttemptsExceeded") {
+          verificationCodeInput.value = "";
+          verificationCodeInput.disabled = false;
+        } else if (verificationCodeInput && verification.error_code === "VerificationAttemptsExceeded") {
+          verificationCodeInput.disabled = true;
+        }
+
+        if (verifyCodeButton) {
+          verifyCodeButton.disabled = verification.error_code === "VerificationAttemptsExceeded";
+          verifyCodeButton.textContent = verifyCodeButton.dataset.defaultText || "確認";
+        }
+
+        if (resendCodeButton && verification.error_code === "SendLimitReached") {
+          resendCodeButton.disabled = true;
+        }
+
+        if (verificationExpiryCountdown) {
+          verificationExpiryCountdown.textContent = "--:--";
+        }
+        if (verificationResendCountdown) {
+          verificationResendCountdown.textContent = "--:--";
+        }
+
+        if (verification.status === "error") {
+          showVerificationError(
+            verification.message || payload.message || "手機驗證處理失敗，請稍後再試。"
+          );
+        } else if (verification.error_code === "VerificationAttemptsExceeded") {
+          showVerificationError("驗證次數過多，請聯絡客服人員協助。");
+        } else if (verification.error_code === "SendLimitReached") {
+          showVerificationError(verification.message || "驗證碼發送次數已達上限，請聯絡客服。");
+        }
+
+        startExpiryCountdown(expiresAt);
+        startResendCountdown(resendTarget, verification.resend_available_in);
+
+        if (verificationCodeInput && !verificationCodeInput.disabled) {
+          setTimeout(() => verificationCodeInput.focus(), 100);
+        }
+      }
+
+      function handleVerificationFailure(data) {
+        if (!data) {
+          return;
+        }
+        const message = data.message || "手機驗證失敗，請稍後再試。";
+        if (verificationMessage) {
+          verificationMessage.textContent = message;
+        }
+        const code = data.error_code;
+        const context = data.context || {};
+
+        if (code === "InvalidVerificationCode" && typeof context.attempts_remaining === "number") {
+          const remaining = context.attempts_remaining;
+          showVerificationError(`${message} (剩餘 ${remaining} 次機會)`);
+        } else {
+          showVerificationError(message);
+        }
+
+        if (code === "VerificationExpired") {
+          if (verifyCodeButton) {
+            verifyCodeButton.disabled = true;
+          }
+          startResendCountdown(null, 0);
+        }
+
+        if (code === "VerificationAttemptsExceeded") {
+          if (verificationCodeInput) {
+            verificationCodeInput.disabled = true;
+          }
+          if (verifyCodeButton) {
+            verifyCodeButton.disabled = true;
+          }
+          if (resendCodeButton) {
+            resendCodeButton.disabled = true;
+          }
+          setSubmitLocked();
+        }
+      }
+
+      function handleVerificationSuccess(payload) {
+        resetVerificationFlow();
+        if (payload && payload.appointment) {
+          showSuccess(payload);
+        } else {
+          showFormAlert("手機驗證成功，但無法取得預約資訊。");
+        }
+      }
+
       function switchToSuccess() {
         if (formCard) {
           formCard.classList.add("visually-hidden");
@@ -361,6 +756,9 @@
         if (!payload || !payload.appointment) {
           showFormAlert("預約已送出，但無法取得確認資訊，請與客服聯繫。");
           return;
+        }
+        if (verificationState.active) {
+          resetVerificationFlow();
         }
         const appointment = payload.appointment;
         const therapist = appointment.therapist || {};
@@ -417,6 +815,7 @@
 
       if (bookAnotherButton) {
         bookAnotherButton.addEventListener("click", () => {
+          resetVerificationFlow();
           switchToForm();
           form.reset();
           startTimeInput.value = "";
@@ -424,6 +823,144 @@
           clearFieldErrors();
           clearSlots("請先選擇日期與療程。");
           setTimeout(() => dateInput.focus(), 100);
+        });
+      }
+
+      if (phoneInput) {
+        phoneInput.addEventListener("input", () => {
+          if (verificationState.active) {
+            resetVerificationFlow();
+          }
+        });
+      }
+
+      if (verificationForm) {
+        verificationForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (!verificationState.active || !verificationState.appointmentUuid) {
+            showVerificationError("請先送出預約以取得驗證碼。");
+            return;
+          }
+          const codeValue = verificationCodeInput ? verificationCodeInput.value.trim() : "";
+          if (!/^\d{4}$/.test(codeValue)) {
+            showVerificationError("請輸入 4 位數字驗證碼。");
+            if (verificationCodeInput) {
+              verificationCodeInput.focus();
+            }
+            return;
+          }
+
+          clearVerificationError();
+          setVerifyBusy(true);
+
+          try {
+            const response = await fetch("/api/phone_verification/verify/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken(),
+                "X-Requested-With": "XMLHttpRequest",
+                Accept: "application/json",
+              },
+              credentials: "same-origin",
+              body: JSON.stringify({
+                appointment_uuid: verificationState.appointmentUuid,
+                phone_number:
+                  verificationState.phoneNumber || (phoneInput ? phoneInput.value : ""),
+                code: codeValue,
+              }),
+            });
+
+            let data;
+            try {
+              data = await response.json();
+            } catch (jsonError) {
+              data = null;
+            }
+
+            if (response.ok && data && data.success) {
+              handleVerificationSuccess(data);
+            } else if (data) {
+              handleVerificationFailure(data);
+            } else {
+              showVerificationError("暫時無法驗證，請稍後再試或聯絡客服。");
+            }
+          } catch (error) {
+            console.error("Failed to verify phone code", error);
+            showVerificationError("暫時無法驗證，請稍後再試或聯絡客服。");
+          } finally {
+            if (verificationState.active) {
+              setVerifyBusy(false);
+            }
+          }
+        });
+      }
+
+      if (resendCodeButton) {
+        resendCodeButton.addEventListener("click", async () => {
+          if (!verificationState.active || !verificationState.phoneNumber) {
+            showVerificationError("請先送出預約以取得驗證碼。");
+            return;
+          }
+
+          clearVerificationError();
+          setResendBusy(true);
+
+          try {
+            const response = await fetch("/api/phone_verification/resend/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken(),
+                "X-Requested-With": "XMLHttpRequest",
+                Accept: "application/json",
+              },
+              credentials: "same-origin",
+              body: JSON.stringify({
+                phone_number: verificationState.phoneNumber,
+                appointment_uuid: verificationState.appointmentUuid,
+              }),
+            });
+
+            let data;
+            try {
+              data = await response.json();
+            } catch (jsonError) {
+              data = null;
+            }
+
+            if (response.ok && data && data.success) {
+              setResendBusy(false);
+              if (
+                data.verification &&
+                data.verification.status === "verified" &&
+                data.appointment
+              ) {
+                handleVerificationSuccess(data);
+              } else {
+                applyVerificationState({
+                  message: data.message,
+                  appointment: { uuid: verificationState.appointmentUuid },
+                  verification: data.verification || {},
+                });
+              }
+            } else if (data && data.verification) {
+              setResendBusy(false);
+              applyVerificationState({
+                message: data.message,
+                appointment: { uuid: verificationState.appointmentUuid },
+                verification: data.verification,
+              });
+            } else {
+              console.error("Failed to resend verification code", response.status, data);
+              showVerificationError((data && data.message) || "重新寄送失敗，請稍後再試。");
+              setResendBusy(false);
+            }
+          } catch (error) {
+            console.error("Failed to resend verification code", error);
+            showVerificationError("暫時無法重新寄送，請稍後再試或聯絡客服。");
+            setResendBusy(false);
+          }
         });
       }
 
@@ -450,7 +987,9 @@
             data = null;
           }
 
-          if (response.ok && data && data.success) {
+          if (data && data.verification_required) {
+            applyVerificationState(data);
+          } else if (response.ok && data && data.success) {
             showSuccess(data);
           } else if (response.status === 400 && data && data.errors) {
             renderFieldErrors(data.errors);
