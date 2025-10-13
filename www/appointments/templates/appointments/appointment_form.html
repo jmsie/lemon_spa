@@ -206,10 +206,6 @@
             <span class="verification-status-label">驗證碼有效時間</span>
             <span class="verification-status-value" id="verification-expiry-countdown">--:--</span>
           </div>
-          <div class="verification-status-item">
-            <span class="verification-status-label">重新寄送倒數</span>
-            <span class="verification-status-value" id="verification-resend-countdown">--:--</span>
-          </div>
         </div>
         <form id="verification-form" class="verification-form" novalidate>
           <label for="verification-code">輸入手機驗證碼</label>
@@ -299,7 +295,6 @@
       const verificationPanel = document.getElementById("verification-panel");
       const verificationMessage = document.getElementById("verification-message");
       const verificationExpiryCountdown = document.getElementById("verification-expiry-countdown");
-      const verificationResendCountdown = document.getElementById("verification-resend-countdown");
       const verificationForm = document.getElementById("verification-form");
       const verificationCodeInput = document.getElementById("verification-code");
       const verifyCodeButton = document.getElementById("verify-code-button");
@@ -427,6 +422,18 @@
         return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
       }
 
+      function updateResendButtonLabel(seconds) {
+        if (!resendCodeButton) {
+          return;
+        }
+        const baseText = resendCodeButton.dataset.defaultText || "重新寄送驗證碼";
+        if (seconds && seconds > 0) {
+          resendCodeButton.textContent = `${baseText} (${formatDuration(seconds)})`;
+        } else {
+          resendCodeButton.textContent = baseText;
+        }
+      }
+
       function clearVerificationError() {
         if (!verificationError) {
           return;
@@ -493,16 +500,14 @@
         }
         if (resendCodeButton) {
           resendCodeButton.disabled = false;
-          resendCodeButton.textContent = resendCodeButton.dataset.defaultText || "重新寄送驗證碼";
+          updateResendButtonLabel(0);
         }
         if (verificationExpiryCountdown) {
           verificationExpiryCountdown.textContent = "--:--";
         }
-        if (verificationResendCountdown) {
-          verificationResendCountdown.textContent = "--:--";
-        }
         clearVerificationError();
         unlockSubmitButton();
+        updateResendButtonLabel(0);
       }
 
       function startExpiryCountdown(targetMoment) {
@@ -540,7 +545,7 @@
       }
 
       function startResendCountdown(targetMoment, fallbackSeconds) {
-        if (!verificationResendCountdown || !resendCodeButton) {
+        if (!resendCodeButton) {
           return;
         }
         clearInterval(verificationState.resendTimer);
@@ -557,19 +562,19 @@
         verificationState.resendAvailableAt = target;
 
         if (!target) {
-          verificationResendCountdown.textContent = "可重新寄送";
           resendCodeButton.disabled = false;
+          updateResendButtonLabel(0);
           return;
         }
 
         const update = () => {
           const diffSeconds = Math.ceil(target.diff(dayjs(), "second"));
           if (diffSeconds > 0) {
-            verificationResendCountdown.textContent = formatDuration(diffSeconds);
             resendCodeButton.disabled = true;
+            updateResendButtonLabel(diffSeconds);
           } else {
-            verificationResendCountdown.textContent = "可重新寄送";
             resendCodeButton.disabled = false;
+            updateResendButtonLabel(0);
             clearInterval(verificationState.resendTimer);
             verificationState.resendTimer = null;
           }
@@ -587,7 +592,7 @@
           resendCodeButton.disabled = true;
           resendCodeButton.textContent = "重新寄送中...";
         } else {
-          resendCodeButton.textContent = resendCodeButton.dataset.defaultText || "重新寄送驗證碼";
+          updateResendButtonLabel(0);
         }
       }
 
@@ -662,10 +667,6 @@
         if (verificationExpiryCountdown) {
           verificationExpiryCountdown.textContent = "--:--";
         }
-        if (verificationResendCountdown) {
-          verificationResendCountdown.textContent = "--:--";
-        }
-
         if (verification.status === "error") {
           showVerificationError(
             verification.message || payload.message || "手機驗證處理失敗，請稍後再試。"
