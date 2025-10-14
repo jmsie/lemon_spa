@@ -45,7 +45,9 @@ class AppointmentFormPhoneTests(TestCase):
                 "treatment": self.treatment.pk,
                 "start_time": timezone.now().replace(microsecond=0).isoformat(),
                 "customer_name": "Client",
-                "customer_phone": "+886 987-654-321",
+                "customer_phone_region": "TW",
+                "customer_phone_national": "0987-654-321",
+                "customer_phone": "",
                 "note": "",
             }
         )
@@ -59,9 +61,11 @@ class AppointmentFormPhoneTests(TestCase):
                 "treatment": self.treatment.pk,
                 "start_time": timezone.now().replace(microsecond=0).isoformat(),
                 "customer_name": "Client",
-                "customer_phone": "12345",
+                "customer_phone_region": "TW",
+                "customer_phone_national": "12345",
+                "customer_phone": "",
                 "note": "",
             }
         )
         self.assertFalse(form.is_valid())
-        self.assertIn("customer_phone", form.errors)
+        self.assertIn("customer_phone_national", form.errors)

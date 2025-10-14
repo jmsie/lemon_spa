@@ -75,6 +75,9 @@
     .verification-status-item { flex: 1 1 160px; background: #fff; border-radius: 0.75rem; padding: 0.75rem 1rem; border: 1px solid rgba(14, 165, 233, 0.25); }
     .verification-status-label { display: block; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.25rem; }
     .verification-status-value { font-weight: 700; color: #0369a1; font-size: 1.05rem; }
+    .phone-input { display: flex; gap: 0.75rem; align-items: center; }
+    .phone-input select { flex: 0 0 9rem; padding: 0.65rem; border-radius: 0.6rem; border: 1px solid #cbd5f5; background: #f8fafc; font-size: 0.95rem; }
+    .phone-input input { flex: 1; }
     .verification-form { display: grid; gap: 0.75rem; }
     .verification-input-row { display: flex; gap: 0.75rem; align-items: center; }
     .verification-input-row input { flex: 1; text-align: center; font-size: 1.5rem; letter-spacing: 0.35rem; padding: 0.6rem 0.75rem; background: #fff; border: 1px solid rgba(14, 165, 233, 0.35); border-radius: 0.65rem; }
@@ -174,23 +177,42 @@
           {{ form.start_time }}
         </div>
 
-        {% for field in form.visible_fields %}
-          {% if field.name != "start_time" and field.name != "treatment" %}
-            <div class="form-field">
-              <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-              {{ field }}
-              {% if field.help_text %}
-                <small>{{ field.help_text }}</small>
-              {% endif %}
-              {% if field.errors %}
-                <ul class="field-errors">
-                  {% for error in field.errors %}
-                    <li>{{ error }}</li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
-            </div>
+        <div class="form-field">
+          <label for="{{ form.customer_phone_region.id_for_label }}">顧客電話 *</label>
+          <div class="phone-input">
+            {{ form.customer_phone_region }}
+            {{ form.customer_phone_national }}
+          </div>
+          {% if form.customer_phone_region.errors %}
+            <ul class="field-errors">
+              {% for error in form.customer_phone_region.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
           {% endif %}
+          {% if form.customer_phone_national.errors %}
+            <ul class="field-errors">
+              {% for error in form.customer_phone_national.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+        {% for field in form.remaining_visible_fields %}
+          <div class="form-field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+            {{ field }}
+            {% if field.help_text %}
+              <small>{{ field.help_text }}</small>
+            {% endif %}
+            {% if field.errors %}
+              <ul class="field-errors">
+                {% for error in field.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
         {% endfor %}
 
         <div class="actions">
@@ -275,6 +297,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/timezone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.6/bundle/libphonenumber-min.js"></script>
   <script>
     dayjs.extend(dayjs_plugin_utc);
     dayjs.extend(dayjs_plugin_timezone);
@@ -291,7 +314,9 @@
       const formCard = document.getElementById("appointment-form-card");
       const successCard = document.getElementById("appointment-success-card");
       const formAlert = document.getElementById("form-alert");
-      const phoneInput = document.getElementById("id_customer_phone");
+      const phoneHiddenInput = document.getElementById("id_customer_phone");
+      const phoneRegionSelect = document.getElementById("id_customer_phone_region");
+      const phoneNationalInput = document.getElementById("id_customer_phone_national");
       const verificationPanel = document.getElementById("verification-panel");
       const verificationMessage = document.getElementById("verification-message");
       const verificationExpiryCountdown = document.getElementById("verification-expiry-countdown");
@@ -332,6 +357,8 @@
       if (!form || !dateInput || !treatmentSelect || !startTimeInput || !slotContainer) {
         return;
       }
+
+      updateHiddenPhoneFromInputs();
 
       let latestAvailability = null;
 
@@ -461,6 +488,42 @@
         }
       }
 
+      function sanitizeNationalInput(value) {
+        return (value || "").replace(/[\s-]+/g, "");
+      }
+
+      function parsePhone(region, national) {
+        if (!window.libphonenumber || !region || !national) {
+          return null;
+        }
+        try {
+          const parsed = libphonenumber.parsePhoneNumberFromString(national, region);
+          return parsed && parsed.isValid() ? parsed : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function updateHiddenPhoneFromInputs() {
+        if (!phoneHiddenInput || !phoneNationalInput || !phoneRegionSelect) {
+          return null;
+        }
+        const region = phoneRegionSelect.value || "TW";
+        const nationalInput = sanitizeNationalInput(phoneNationalInput.value);
+        const phoneNumber = parsePhone(region, nationalInput);
+
+        if (phoneNumber) {
+          phoneHiddenInput.value = phoneNumber.number;
+          phoneNationalInput.value = phoneNumber.nationalNumber;
+          verificationState.phoneNumber = phoneNumber.number;
+          return phoneNumber.number;
+        }
+
+        phoneHiddenInput.value = "";
+        verificationState.phoneNumber = null;
+        return null;
+      }
+
       function unlockSubmitButton() {
         if (!submitButton) {
           return;
@@ -508,6 +571,9 @@
         clearVerificationError();
         unlockSubmitButton();
         updateResendButtonLabel(0);
+        if (phoneHiddenInput) {
+          phoneHiddenInput.value = "";
+        }
       }
 
       function startExpiryCountdown(targetMoment) {
@@ -620,8 +686,12 @@
         }
         if (verification.phone_number) {
           verificationState.phoneNumber = verification.phone_number;
-        } else if (!verificationState.phoneNumber && phoneInput) {
-          verificationState.phoneNumber = phoneInput.value || null;
+        } else if (!verificationState.phoneNumber && phoneHiddenInput) {
+          verificationState.phoneNumber = phoneHiddenInput.value || null;
+        }
+
+        if (phoneHiddenInput) {
+          phoneHiddenInput.value = verificationState.phoneNumber || "";
         }
 
         const expiresAt = verification.expires_at ? dayjs(verification.expires_at) : null;
@@ -827,12 +897,25 @@
         });
       }
 
-      if (phoneInput) {
-        phoneInput.addEventListener("input", () => {
-          if (verificationState.active) {
-            resetVerificationFlow();
-          }
+      const resetVerificationIfActive = () => {
+        if (verificationState.active) {
+          resetVerificationFlow();
+        }
+      };
+
+      if (phoneRegionSelect) {
+        phoneRegionSelect.addEventListener("change", () => {
+          updateHiddenPhoneFromInputs();
+          resetVerificationIfActive();
         });
+      }
+
+      if (phoneNationalInput) {
+        phoneNationalInput.addEventListener("input", () => {
+          updateHiddenPhoneFromInputs();
+          resetVerificationIfActive();
+        });
+        phoneNationalInput.addEventListener("blur", updateHiddenPhoneFromInputs);
       }
 
       if (verificationForm) {
@@ -867,7 +950,7 @@
               body: JSON.stringify({
                 appointment_uuid: verificationState.appointmentUuid,
                 phone_number:
-                  verificationState.phoneNumber || (phoneInput ? phoneInput.value : ""),
+                  verificationState.phoneNumber || (phoneHiddenInput ? phoneHiddenInput.value : ""),
                 code: codeValue,
               }),
             });
@@ -969,6 +1052,13 @@
         event.preventDefault();
         hideFormAlert();
         clearFieldErrors();
+
+        const normalizedPhone = updateHiddenPhoneFromInputs();
+        if (!normalizedPhone) {
+          showFormAlert("請輸入有效的電話號碼。");
+          return;
+        }
+
         toggleSubmitting(true);
 
         try {

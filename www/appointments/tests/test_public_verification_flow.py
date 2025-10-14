@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta, timezone as dt_timezone
+import phonenumbers
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -51,13 +52,18 @@ class AppointmentPhoneVerificationTests(TestCase):
             .isoformat()
             .replace("+00:00", "Z")
         )
+        parsed = phonenumbers.parse(phone)
+        region = phonenumbers.region_code_for_number(parsed) or "TW"
+        national = str(parsed.national_number)
         return {
             "therapist": str(self.therapist.pk),
             "treatment": str(self.treatment.pk),
             "start_time": start_iso,
             "appointment-date": self.start_time.date().isoformat(),
             "customer_name": "Client",
-            "customer_phone": phone,
+            "customer_phone_region": region,
+            "customer_phone_national": national,
+            "customer_phone": "",
             "note": "",
         }
 
