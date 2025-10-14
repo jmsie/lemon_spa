@@ -55,3 +55,40 @@ class Appointment(models.Model):
         if computed is not None:
             self.end_time = computed
         super().save(*args, **kwargs)
+
+
+class TherapistSmsNotificationLog(models.Model):
+    """Record SMS notification attempts sent to therapists."""
+
+    STATUS_PENDING = "pending"
+    STATUS_SENT = "sent"
+    STATUS_FAILED = "failed"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_SENT, "Sent"),
+        (STATUS_FAILED, "Failed"),
+    ]
+
+    appointment = models.ForeignKey(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name="therapist_sms_logs",
+    )
+    therapist = models.ForeignKey(
+        "therapist_panel.Therapist",
+        on_delete=models.CASCADE,
+        related_name="sms_notification_logs",
+    )
+    phone_number = models.CharField(max_length=32)
+    message = models.CharField(max_length=160)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.therapist.nickname} - {self.status} @ {self.created_at:%Y-%m-%d %H:%M}"

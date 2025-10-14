@@ -15,6 +15,7 @@ from django.views.generic import CreateView
 
 from appointments.forms import AppointmentForm
 from appointments.models import Appointment
+from appointments.notifications import notify_new_public_booking
 from appointments.utils import serialize_public_appointment
 from phone_verification.exceptions import (
     PhoneVerificationError,
@@ -73,6 +74,8 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
 
         self.object = form.save()
         appointment = self.object
+
+        notify_new_public_booking(appointment)
 
         verification_required = False
         verification_payload: dict[str, Any] | None = None
