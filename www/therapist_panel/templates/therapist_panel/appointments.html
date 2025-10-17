@@ -85,6 +85,7 @@
                     <th scope="col">金額</th>
                     <th scope="col">開始時間</th>
                     <th scope="col">客人資訊</th>
+                    <th scope="col" class="text-center">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -117,6 +118,20 @@
                       <td>
                         <div class="fw-semibold">{{ appointment.customer_name }}</div>
                         <small class="text-muted">{{ appointment.customer_phone }}</small>
+                      </td>
+                      <td class="text-center">
+                        {% if appointment.is_cancelled %}
+                          <button class="btn btn-outline-secondary btn-sm" type="button" disabled>已取消</button>
+                        {% else %}
+                          <button
+                            type="button"
+                            class="btn btn-outline-danger btn-sm"
+                            data-action="cancel-appointment"
+                            data-appointment-id="{{ appointment.uuid }}"
+                          >
+                            <i class="bi bi-x-circle me-1"></i>取消
+                          </button>
+                        {% endif %}
                       </td>
                     </tr>
                   {% endfor %}
@@ -169,4 +184,74 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script>
+    (function () {
+      const cancelButtons = document.querySelectorAll('[data-action="cancel-appointment"]');
+      if (!cancelButtons.length) return;
+
+      const apiBase = "{{ appointments_api_url }}";
+
+      function getCookie(name) {
+        const match = document.cookie.match(
+          new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\\[\\]\\\\\/\\+^])/g, "\\$1") + "=([^;]*)")
+        );
+        return match ? decodeURIComponent(match[1]) : null;
+      }
+
+      function toggleButton(button, isLoading) {
+        const originalText = button.dataset.originalText || button.innerHTML;
+        if (isLoading) {
+          button.dataset.originalText = originalText;
+          button.disabled = true;
+          button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>取消中...';
+        } else {
+          button.disabled = false;
+          if (button.dataset.originalText) {
+            button.innerHTML = button.dataset.originalText;
+            delete button.dataset.originalText;
+          }
+        }
+      }
+
+      cancelButtons.forEach((button) => {
+        button.addEventListener("click", async () => {
+          if (!confirm("確認要取消這筆預約嗎？")) {
+            return;
+          }
+
+          const appointmentId = button.dataset.appointmentId;
+          if (!appointmentId) {
+            return;
+          }
+
+          toggleButton(button, true);
+
+          try {
+            const response = await fetch(`${apiBase}${appointmentId}/`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken") || "",
+              },
+              body: JSON.stringify({ is_cancelled: true }),
+            });
+
+            if (!response.ok) {
+              throw new Error("預約取消失敗");
+            }
+
+            window.location.reload();
+          } catch (error) {
+            console.error(error);
+            alert(error.message || "取消失敗，請稍後再試。");
+            toggleButton(button, false);
+          }
+        });
+      });
+    })();
+  </script>
 {% endblock %}

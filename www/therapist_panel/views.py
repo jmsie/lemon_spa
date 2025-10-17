@@ -2,7 +2,6 @@
 
 from datetime import datetime, time, timedelta
 
-from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import Http404
 from django.utils import timezone
@@ -131,6 +130,7 @@ class TherapistAppointmentSearchView(TherapistPanelContextMixin, TemplateView):
                 "has_filters": self._has_active_filters(form),
                 "therapist_timezone": therapist.timezone,
                 "query_string": query_string,
+                "appointments_api_url": reverse("api:appointments:appointment-list"),
             }
         )
         return context

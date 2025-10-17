@@ -63,6 +63,7 @@ class TherapistAppointmentSearchViewTests(TestCase):
             "0977000333",
             datetime(2024, 6, 1, 16, 0, tzinfo=self.tzinfo),
         )
+        self.api_base = reverse("api:appointments:appointment-list")
 
     def _create_appointment(self, customer_name, customer_phone, local_start):
         return Appointment.objects.create(
@@ -137,3 +138,13 @@ class TherapistAppointmentSearchViewTests(TestCase):
         form = response.context["form"]
         self.assertIn("結束日期需在開始日期之後", form.errors["end_date"])
         self.assertFalse(response.context["appointments"])
+
+    def test_template_includes_api_base_for_cancellation(self):
+        self._login_as_therapist()
+
+        response = self.client.get(self.url)
+
+        self.assertIn("appointments_api_url", response.context)
+        self.assertEqual(response.context["appointments_api_url"], self.api_base)
+        self.assertContains(response, f'data-appointment-id="{self.mid_appointment.uuid}"')
+        self.assertContains(response, self.api_base)
