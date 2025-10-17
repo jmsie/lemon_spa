@@ -72,6 +72,16 @@
           Schedule
         </a>
       </li>
+      <li class="nav-item">
+        <a
+          href="{% url 'therapist_panel:appointments' %}"
+          class="nav-link text-white {% if current_url_name == 'appointments' %}active{% endif %}"
+          onclick="handleNavClick(event, this)"
+        >
+          <i class="bi bi-receipt me-2"></i>
+          Appointments
+        </a>
+      </li>
     </ul>
   </div>
 

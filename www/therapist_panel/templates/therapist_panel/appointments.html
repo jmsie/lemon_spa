@@ -1,0 +1,172 @@
+{% extends "therapist_panel/base.html" %}
+{% load tz %}
+
+{% block title %}Orders | Therapist Panel{% endblock %}
+
+{% block content %}
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-funnel me-2"></i>查詢條件
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-warning">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <form method="get" class="row g-3 align-items-end">
+            <div class="col-12 col-md-4 col-lg-3">
+              <label class="form-label" for="{{ form.customer_phone.id_for_label }}">{{ form.customer_phone.label }}</label>
+              {{ form.customer_phone }}
+              {% for error in form.customer_phone.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-12 col-md-4 col-lg-3">
+              <label class="form-label" for="{{ form.customer_name.id_for_label }}">{{ form.customer_name.label }}</label>
+              {{ form.customer_name }}
+              {% for error in form.customer_name.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-12 col-md-4 col-lg-3">
+              <label class="form-label" for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
+              {{ form.start_date }}
+              {% for error in form.start_date.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-12 col-md-4 col-lg-3">
+              <label class="form-label" for="{{ form.end_date.id_for_label }}">{{ form.end_date.label }}</label>
+              {{ form.end_date }}
+              {% for error in form.end_date.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search me-1"></i>查詢
+              </button>
+              {% if has_filters %}
+                <a href="{% url 'therapist_panel:appointments' %}" class="btn btn-outline-secondary">
+                  <i class="bi bi-eraser me-1"></i>清除條件
+                </a>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-receipt me-2"></i>按摩預約清單
+          </h5>
+          <span class="badge bg-secondary">
+            共 {{ page_obj.paginator.count }} 筆
+          </span>
+        </div>
+        <div class="card-body p-0">
+          {% if appointments %}
+            <div class="table-responsive">
+              <table class="table table-striped mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col">狀態</th>
+                    <th scope="col">服務項目</th>
+                    <th scope="col">金額</th>
+                    <th scope="col">開始時間</th>
+                    <th scope="col">客人資訊</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for appointment in appointments %}
+                    <tr>
+                      <td>
+                        {% if appointment.is_cancelled %}
+                          <span class="badge bg-secondary">已取消</span>
+                        {% elif appointment.end_time <= current_time %}
+                          <span class="badge bg-success">已完成</span>
+                        {% elif appointment.start_time <= current_time %}
+                          <span class="badge bg-warning text-dark">進行中</span>
+                        {% else %}
+                          <span class="badge bg-info text-dark">未開始</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <div class="fw-semibold">{{ appointment.treatment.name }}</div>
+                      </td>
+                      <td>
+                        <span class="fw-semibold">{{ appointment.treatment.price }}</span>
+                      </td>
+                      <td>
+                        {% if therapist_timezone %}
+                          {{ appointment.start_time|timezone:therapist_timezone|date:"Y-m-d H:i" }}
+                        {% else %}
+                          {{ appointment.start_time|localtime|date:"Y-m-d H:i" }}
+                        {% endif %}
+                      </td>
+                      <td>
+                        <div class="fw-semibold">{{ appointment.customer_name }}</div>
+                        <small class="text-muted">{{ appointment.customer_phone }}</small>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5">
+              <i class="bi bi-journal-x display-4 text-muted"></i>
+              <p class="mt-3 mb-0 text-muted">找不到符合條件的預約紀錄</p>
+            </div>
+          {% endif %}
+        </div>
+        {% if page_obj.has_other_pages %}
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <div class="small text-muted">
+              第 {{ page_obj.number }} / {{ paginator.num_pages }} 頁
+            </div>
+            <nav aria-label="Appointment pagination">
+              <ul class="pagination mb-0">
+                {% if page_obj.has_previous %}
+                  <li class="page-item">
+                    <a class="page-link" href="{% if query_string %}?{{ query_string }}&page={{ page_obj.previous_page_number }}{% else %}?page={{ page_obj.previous_page_number }}{% endif %}" aria-label="Previous">
+                      <span aria-hidden="true">&laquo;</span>
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link" aria-hidden="true">&laquo;</span>
+                  </li>
+                {% endif %}
+                <li class="page-item active">
+                  <span class="page-link">{{ page_obj.number }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                  <li class="page-item">
+                    <a class="page-link" href="{% if query_string %}?{{ query_string }}&page={{ page_obj.next_page_number }}{% else %}?page={{ page_obj.next_page_number }}{% endif %}" aria-label="Next">
+                      <span aria-hidden="true">&raquo;</span>
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link" aria-hidden="true">&raquo;</span>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

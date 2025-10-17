@@ -5,6 +5,7 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from therapist_panel.views import (
+    TherapistAppointmentSearchView,
     TherapistPanelIndexView,
     TherapistProfileUpdateView,
     TherapistQuestionnaireListView,
@@ -24,6 +25,7 @@ urlpatterns = [
     path("profile/", TherapistProfileUpdateView.as_view(), name="profile_edit"),
     path("treatments/", TherapistTreatmentManagementView.as_view(), name="treatments"),
     path("reviews/", TherapistQuestionnaireListView.as_view(), name="reviews"),
+    path("appointments/", TherapistAppointmentSearchView.as_view(), name="appointments"),
     path(
         "schedule/",
         include(("scheduling.urls", "scheduling"), namespace="scheduling"),

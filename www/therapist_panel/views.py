@@ -1,17 +1,22 @@
 """Views for therapist panel web interface and legacy API imports."""
 
+from datetime import datetime, time, timedelta
+
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.http import Http404
+from django.utils import timezone
 from django.urls import reverse, reverse_lazy
 from django.views.generic import FormView, TemplateView
 
 from accounts.constants import ROLE_CLIENT, ROLE_THERAPIST
 from accounts.mixins import TherapistRoleRequiredMixin
 from accounts.services import get_active_role, role_to_label, user_has_role
-from django.utils import timezone
+from appointments.models import Appointment
+from scheduling.utils import to_utc
 from therapist_panel.api.views import TherapistViewSet
+from therapist_panel.forms import AppointmentSearchForm, TherapistProfileForm
 from therapist_panel.services import get_today_appointments
-from therapist_panel.forms import TherapistProfileForm
 
 
 class TherapistPanelContextMixin(TherapistRoleRequiredMixin):
@@ -89,10 +94,97 @@ class TherapistQuestionnaireListView(TherapistPanelContextMixin, TemplateView):
     template_name = "therapist_panel/reviews.html"
 
 
+class TherapistAppointmentSearchView(TherapistPanelContextMixin, TemplateView):
+    """Allow therapists to search over their appointment history."""
+
+    template_name = "therapist_panel/appointments.html"
+    form_class = AppointmentSearchForm
+    paginate_by = 10
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        therapist = self.get_therapist_profile()
+        if therapist is None:
+            raise Http404("Therapist profile not found.")
+
+        form = self.form_class(self.request.GET or None)
+        queryset = self._build_queryset(therapist)
+
+        if form.is_bound and form.is_valid():
+            queryset = self._apply_filters(queryset, therapist, form.cleaned_data)
+        elif form.is_bound and not form.is_valid():
+            queryset = queryset.none()
+
+        paginator = Paginator(queryset, self.paginate_by)
+        page_number = self.request.GET.get("page")
+        page_obj = paginator.get_page(page_number)
+        query_params = self.request.GET.copy()
+        query_params.pop("page", None)
+        query_string = query_params.urlencode()
+
+        context.update(
+            {
+                "form": form,
+                "appointments": page_obj.object_list,
+                "page_obj": page_obj,
+                "paginator": paginator,
+                "has_filters": self._has_active_filters(form),
+                "therapist_timezone": therapist.timezone,
+                "query_string": query_string,
+            }
+        )
+        return context
+
+    def _build_queryset(self, therapist):
+        return (
+            Appointment.objects.filter(therapist=therapist)
+            .select_related("treatment")
+            .order_by("-start_time")
+        )
+
+    def _apply_filters(self, queryset, therapist, cleaned_data):
+        phone = cleaned_data.get("customer_phone")
+        name = cleaned_data.get("customer_name")
+        start_date = cleaned_data.get("start_date")
+        end_date = cleaned_data.get("end_date")
+
+        if phone:
+            queryset = queryset.filter(customer_phone__icontains=phone.strip())
+        if name:
+            queryset = queryset.filter(customer_name__icontains=name.strip())
+
+        if start_date:
+            start_local = datetime.combine(start_date, time.min)
+            queryset = queryset.filter(
+                start_time__gte=to_utc(start_local, therapist.timezone),
+            )
+
+        if end_date:
+            end_local = datetime.combine(end_date + timedelta(days=1), time.min)
+            queryset = queryset.filter(
+                start_time__lt=to_utc(end_local, therapist.timezone),
+            )
+
+        return queryset
+
+    @staticmethod
+    def _has_active_filters(form):
+        if not form.is_bound:
+            return False
+        if form.is_valid():
+            return any(value not in (None, "") for value in form.cleaned_data.values())
+        for name in form.fields:
+            value = form.data.get(name)
+            if value not in (None, ""):
+                return True
+        return False
+
+
 __all__ = [
     "TherapistViewSet",
     "TherapistPanelIndexView",
     "TherapistProfileUpdateView",
     "TherapistTreatmentManagementView",
     "TherapistQuestionnaireListView",
+    "TherapistAppointmentSearchView",
 ]
