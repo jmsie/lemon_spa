@@ -100,6 +100,7 @@ class TherapistOnboardingFlowTests(TestCase):
         self.assertIn("working_hours_api_url", response.context)
         self.assertIn("time_off_api_url", response.context)
         self.assertIn("appointments_booking_path", response.context)
+        self.assertEqual(response.context["therapist_timezone"], DEFAULT_THERAPIST_TIMEZONE)
 
 
 class TherapistAppointmentSearchViewTests(TestCase):

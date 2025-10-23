@@ -172,42 +172,67 @@
           <form id="working-hours-form" class="needs-validation" novalidate>
             <input type="hidden" name="uuid" id="working-hours-id">
             <div class="row g-3">
-              <div class="col-md-4">
-                <label for="working-start" class="form-label">開始時間</label>
-                <input type="datetime-local" class="form-control" id="working-start" name="starts_at" required>
-                <p class="form-hint mb-0">請輸入你的當地時間</p>
+              <div class="col-12">
+                <label class="form-label d-block mb-2">選擇上班星期（可複選）</label>
+                <div class="d-flex flex-wrap gap-2" id="working-weekdays">
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="0" id="working-weekday-0" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="working-weekday-0">週一</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="1" id="working-weekday-1" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="working-weekday-1">週二</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="2" id="working-weekday-2" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="working-weekday-2">週三</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="3" id="working-weekday-3" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="working-weekday-3">週四</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="4" id="working-weekday-4" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="working-weekday-4">週五</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="5" id="working-weekday-5" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="working-weekday-5">週六</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="6" id="working-weekday-6" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="working-weekday-6">週日</label>
+                  </div>
+                </div>
               </div>
-              <div class="col-md-4">
-                <label for="working-end" class="form-label">結束時間</label>
-                <input type="datetime-local" class="form-control" id="working-end" name="ends_at" required>
+              <div class="col-md-3">
+                <label for="working-start-time" class="form-label">開始時間</label>
+                <input type="time" class="form-control" id="working-start-time" step="1800" value="09:00" required>
               </div>
-              <div class="col-md-4">
-                <label for="working-note" class="form-label">備註（選填）</label>
-                <input type="text" class="form-control" id="working-note" name="note" placeholder="例如：現場服務或線上諮詢">
+              <div class="col-md-3">
+                <label for="working-end-time" class="form-label">結束時間</label>
+                <input type="time" class="form-control" id="working-end-time" step="1800" value="17:00" required>
               </div>
-              <div class="col-md-4">
-                <label for="working-weekday" class="form-label">每週循環（選填）</label>
-                <select class="form-select" id="working-weekday" name="weekday">
-                  <option value="">不設定循環</option>
-                  <option value="0">週一</option>
-                  <option value="1">週二</option>
-                  <option value="2">週三</option>
-                  <option value="3">週四</option>
-                  <option value="4">週五</option>
-                  <option value="5">週六</option>
-                  <option value="6">週日</option>
+              <div class="col-md-3">
+                <label for="working-repeat-interval" class="form-label">每幾週重複</label>
+                <select class="form-select" id="working-repeat-interval">
+                  <option value="1">每 1 週</option>
+                  <option value="2">每 2 週</option>
+                  <option value="3">每 3 週</option>
+                  <option value="4">每 4 週</option>
+                  <option value="5">每 5 週</option>
+                  <option value="6">每 6 週</option>
+                  <option value="7">每 7 週</option>
+                  <option value="8">每 8 週</option>
                 </select>
+                <div class="form-text">1 代表每週重複一次，最多可每 8 週重複。</div>
               </div>
-              <div class="col-md-4">
-                <label for="working-repeat-interval" class="form-label">重複頻率（週）</label>
-                <input type="number" class="form-control" id="working-repeat-interval" name="repeat_interval" min="1" value="1" disabled>
-              </div>
-              <div class="col-md-4">
-                <label for="working-repeat-until" class="form-label">重複到（選填）</label>
-                <input type="date" class="form-control" id="working-repeat-until" name="repeat_until" disabled>
+              <div class="col-md-3">
+                <label for="working-note" class="form-label">備註（選填）</label>
+                <input type="text" class="form-control" id="working-note" placeholder="例如：現場服務或線上諮詢">
               </div>
             </div>
-            <div class="form-text mt-2">若要建立每週固定班表，選擇星期後即可設定重複區間。</div>
+            <div class="form-text mt-2">系統會自動從最近的對應星期開始排程。</div>
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
               <div id="working-form-errors" class="flex-grow-1"></div>
               <div class="d-flex gap-2">
@@ -265,36 +290,66 @@
           <form id="time-off-form" class="needs-validation" novalidate>
             <input type="hidden" name="uuid" id="time-off-id">
             <div class="row g-3">
-              <div class="col-md-4">
-                <label for="timeoff-start" class="form-label">開始時間</label>
-                <input type="datetime-local" class="form-control" id="timeoff-start" name="starts_at" required>
+              <div class="col-12">
+                <label class="form-label d-block mb-2">選擇休假星期（可複選）</label>
+                <div class="d-flex flex-wrap gap-2" id="timeoff-weekdays">
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="0" id="timeoff-weekday-0" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="timeoff-weekday-0">週一</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="1" id="timeoff-weekday-1" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="timeoff-weekday-1">週二</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="2" id="timeoff-weekday-2" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="timeoff-weekday-2">週三</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="3" id="timeoff-weekday-3" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="timeoff-weekday-3">週四</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="4" id="timeoff-weekday-4" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="timeoff-weekday-4">週五</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="5" id="timeoff-weekday-5" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="timeoff-weekday-5">週六</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="6" id="timeoff-weekday-6" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="timeoff-weekday-6">週日</label>
+                  </div>
+                </div>
               </div>
               <div class="col-md-4">
-                <label for="timeoff-end" class="form-label">結束時間</label>
-                <input type="datetime-local" class="form-control" id="timeoff-end" name="ends_at" required>
+                <label for="timeoff-start-time" class="form-label">開始時間</label>
+                <input type="time" class="form-control" id="timeoff-start-time" step="1800" value="12:00" required>
               </div>
               <div class="col-md-4">
-                <label for="timeoff-note" class="form-label">備註（選填）</label>
-                <input type="text" class="form-control" id="timeoff-note" name="note" placeholder="例如：午休、外出、進修">
+                <label for="timeoff-end-time" class="form-label">結束時間</label>
+                <input type="time" class="form-control" id="timeoff-end-time" step="1800" value="13:00" required>
               </div>
               <div class="col-md-4">
-                <label for="timeoff-repeat-type" class="form-label">循環類型（選填）</label>
-                <select class="form-select" id="timeoff-repeat-type" name="repeat_type">
-                  <option value="">單次</option>
-                  <option value="daily">每日重複</option>
-                  <option value="weekly">每週重複</option>
+                <label for="timeoff-repeat-interval" class="form-label">每幾週重複</label>
+                <select class="form-select" id="timeoff-repeat-interval">
+                  <option value="1">每 1 週</option>
+                  <option value="2">每 2 週</option>
+                  <option value="3">每 3 週</option>
+                  <option value="4">每 4 週</option>
+                  <option value="5">每 5 週</option>
+                  <option value="6">每 6 週</option>
+                  <option value="7">每 7 週</option>
+                  <option value="8">每 8 週</option>
                 </select>
               </div>
-              <div class="col-md-4">
-                <label for="timeoff-repeat-interval" class="form-label">重複頻率</label>
-                <input type="number" class="form-control" id="timeoff-repeat-interval" name="repeat_interval" min="1" value="1" disabled>
-              </div>
-              <div class="col-md-4">
-                <label for="timeoff-repeat-until" class="form-label">重複到（選填）</label>
-                <input type="date" class="form-control" id="timeoff-repeat-until" name="repeat_until" disabled>
+              <div class="col-12">
+                <label for="timeoff-note" class="form-label">備註（選填）</label>
+                <input type="text" class="form-control" id="timeoff-note" placeholder="例如：午休、外出、進修">
               </div>
             </div>
-            <div class="form-text mt-2">若設定循環，時間將自動轉換為你所在時區後建立系列。</div>
+            <div class="form-text mt-2">系統會從最近的該星期開始設定休假，並依照間隔重複。</div>
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
               <div id="timeoff-form-errors" class="flex-grow-1"></div>
               <div class="d-flex gap-2">
@@ -397,7 +452,8 @@
         "timeOff": "{{ time_off_api_url }}",
         "booking": "{{ appointments_booking_path }}"
       },
-      "therapistUuid": "{{ therapist_uuid }}"
+      "therapistUuid": "{{ therapist_uuid }}",
+      "timezone": "{{ therapist_timezone }}"
     }
   </script>
 {% endblock %}
@@ -410,6 +466,7 @@
       const stepIndicators = Array.from(stepper.querySelectorAll(".step-indicator"));
       const onboardingStatus = JSON.parse(document.getElementById("onboarding-status").textContent);
       const config = JSON.parse(document.getElementById("onboarding-config").textContent);
+      const therapistTimeZone = config.timezone || "UTC";
 
       let currentStep = onboardingStatus.is_complete ? 4 : 1;
       const store = {
@@ -425,6 +482,15 @@
       }
 
       const weekdayLabels = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+      const weekdayNameMap = {
+        Sun: 6,
+        Mon: 0,
+        Tue: 1,
+        Wed: 2,
+        Thu: 3,
+        Fri: 4,
+        Sat: 5,
+      };
       function weekdayLabel(index) {
         if (Number.isInteger(index) && index >= 0 && index < weekdayLabels.length) {
           return weekdayLabels[index];
@@ -432,20 +498,102 @@
         return "單次";
       }
 
-      function isoToInputValue(isoString) {
+      function formatDateInTimeZone(date, timeZone) {
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(date);
+      }
+
+      function getNextDateStringForWeekday(weekday, timeZone) {
+        const now = new Date();
+        const tzNow = new Date(now.toLocaleString("en-US", { timeZone }));
+        const currentWeekday = (tzNow.getDay() + 6) % 7; // convert Sunday=0 to 6
+        const diff = (weekday - currentWeekday + 7) % 7;
+        tzNow.setDate(tzNow.getDate() + diff);
+        return formatDateInTimeZone(tzNow, timeZone);
+      }
+
+      function isoToTime(isoString) {
         if (!isoString) {
           return "";
         }
+        const timePart = isoString.split("T")[1] || "";
+        return timePart.slice(0, 5);
+      }
+
+      function getWeekdayIndexFromISO(isoString, timeZone) {
+        if (!isoString) {
+          return null;
+        }
         const date = new Date(isoString);
         if (Number.isNaN(date.getTime())) {
+          return null;
+        }
+        const weekdayShort = new Intl.DateTimeFormat("en-US", {
+          timeZone,
+          weekday: "short",
+        }).format(date);
+        return weekdayNameMap[weekdayShort] ?? null;
+      }
+
+      function getSelectedWeekdays(inputs) {
+        return inputs
+          .filter((input) => input.checked && !input.disabled)
+          .map((input) => Number(input.value));
+      }
+
+      function setCheckboxSelection(inputs, values, disableOthers = false) {
+        const valueSet = new Set(values.map(String));
+        inputs.forEach((input) => {
+          const isSelected = valueSet.has(input.value);
+          input.checked = isSelected;
+          input.disabled = disableOthers ? !isSelected : false;
+          const label = input.nextElementSibling;
+          if (label && label.classList.contains("btn")) {
+            label.classList.toggle("btn-primary", isSelected);
+            label.classList.toggle("btn-outline-secondary", !isSelected);
+          }
+        });
+      }
+
+      function resetCheckboxes(inputs) {
+        inputs.forEach((input) => {
+          input.checked = false;
+          input.disabled = false;
+          const label = input.nextElementSibling;
+          if (label && label.classList.contains("btn")) {
+            label.classList.remove("btn-primary");
+            label.classList.add("btn-outline-secondary");
+          }
+        });
+      }
+
+      function appendSecondsToTime(timeValue) {
+        if (!timeValue) {
           return "";
         }
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
+        return timeValue.length === 5 ? `${timeValue}:00` : timeValue;
+      }
+
+      function attachToggleStyling(inputs) {
+        inputs.forEach((input) => {
+          input.addEventListener("change", () => {
+            const label = input.nextElementSibling;
+            if (!label || !label.classList.contains("btn")) {
+              return;
+            }
+            if (input.checked) {
+              label.classList.add("btn-primary");
+              label.classList.remove("btn-outline-secondary");
+            } else if (!input.disabled) {
+              label.classList.remove("btn-primary");
+              label.classList.add("btn-outline-secondary");
+            }
+          });
+        });
       }
 
       function formatCurrency(value) {
@@ -701,31 +849,31 @@
       const workingForm = document.getElementById("working-hours-form");
       const workingErrors = document.getElementById("working-form-errors");
       const resetWorkingBtn = document.getElementById("reset-working-form");
+      const workingCheckboxes = Array.from(
+        document.querySelectorAll("#working-weekdays input[type='checkbox']")
+      );
+      attachToggleStyling(workingCheckboxes);
+
       const workingFields = {
         uuid: document.getElementById("working-hours-id"),
-        startsAt: document.getElementById("working-start"),
-        endsAt: document.getElementById("working-end"),
-        note: document.getElementById("working-note"),
-        weekday: document.getElementById("working-weekday"),
+        weekdays: workingCheckboxes,
+        startTime: document.getElementById("working-start-time"),
+        endTime: document.getElementById("working-end-time"),
         repeatInterval: document.getElementById("working-repeat-interval"),
-        repeatUntil: document.getElementById("working-repeat-until"),
+        note: document.getElementById("working-note"),
       };
-
-      function syncWorkingRepeatFields() {
-        const shouldEnable = Boolean(workingFields.weekday.value);
-        workingFields.repeatInterval.disabled = !shouldEnable;
-        workingFields.repeatUntil.disabled = !shouldEnable;
-      }
 
       function resetWorkingForm() {
         workingForm.reset();
         workingErrors.innerHTML = "";
         workingFields.uuid.value = "";
-        workingFields.weekday.disabled = false;
-        syncWorkingRepeatFields();
+        resetCheckboxes(workingFields.weekdays);
+        workingFields.startTime.value = "09:00";
+        workingFields.endTime.value = "17:00";
+        workingFields.repeatInterval.disabled = false;
+        workingFields.repeatInterval.value = "1";
+        workingFields.note.value = "";
       }
-
-      workingFields.weekday.addEventListener("change", syncWorkingRepeatFields);
 
       async function loadWorkingHours() {
         renderEmptyRow(workingList, 4, "載入中…");
@@ -744,12 +892,17 @@
           } else {
             workingList.innerHTML = items
               .map((item) => {
-                const recurrence = item.series_uuid ? `循環 · ${weekdayLabel(item.weekday)}` : weekdayLabel(item.weekday);
+                const weekdayIndex =
+                  typeof item.weekday === "number"
+                    ? item.weekday
+                    : getWeekdayIndexFromISO(item.starts_at, therapistTimeZone);
+                const weekdayText = weekdayIndex !== null ? weekdayLabel(weekdayIndex) : "單次";
+                const repeatText = item.series_uuid ? `${weekdayText} · 循環` : weekdayText;
                 const note = item.note || "—";
                 return `
-                  <tr data-uuid="${item.uuid}" data-series="${item.series_uuid || ""}">
+                  <tr data-uuid="${item.uuid}" data-series="${item.series_uuid || ""}" data-weekday="${weekdayIndex ?? ""}">
                     <td>${formatDateTime(item.starts_at)} 至 ${formatDateTime(item.ends_at)}</td>
-                    <td>${recurrence}</td>
+                    <td>${repeatText}</td>
                     <td>${note}</td>
                     <td class="text-end">
                       <div class="btn-group btn-group-sm" role="group">
@@ -774,42 +927,90 @@
         event.preventDefault();
         showFieldErrors(workingErrors, null);
 
-        const payload = {
-          starts_at: workingFields.startsAt.value,
-          ends_at: workingFields.endsAt.value,
-          note: workingFields.note.value.trim(),
-        };
-
-        if (workingFields.weekday.value) {
-          payload.weekday = Number(workingFields.weekday.value);
-          if (workingFields.repeatInterval.value) {
-            payload.repeat_interval = Number(workingFields.repeatInterval.value);
-          }
-          if (workingFields.repeatUntil.value) {
-            payload.repeat_until = workingFields.repeatUntil.value;
-          }
+        const selectedWeekdays = getSelectedWeekdays(workingFields.weekdays);
+        if (!selectedWeekdays.length && !workingFields.uuid.value) {
+          showFieldErrors(workingErrors, { weekday: ["請至少選擇一天。"] });
+          return;
         }
 
+        const startTime = workingFields.startTime.value;
+        const endTime = workingFields.endTime.value;
+        if (!startTime || !endTime) {
+          showFieldErrors(workingErrors, { starts_at: ["請輸入完整的開始與結束時間。"] });
+          return;
+        }
+        if (startTime >= endTime) {
+          showFieldErrors(workingErrors, { ends_at: ["結束時間需晚於開始時間。"] });
+          return;
+        }
+
+        const repeatInterval = Number(workingFields.repeatInterval.value) || 1;
+        const note = workingFields.note.value.trim();
         const isEditing = Boolean(workingFields.uuid.value);
-        const url = isEditing
-          ? `${config.urls.workingHours}${payloadIdSegment(workingFields.uuid.value)}/`
-          : config.urls.workingHours;
-        const method = isEditing ? "PATCH" : "POST";
+
+        if (isEditing) {
+          const record = store.workingHours.find((item) => item.uuid === workingFields.uuid.value);
+          if (!record) {
+            showFieldErrors(workingErrors, { __all__: ["找不到要編輯的上班時段。"] });
+            return;
+          }
+          const datePart = record.starts_at.slice(0, 10);
+          const payload = {
+            starts_at: `${datePart}T${appendSecondsToTime(startTime)}`,
+            ends_at: `${datePart}T${appendSecondsToTime(endTime)}`,
+            note,
+          };
+
+          try {
+            const response = await fetch(
+              `${config.urls.workingHours}${payloadIdSegment(record.uuid)}/`,
+              {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": getCsrfToken(),
+                  Accept: "application/json",
+                },
+                body: JSON.stringify(payload),
+              }
+            );
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              showFieldErrors(workingErrors, errorData);
+              return;
+            }
+            resetWorkingForm();
+            await loadWorkingHours();
+          } catch (error) {
+            showFieldErrors(workingErrors, { __all__: ["儲存失敗，請稍候再試。"] });
+          }
+          return;
+        }
 
         try {
-          const response = await fetch(url, {
-            method,
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": getCsrfToken(),
-              Accept: "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            showFieldErrors(workingErrors, errorData);
-            return;
+          for (const weekday of selectedWeekdays) {
+            const dateStr = getNextDateStringForWeekday(weekday, therapistTimeZone);
+            const payload = {
+              starts_at: `${dateStr}T${appendSecondsToTime(startTime)}`,
+              ends_at: `${dateStr}T${appendSecondsToTime(endTime)}`,
+              note,
+              weekday,
+              repeat_interval: repeatInterval,
+            };
+            const response = await fetch(config.urls.workingHours, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken(),
+                Accept: "application/json",
+              },
+              body: JSON.stringify(payload),
+            });
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              showFieldErrors(workingErrors, errorData);
+              return;
+            }
           }
           resetWorkingForm();
           await loadWorkingHours();
@@ -853,37 +1054,33 @@
           return;
         }
         const row = button.closest("tr[data-uuid]");
-        if (!row) {
+      if (!row) {
+        return;
+      }
+      const uuid = row.dataset.uuid;
+      if (button.dataset.action === "edit") {
+        const record = store.workingHours.find((item) => item.uuid === uuid);
+        if (!record) {
           return;
         }
-        const uuid = row.dataset.uuid;
-        if (button.dataset.action === "edit") {
-          const record = store.workingHours.find((item) => item.uuid === uuid);
-          if (!record) {
-            return;
-          }
-          workingFields.uuid.value = record.uuid;
-          workingFields.startsAt.value = isoToInputValue(record.starts_at);
-          workingFields.endsAt.value = isoToInputValue(record.ends_at);
-          workingFields.note.value = record.note || "";
-          workingFields.weekday.disabled = Boolean(record.series_uuid);
-          if (record.series_uuid) {
-            workingFields.weekday.value = "";
-            workingFields.repeatInterval.value = 1;
-            workingFields.repeatUntil.value = "";
-          } else {
-            workingFields.weekday.value = Number.isInteger(record.weekday) ? String(record.weekday) : "";
-            if (workingFields.weekday.value !== "") {
-              workingFields.repeatInterval.value = 1;
-              workingFields.repeatUntil.value = "";
-            }
-          }
-          syncWorkingRepeatFields();
-          workingFields.startsAt.focus();
-        } else if (button.dataset.action === "delete") {
-          deleteWorkingHours(uuid, row.dataset.series);
+        workingFields.uuid.value = record.uuid;
+        const weekdayIndex =
+          row.dataset.weekday !== ""
+            ? Number(row.dataset.weekday)
+            : getWeekdayIndexFromISO(record.starts_at, therapistTimeZone);
+        if (weekdayIndex !== null && !Number.isNaN(weekdayIndex)) {
+          setCheckboxSelection(workingFields.weekdays, [weekdayIndex], true);
         }
-      });
+        workingFields.startTime.value = isoToTime(record.starts_at) || "09:00";
+        workingFields.endTime.value = isoToTime(record.ends_at) || "17:00";
+        workingFields.note.value = record.note || "";
+        workingFields.repeatInterval.disabled = Boolean(record.series_uuid);
+        workingFields.repeatInterval.value = record.repeat_interval || "1";
+        workingFields.startTime.focus();
+      } else if (button.dataset.action === "delete") {
+        deleteWorkingHours(uuid, row.dataset.series);
+      }
+    });
 
       workingForm.addEventListener("submit", submitWorkingHours);
       resetWorkingBtn.addEventListener("click", resetWorkingForm);
@@ -893,33 +1090,31 @@
       const timeoffForm = document.getElementById("time-off-form");
       const timeoffErrors = document.getElementById("timeoff-form-errors");
       const resetTimeoffBtn = document.getElementById("reset-timeoff-form");
+      const timeoffCheckboxes = Array.from(
+        document.querySelectorAll("#timeoff-weekdays input[type='checkbox']")
+      );
+      attachToggleStyling(timeoffCheckboxes);
+
       const timeoffFields = {
         uuid: document.getElementById("time-off-id"),
-        startsAt: document.getElementById("timeoff-start"),
-        endsAt: document.getElementById("timeoff-end"),
-        note: document.getElementById("timeoff-note"),
-        repeatType: document.getElementById("timeoff-repeat-type"),
+        weekdays: timeoffCheckboxes,
+        startTime: document.getElementById("timeoff-start-time"),
+        endTime: document.getElementById("timeoff-end-time"),
         repeatInterval: document.getElementById("timeoff-repeat-interval"),
-        repeatUntil: document.getElementById("timeoff-repeat-until"),
+        note: document.getElementById("timeoff-note"),
       };
-
-      function syncTimeoffRepeatFields() {
-        const enable = Boolean(timeoffFields.repeatType.value);
-        timeoffFields.repeatInterval.disabled = !enable;
-        timeoffFields.repeatUntil.disabled = !enable;
-      }
 
       function resetTimeoffForm() {
         timeoffForm.reset();
         timeoffErrors.innerHTML = "";
         timeoffFields.uuid.value = "";
-        timeoffFields.repeatType.disabled = false;
-        timeoffFields.repeatInterval.disabled = true;
-        timeoffFields.repeatUntil.disabled = true;
-        syncTimeoffRepeatFields();
+        resetCheckboxes(timeoffFields.weekdays);
+        timeoffFields.startTime.value = "12:00";
+        timeoffFields.endTime.value = "13:00";
+        timeoffFields.repeatInterval.disabled = false;
+        timeoffFields.repeatInterval.value = "1";
+        timeoffFields.note.value = "";
       }
-
-      timeoffFields.repeatType.addEventListener("change", syncTimeoffRepeatFields);
 
       async function loadTimeOff() {
         renderEmptyRow(timeoffList, 4, "載入中…");
@@ -938,10 +1133,12 @@
           } else {
             timeoffList.innerHTML = items
               .map((item) => {
-                const repeat = item.series_uuid ? "循環" : "單次";
+                const weekdayIndex = getWeekdayIndexFromISO(item.starts_at, therapistTimeZone);
+                const weekdayText = weekdayIndex !== null ? weekdayLabel(weekdayIndex) : "單次";
+                const repeat = item.series_uuid ? `${weekdayText} · 循環` : weekdayText;
                 const note = item.note || "—";
                 return `
-                  <tr data-uuid="${item.uuid}" data-series="${item.series_uuid || ""}">
+                  <tr data-uuid="${item.uuid}" data-series="${item.series_uuid || ""}" data-weekday="${weekdayIndex ?? ""}">
                     <td>${formatDateTime(item.starts_at)} 至 ${formatDateTime(item.ends_at)}</td>
                     <td>${repeat}</td>
                     <td>${note}</td>
@@ -968,42 +1165,90 @@
         event.preventDefault();
         showFieldErrors(timeoffErrors, null);
 
-        const payload = {
-          starts_at: timeoffFields.startsAt.value,
-          ends_at: timeoffFields.endsAt.value,
-          note: timeoffFields.note.value.trim(),
-        };
-
-        if (timeoffFields.repeatType.value) {
-          payload.repeat_type = timeoffFields.repeatType.value;
-          if (timeoffFields.repeatInterval.value) {
-            payload.repeat_interval = Number(timeoffFields.repeatInterval.value);
-          }
-          if (timeoffFields.repeatUntil.value) {
-            payload.repeat_until = timeoffFields.repeatUntil.value;
-          }
+        const selectedWeekdays = getSelectedWeekdays(timeoffFields.weekdays);
+        if (!selectedWeekdays.length && !timeoffFields.uuid.value) {
+          showFieldErrors(timeoffErrors, { weekday: ["請至少選擇一天。"] });
+          return;
         }
 
+        const startTime = timeoffFields.startTime.value;
+        const endTime = timeoffFields.endTime.value;
+        if (!startTime || !endTime) {
+          showFieldErrors(timeoffErrors, { starts_at: ["請輸入完整的開始與結束時間。"] });
+          return;
+        }
+        if (startTime >= endTime) {
+          showFieldErrors(timeoffErrors, { ends_at: ["結束時間需晚於開始時間。"] });
+          return;
+        }
+
+        const repeatInterval = Number(timeoffFields.repeatInterval.value) || 1;
+        const note = timeoffFields.note.value.trim();
         const isEditing = Boolean(timeoffFields.uuid.value);
-        const url = isEditing
-          ? `${config.urls.timeOff}${payloadIdSegment(timeoffFields.uuid.value)}/`
-          : config.urls.timeOff;
-        const method = isEditing ? "PATCH" : "POST";
+
+        if (isEditing) {
+          const record = store.timeOff.find((item) => item.uuid === timeoffFields.uuid.value);
+          if (!record) {
+            showFieldErrors(timeoffErrors, { __all__: ["找不到要編輯的休假時段。"] });
+            return;
+          }
+          const datePart = record.starts_at.slice(0, 10);
+          const payload = {
+            starts_at: `${datePart}T${appendSecondsToTime(startTime)}`,
+            ends_at: `${datePart}T${appendSecondsToTime(endTime)}`,
+            note,
+          };
+
+          try {
+            const response = await fetch(
+              `${config.urls.timeOff}${payloadIdSegment(record.uuid)}/`,
+              {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": getCsrfToken(),
+                  Accept: "application/json",
+                },
+                body: JSON.stringify(payload),
+              }
+            );
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              showFieldErrors(timeoffErrors, errorData);
+              return;
+            }
+            resetTimeoffForm();
+            await loadTimeOff();
+          } catch (error) {
+            showFieldErrors(timeoffErrors, { __all__: ["儲存失敗，請稍候再試。"] });
+          }
+          return;
+        }
 
         try {
-          const response = await fetch(url, {
-            method,
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": getCsrfToken(),
-              Accept: "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            showFieldErrors(timeoffErrors, errorData);
-            return;
+          for (const weekday of selectedWeekdays) {
+            const dateStr = getNextDateStringForWeekday(weekday, therapistTimeZone);
+            const payload = {
+              starts_at: `${dateStr}T${appendSecondsToTime(startTime)}`,
+              ends_at: `${dateStr}T${appendSecondsToTime(endTime)}`,
+              note,
+              repeat_type: "weekly",
+              repeat_interval: repeatInterval,
+            };
+            const response = await fetch(config.urls.timeOff, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken(),
+                Accept: "application/json",
+              },
+              body: JSON.stringify(payload),
+            });
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              showFieldErrors(timeoffErrors, errorData);
+              return;
+            }
           }
           resetTimeoffForm();
           await loadTimeOff();
@@ -1057,24 +1302,16 @@
             return;
           }
           timeoffFields.uuid.value = record.uuid;
-          timeoffFields.startsAt.value = isoToInputValue(record.starts_at);
-          timeoffFields.endsAt.value = isoToInputValue(record.ends_at);
-          timeoffFields.note.value = record.note || "";
-          const isSeries = Boolean(record.series_uuid);
-          timeoffFields.repeatType.disabled = isSeries;
-          timeoffFields.repeatInterval.disabled = isSeries;
-          timeoffFields.repeatUntil.disabled = isSeries;
-          if (isSeries) {
-            timeoffFields.repeatType.value = "";
-            timeoffFields.repeatInterval.value = 1;
-            timeoffFields.repeatUntil.value = "";
-          } else {
-            timeoffFields.repeatType.value = "";
-            timeoffFields.repeatInterval.value = 1;
-            timeoffFields.repeatUntil.value = "";
+          const weekdayIndex = getWeekdayIndexFromISO(record.starts_at, therapistTimeZone);
+          if (weekdayIndex !== null && !Number.isNaN(weekdayIndex)) {
+            setCheckboxSelection(timeoffFields.weekdays, [weekdayIndex], true);
           }
-          syncTimeoffRepeatFields();
-          timeoffFields.startsAt.focus();
+          timeoffFields.startTime.value = isoToTime(record.starts_at) || "12:00";
+          timeoffFields.endTime.value = isoToTime(record.ends_at) || "13:00";
+          timeoffFields.note.value = record.note || "";
+          timeoffFields.repeatInterval.disabled = Boolean(record.series_uuid);
+          timeoffFields.repeatInterval.value = record.repeat_interval || "1";
+          timeoffFields.startTime.focus();
         } else if (button.dataset.action === "delete") {
           deleteTimeoff(uuid, row.dataset.series);
         }

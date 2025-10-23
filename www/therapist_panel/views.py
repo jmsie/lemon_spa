@@ -115,6 +115,7 @@ class TherapistOnboardingView(TherapistPanelContextMixin, TemplateView):
                     "therapist_panel:api:time_off:time-off-list"
                 ),
                 "therapist_uuid": therapist.uuid,
+                "therapist_timezone": therapist.timezone,
                 "appointments_booking_path": reverse(
                     "appointments:book_with_therapist", args=[therapist.uuid]
                 ),
