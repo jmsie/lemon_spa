@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from django.db import models
+from django.utils import timezone
 
 
 class Appointment(models.Model):
@@ -92,3 +93,53 @@ class TherapistSmsNotificationLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.therapist.nickname} - {self.status} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class AppointmentQuestionnaireLog(models.Model):
+    """Track questionnaire invitation SMS attempts for appointments."""
+
+    STATUS_SENT = "sent"
+    STATUS_FAILED = "failed"
+
+    STATUS_CHOICES = [
+        (STATUS_SENT, "Sent"),
+        (STATUS_FAILED, "Failed"),
+    ]
+
+    appointment = models.ForeignKey(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name="questionnaire_logs",
+    )
+    therapist = models.ForeignKey(
+        "therapist_panel.Therapist",
+        on_delete=models.CASCADE,
+        related_name="questionnaire_logs",
+    )
+    phone_number = models.CharField(max_length=32)
+    message = models.TextField()
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["appointment", "status"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["appointment"],
+                condition=models.Q(status="sent"),
+                name="unique_questionnaire_sent_per_appointment",
+            )
+        ]
+
+    def mark_sent(self) -> None:
+        self.status = self.STATUS_SENT
+        self.sent_at = timezone.now()
+        self.error_message = ""
+
+    def __str__(self) -> str:
+        return f"{self.appointment_id} questionnaire {self.status} @ {self.created_at:%Y-%m-%d %H:%M}"

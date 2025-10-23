@@ -2,7 +2,9 @@
 
 from datetime import datetime, time, timedelta
 
+from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db.models import Exists, OuterRef
 from django.http import Http404
 from django.utils import timezone
 from django.urls import reverse, reverse_lazy
@@ -11,7 +13,7 @@ from django.views.generic import FormView, TemplateView
 from accounts.constants import ROLE_CLIENT, ROLE_THERAPIST
 from accounts.mixins import TherapistRoleRequiredMixin
 from accounts.services import get_active_role, role_to_label, user_has_role
-from appointments.models import Appointment
+from appointments.models import Appointment, AppointmentQuestionnaireLog
 from scheduling.utils import to_utc
 from therapist_panel.api.views import TherapistViewSet
 from therapist_panel.forms import AppointmentSearchForm, TherapistProfileForm
@@ -136,9 +138,14 @@ class TherapistAppointmentSearchView(TherapistPanelContextMixin, TemplateView):
         return context
 
     def _build_queryset(self, therapist):
+        sent_exists = AppointmentQuestionnaireLog.objects.filter(
+            appointment=OuterRef("pk"),
+            status=AppointmentQuestionnaireLog.STATUS_SENT,
+        )
         return (
             Appointment.objects.filter(therapist=therapist)
             .select_related("treatment")
+            .annotate(questionnaire_sent=Exists(sent_exists))
             .order_by("-start_time")
         )
 

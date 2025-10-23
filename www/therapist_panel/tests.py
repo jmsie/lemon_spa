@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.constants import ROLE_THERAPIST, SESSION_ACTIVE_ROLE_KEY
-from appointments.models import Appointment
+from appointments.models import Appointment, AppointmentQuestionnaireLog
 from scheduling.utils import to_utc
 from therapist_panel.constants import DEFAULT_THERAPIST_TIMEZONE
 from therapist_panel.models import Therapist, TherapistTreatment
@@ -83,8 +83,7 @@ class TherapistAppointmentSearchViewTests(TestCase):
 
     def test_login_required(self):
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login", response.headers["Location"])
+        self.assertEqual(response.status_code, 403)
 
     def test_requires_therapist_role(self):
         self.client.login(username="viewer", password="viewerpass123")
@@ -138,6 +137,24 @@ class TherapistAppointmentSearchViewTests(TestCase):
         form = response.context["form"]
         self.assertIn("結束日期需在開始日期之後", form.errors["end_date"])
         self.assertFalse(response.context["appointments"])
+
+    def test_questionnaire_button_disabled_after_successful_send(self):
+        self._login_as_therapist()
+        AppointmentQuestionnaireLog.objects.create(
+            appointment=self.mid_appointment,
+            therapist=self.therapist,
+            phone_number=self.mid_appointment.customer_phone,
+            message="link",
+            status=AppointmentQuestionnaireLog.STATUS_SENT,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        appointments = list(response.context["appointments"])
+        target = next(a for a in appointments if a.pk == self.mid_appointment.pk)
+        self.assertTrue(target.questionnaire_sent)
+        self.assertContains(response, f'data-appointment-id="{self.mid_appointment.uuid}" disabled')
 
     def test_template_includes_api_base_for_cancellation(self):
         self._login_as_therapist()

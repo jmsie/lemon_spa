@@ -120,18 +120,33 @@
                         <small class="text-muted">{{ appointment.customer_phone }}</small>
                       </td>
                       <td class="text-center">
-                        {% if appointment.is_cancelled %}
-                          <button class="btn btn-outline-secondary btn-sm" type="button" disabled>已取消</button>
-                        {% else %}
-                          <button
-                            type="button"
-                            class="btn btn-outline-danger btn-sm"
-                            data-action="cancel-appointment"
-                            data-appointment-id="{{ appointment.uuid }}"
-                          >
-                            <i class="bi bi-x-circle me-1"></i>取消
-                          </button>
-                        {% endif %}
+                        <div class="d-flex flex-column align-items-center gap-2">
+                          <div class="d-flex flex-wrap justify-content-center gap-2">
+                            <button
+                              type="button"
+                              class="btn btn-outline-secondary btn-sm"
+                              data-action="send-questionnaire"
+                              data-appointment-id="{{ appointment.uuid }}"{% if appointment.questionnaire_sent or appointment.is_cancelled %} disabled{% endif %}
+                            >
+                              <i class="bi bi-chat-dots me-1"></i>發送問卷
+                            </button>
+                            {% if appointment.is_cancelled %}
+                              <button class="btn btn-outline-secondary btn-sm" type="button" disabled>已取消</button>
+                            {% else %}
+                              <button
+                                type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                data-action="cancel-appointment"
+                                data-appointment-id="{{ appointment.uuid }}"
+                              >
+                                <i class="bi bi-x-circle me-1"></i>取消
+                              </button>
+                            {% endif %}
+                          </div>
+                          {% if appointment.questionnaire_sent %}
+                            <span class="badge bg-success">問卷已發送</span>
+                          {% endif %}
+                        </div>
                       </td>
                     </tr>
                   {% endfor %}
@@ -191,7 +206,8 @@
   <script>
     (function () {
       const cancelButtons = document.querySelectorAll('[data-action="cancel-appointment"]');
-      if (!cancelButtons.length) return;
+      const questionnaireButtons = document.querySelectorAll('[data-action="send-questionnaire"]');
+      if (!cancelButtons.length && !questionnaireButtons.length) return;
 
       const apiBase = "{{ appointments_api_url }}";
 
@@ -202,12 +218,12 @@
         return match ? decodeURIComponent(match[1]) : null;
       }
 
-      function toggleButton(button, isLoading) {
+      function toggleButton(button, isLoading, loadingText) {
         const originalText = button.dataset.originalText || button.innerHTML;
         if (isLoading) {
           button.dataset.originalText = originalText;
           button.disabled = true;
-          button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>取消中...';
+          button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${loadingText}`;
         } else {
           button.disabled = false;
           if (button.dataset.originalText) {
@@ -228,7 +244,7 @@
             return;
           }
 
-          toggleButton(button, true);
+          toggleButton(button, true, "取消中...");
 
           try {
             const response = await fetch(`${apiBase}${appointmentId}/`, {
@@ -248,6 +264,45 @@
           } catch (error) {
             console.error(error);
             alert(error.message || "取消失敗，請稍後再試。");
+            toggleButton(button, false);
+          }
+        });
+      });
+
+      questionnaireButtons.forEach((button) => {
+        button.addEventListener("click", async () => {
+          if (!confirm("要發送問卷連結給客戶嗎？")) {
+            return;
+          }
+
+          const appointmentId = button.dataset.appointmentId;
+          if (!appointmentId) {
+            return;
+          }
+
+          toggleButton(button, true, "發送中...");
+
+          try {
+            const response = await fetch(`${apiBase}${appointmentId}/send-questionnaire/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken") || "",
+              },
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+              const message = payload.detail || "問卷發送失敗";
+              throw new Error(message);
+            }
+
+            alert(payload.detail || "問卷已成功發送。");
+            window.location.reload();
+          } catch (error) {
+            console.error(error);
+            alert(error.message || "問卷發送失敗，請稍後再試。");
             toggleButton(button, false);
           }
         });

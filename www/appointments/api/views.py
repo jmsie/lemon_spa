@@ -6,18 +6,22 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from appointments.models import Appointment
+from appointments.models import Appointment, AppointmentQuestionnaireLog
+from phone_verification.sms import get_sms_provider
 from appointments.api.serializers import AppointmentSerializer
 from scheduling.models import TherapistTimeOff, TherapistWorkingHours
 from scheduling.services import ensure_series_occurrences, ensure_working_hours_occurrences
 from scheduling.utils import ensure_timezone, to_local, to_utc
 from therapist_panel.models import Therapist
+from questionnaires.models import Questionnaire
 
 
 class AppointmentViewSet(viewsets.ModelViewSet):
@@ -62,6 +66,80 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             serializer.save()
         else:
             serializer.save(therapist=therapist)
+
+    @action(detail=True, methods=["post"], url_path="send-questionnaire")
+    def send_questionnaire(self, request, *args, **kwargs):
+        """Send questionnaire invitation SMS for this appointment."""
+
+        appointment: Appointment = self.get_object()
+
+        try:
+            appointment.questionnaire  # type: ignore[attr-defined]
+        except Questionnaire.DoesNotExist:
+            questionnaire_completed = False
+        else:
+            questionnaire_completed = True
+
+        if questionnaire_completed:
+            return Response(
+                {"detail": "問卷已填寫，無需再次發送。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if appointment.is_cancelled:
+            return Response(
+                {"detail": "已取消的預約無法發送問卷。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not appointment.customer_phone:
+            return Response(
+                {"detail": "此預約缺少客戶手機，無法發送問卷。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        already_sent = appointment.questionnaire_logs.filter(
+            status=AppointmentQuestionnaireLog.STATUS_SENT
+        ).exists()
+        if already_sent:
+            return Response(
+                {"detail": "問卷已發送過，無法重複發送。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        questionnaire_url = request.build_absolute_uri(
+            reverse("questionnaires:fill", kwargs={"appointment_uuid": appointment.uuid})
+        )
+        message = f"您好，請協助填寫按摩服務滿意度問卷：{questionnaire_url}"
+
+        sms_provider = get_sms_provider()
+
+        try:
+            sms_provider.send(phone_number=appointment.customer_phone, message=message)
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            AppointmentQuestionnaireLog.objects.create(
+                appointment=appointment,
+                therapist=appointment.therapist,
+                phone_number=appointment.customer_phone,
+                message=message,
+                status=AppointmentQuestionnaireLog.STATUS_FAILED,
+                error_message=str(exc),
+            )
+            return Response(
+                {"detail": "問卷發送失敗，請稍後再試。"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        AppointmentQuestionnaireLog.objects.create(
+            appointment=appointment,
+            therapist=appointment.therapist,
+            phone_number=appointment.customer_phone,
+            message=message,
+            status=AppointmentQuestionnaireLog.STATUS_SENT,
+            sent_at=timezone.now(),
+        )
+
+        return Response({"detail": "問卷已成功發送。"}, status=status.HTTP_200_OK)
 
 
 class TherapistAvailabilityView(APIView):
