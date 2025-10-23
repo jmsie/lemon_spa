@@ -7,8 +7,9 @@ from datetime import timedelta
 from django.utils import timezone
 
 from appointments.models import Appointment
-from therapist_panel.models import Therapist
+from scheduling.models import TherapistTimeOff, TherapistWorkingHours
 from scheduling.utils import ensure_timezone, to_utc
+from therapist_panel.models import Therapist, TherapistTreatment
 
 
 def get_today_appointments(therapist: Therapist) -> list[Appointment]:
@@ -30,3 +31,33 @@ def get_today_appointments(therapist: Therapist) -> list[Appointment]:
         .select_related("treatment")
         .order_by("start_time")
     )
+
+
+def get_onboarding_status(therapist: Therapist) -> dict[str, int | bool]:
+    """Return counts and completion status for therapist onboarding."""
+
+    treatments_count = TherapistTreatment.objects.filter(therapist=therapist).count()
+    working_hours_count = TherapistWorkingHours.objects.filter(
+        therapist=therapist,
+        is_generated=False,
+    ).count()
+    time_off_count = TherapistTimeOff.objects.filter(
+        therapist=therapist,
+        is_skipped=False,
+    ).count()
+    is_complete = all(
+        count > 0 for count in (treatments_count, working_hours_count, time_off_count)
+    )
+    return {
+        "treatments_count": treatments_count,
+        "working_hours_count": working_hours_count,
+        "time_off_count": time_off_count,
+        "is_complete": is_complete,
+    }
+
+
+def needs_onboarding(therapist: Therapist) -> bool:
+    """Determine if the therapist should be routed through onboarding."""
+
+    status = get_onboarding_status(therapist)
+    return not status["is_complete"]

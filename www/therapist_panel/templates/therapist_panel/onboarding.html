@@ -1,0 +1,1117 @@
+{% extends "therapist_panel/base.html" %}
+
+{% block title %}Onboarding | Therapist Panel{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .onboarding-stepper {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+    .onboarding-stepper .step-indicator {
+      position: relative;
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      background-color: var(--bs-secondary-bg);
+      color: var(--bs-secondary-color);
+      text-align: center;
+      font-weight: 500;
+    }
+    .onboarding-stepper .step-indicator.active {
+      background: var(--bs-primary);
+      color: #fff;
+      box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.1);
+    }
+    .onboarding-stepper .step-indicator.completed {
+      background: rgba(13, 110, 253, 0.2);
+      color: var(--bs-primary);
+    }
+    .onboarding-section {
+      display: none;
+      animation: fadeInUp 250ms ease-out;
+    }
+    .onboarding-section.active {
+      display: block;
+    }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .collection-table td,
+    .collection-table th {
+      vertical-align: middle;
+    }
+    .form-hint {
+      font-size: 0.875rem;
+      color: var(--bs-secondary-color);
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid px-0 px-md-2">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+      <div>
+        <h1 class="h3 mb-1">歡迎加入 Lemon Spa！</h1>
+        <p class="mb-0 text-body-secondary">只要 4 個步驟，建立療程、上班時間與休假，馬上開啟線上預約。</p>
+      </div>
+      <div>
+        <span class="badge text-bg-light border">
+          導覽完成後即可取得預約連結
+        </span>
+      </div>
+    </div>
+
+    <div class="onboarding-stepper mb-4" id="onboarding-stepper">
+      <div class="step-indicator active" data-step-index="1">1. 建立療程</div>
+      <div class="step-indicator" data-step-index="2">2. 上班時間</div>
+      <div class="step-indicator" data-step-index="3">3. 休假設定</div>
+      <div class="step-indicator" data-step-index="4">4. 完成</div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body p-4 p-lg-5">
+        <section class="onboarding-section active" data-step="1">
+          <header class="mb-4">
+            <h2 class="h4 mb-1">Step 1：新增你提供的療程</h2>
+            <p class="text-body-secondary mb-0">至少需要一個療程，才能讓客戶選擇服務項目。</p>
+          </header>
+
+          <form id="treatment-form" class="needs-validation" novalidate>
+            <input type="hidden" name="id" id="treatment-id">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="treatment-name" class="form-label">療程名稱</label>
+                <input type="text" class="form-control" id="treatment-name" name="name" required placeholder="例如：深層按摩 60 分鐘">
+              </div>
+              <div class="col-md-3">
+                <label for="treatment-duration" class="form-label">服務時間（分鐘）</label>
+                <input type="number" class="form-control" id="treatment-duration" name="duration_minutes" min="1" required value="60">
+              </div>
+              <div class="col-md-3">
+                <label for="treatment-preparation" class="form-label">預留準備時間（分鐘）</label>
+                <input type="number" class="form-control" id="treatment-preparation" name="preparation_minutes" min="0" value="10">
+              </div>
+              <div class="col-md-3">
+                <label for="treatment-price" class="form-label">價格</label>
+                <input type="number" class="form-control" id="treatment-price" name="price" min="0" step="0.01" required placeholder="例如：1500">
+              </div>
+              <div class="col-md-6">
+                <label for="treatment-notes" class="form-label">備註（選填）</label>
+                <textarea class="form-control" id="treatment-notes" name="notes" rows="2" placeholder="提供可選加值項目或注意事項"></textarea>
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="1" id="treatment-active" name="is_active" checked>
+                  <label class="form-check-label" for="treatment-active">
+                    上架此療程（若稍後要暫停，可取消勾選）
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+              <div id="treatment-form-errors" class="flex-grow-1"></div>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" id="reset-treatment-form">清除</button>
+                <button type="submit" class="btn btn-primary" id="submit-treatment-btn">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  儲存療程
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="h5 mb-0">已建立的療程</h3>
+            <span class="badge text-bg-light" id="treatment-count-badge">0 個療程</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle collection-table">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">名稱</th>
+                  <th scope="col">時間</th>
+                  <th scope="col">價格</th>
+                  <th scope="col">備註</th>
+                  <th scope="col" class="text-center">狀態</th>
+                  <th scope="col" class="text-end">操作</th>
+                </tr>
+              </thead>
+              <tbody id="treatments-list">
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-body-secondary">目前尚未建立療程。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end mt-4">
+            <button class="btn btn-primary" data-action="next" data-target-step="2" id="step-1-next" disabled>
+              下一步：設定上班時間
+              <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </section>
+
+        <section class="onboarding-section" data-step="2">
+          <header class="mb-4">
+            <h2 class="h4 mb-1">Step 2：設定上班時間</h2>
+            <p class="text-body-secondary mb-0">建立至少一段可預約的時段，客戶才能在這些時間預約你。</p>
+          </header>
+
+          <form id="working-hours-form" class="needs-validation" novalidate>
+            <input type="hidden" name="uuid" id="working-hours-id">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="working-start" class="form-label">開始時間</label>
+                <input type="datetime-local" class="form-control" id="working-start" name="starts_at" required>
+                <p class="form-hint mb-0">請輸入你的當地時間</p>
+              </div>
+              <div class="col-md-4">
+                <label for="working-end" class="form-label">結束時間</label>
+                <input type="datetime-local" class="form-control" id="working-end" name="ends_at" required>
+              </div>
+              <div class="col-md-4">
+                <label for="working-note" class="form-label">備註（選填）</label>
+                <input type="text" class="form-control" id="working-note" name="note" placeholder="例如：現場服務或線上諮詢">
+              </div>
+              <div class="col-md-4">
+                <label for="working-weekday" class="form-label">每週循環（選填）</label>
+                <select class="form-select" id="working-weekday" name="weekday">
+                  <option value="">不設定循環</option>
+                  <option value="0">週一</option>
+                  <option value="1">週二</option>
+                  <option value="2">週三</option>
+                  <option value="3">週四</option>
+                  <option value="4">週五</option>
+                  <option value="5">週六</option>
+                  <option value="6">週日</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="working-repeat-interval" class="form-label">重複頻率（週）</label>
+                <input type="number" class="form-control" id="working-repeat-interval" name="repeat_interval" min="1" value="1" disabled>
+              </div>
+              <div class="col-md-4">
+                <label for="working-repeat-until" class="form-label">重複到（選填）</label>
+                <input type="date" class="form-control" id="working-repeat-until" name="repeat_until" disabled>
+              </div>
+            </div>
+            <div class="form-text mt-2">若要建立每週固定班表，選擇星期後即可設定重複區間。</div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+              <div id="working-form-errors" class="flex-grow-1"></div>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" id="reset-working-form">清除</button>
+                <button type="submit" class="btn btn-primary" id="submit-working-btn">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  儲存時段
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="h5 mb-0">已設定的上班時間</h3>
+            <span class="badge text-bg-light" id="working-count-badge">0 段時段</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle collection-table">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">時間區間</th>
+                  <th scope="col">星期 / 循環</th>
+                  <th scope="col">備註</th>
+                  <th scope="col" class="text-end">操作</th>
+                </tr>
+              </thead>
+              <tbody id="working-hours-list">
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-body-secondary">尚未設定上班時間。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-between mt-4">
+            <button class="btn btn-outline-secondary" data-action="prev" data-target-step="1">
+              <i class="bi bi-arrow-left me-1"></i>
+              上一步
+            </button>
+            <button class="btn btn-primary" data-action="next" data-target-step="3" id="step-2-next" disabled>
+              下一步：設定休假
+              <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </section>
+
+        <section class="onboarding-section" data-step="3">
+          <header class="mb-4">
+            <h2 class="h4 mb-1">Step 3：建立休假與不可預約時間</h2>
+            <p class="text-body-secondary mb-0">避免客戶在你不在的時段預約，至少新增一段休假。</p>
+          </header>
+
+          <form id="time-off-form" class="needs-validation" novalidate>
+            <input type="hidden" name="uuid" id="time-off-id">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="timeoff-start" class="form-label">開始時間</label>
+                <input type="datetime-local" class="form-control" id="timeoff-start" name="starts_at" required>
+              </div>
+              <div class="col-md-4">
+                <label for="timeoff-end" class="form-label">結束時間</label>
+                <input type="datetime-local" class="form-control" id="timeoff-end" name="ends_at" required>
+              </div>
+              <div class="col-md-4">
+                <label for="timeoff-note" class="form-label">備註（選填）</label>
+                <input type="text" class="form-control" id="timeoff-note" name="note" placeholder="例如：午休、外出、進修">
+              </div>
+              <div class="col-md-4">
+                <label for="timeoff-repeat-type" class="form-label">循環類型（選填）</label>
+                <select class="form-select" id="timeoff-repeat-type" name="repeat_type">
+                  <option value="">單次</option>
+                  <option value="daily">每日重複</option>
+                  <option value="weekly">每週重複</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="timeoff-repeat-interval" class="form-label">重複頻率</label>
+                <input type="number" class="form-control" id="timeoff-repeat-interval" name="repeat_interval" min="1" value="1" disabled>
+              </div>
+              <div class="col-md-4">
+                <label for="timeoff-repeat-until" class="form-label">重複到（選填）</label>
+                <input type="date" class="form-control" id="timeoff-repeat-until" name="repeat_until" disabled>
+              </div>
+            </div>
+            <div class="form-text mt-2">若設定循環，時間將自動轉換為你所在時區後建立系列。</div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+              <div id="timeoff-form-errors" class="flex-grow-1"></div>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" id="reset-timeoff-form">清除</button>
+                <button type="submit" class="btn btn-primary" id="submit-timeoff-btn">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  儲存休假
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="h5 mb-0">已設定的休假/封鎖時段</h3>
+            <span class="badge text-bg-light" id="timeoff-count-badge">0 段休假</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle collection-table">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">時間區間</th>
+                  <th scope="col">循環</th>
+                  <th scope="col">備註</th>
+                  <th scope="col" class="text-end">操作</th>
+                </tr>
+              </thead>
+              <tbody id="timeoff-list">
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-body-secondary">尚未設定休假。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-between mt-4">
+            <button class="btn btn-outline-secondary" data-action="prev" data-target-step="2">
+              <i class="bi bi-arrow-left me-1"></i>
+              上一步
+            </button>
+            <button class="btn btn-primary" data-action="next" data-target-step="4" id="step-3-next" disabled>
+              完成設定
+              <i class="bi bi-check-circle ms-1"></i>
+            </button>
+          </div>
+        </section>
+
+        <section class="onboarding-section" data-step="4">
+          <header class="mb-4 text-center">
+            <div class="display-6 mb-3 text-success"><i class="bi bi-stars"></i></div>
+            <h2 class="h4 mb-2">恭喜完成！你的預約頁面準備好了</h2>
+            <p class="text-body-secondary mb-0">以下提供你的專屬預約連結，將網址分享給客戶即可開始接受預約。</p>
+          </header>
+
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h3 class="h6 text-uppercase text-body-secondary mb-2">專屬預約連結</h3>
+              <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center">
+                <code class="text-wrap bg-body-secondary px-3 py-2 rounded flex-grow-1" id="booking-link-display">
+                  {{ appointment_booking_url|default:appointments_booking_path }}
+                </code>
+                <a
+                  href="{{ appointment_booking_url|default:appointments_booking_path }}"
+                  class="btn btn-outline-primary"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  開啟預約頁面
+                </a>
+              </div>
+              <hr>
+              <p class="mb-0 text-body-secondary">
+                有空時也歡迎前往 <a href="{% url 'therapist_panel:treatments' %}">療程管理</a> 或 <a href="{% url 'therapist_panel:appointments' %}">預約總覽</a> 持續更新你的資訊。
+              </p>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <button class="btn btn-outline-secondary" data-action="prev" data-target-step="3">
+              <i class="bi bi-arrow-left me-1"></i>
+              回上一頁
+            </button>
+            <a class="btn btn-success" href="{% url 'therapist_panel:index' %}">
+              進入治療師主控台
+              <i class="bi bi-box-arrow-in-right ms-1"></i>
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  {{ onboarding_status|json_script:"onboarding-status" }}
+  <script type="application/json" id="onboarding-config">
+    {
+      "urls": {
+        "treatments": "{{ treatments_api_url }}",
+        "workingHours": "{{ working_hours_api_url }}",
+        "timeOff": "{{ time_off_api_url }}",
+        "booking": "{{ appointments_booking_path }}"
+      },
+      "therapistUuid": "{{ therapist_uuid }}"
+    }
+  </script>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    (function () {
+      const stepper = document.getElementById("onboarding-stepper");
+      const sections = Array.from(document.querySelectorAll(".onboarding-section"));
+      const stepIndicators = Array.from(stepper.querySelectorAll(".step-indicator"));
+      const onboardingStatus = JSON.parse(document.getElementById("onboarding-status").textContent);
+      const config = JSON.parse(document.getElementById("onboarding-config").textContent);
+
+      let currentStep = onboardingStatus.is_complete ? 4 : 1;
+      const store = {
+        treatments: [],
+        workingHours: [],
+        timeOff: [],
+      };
+
+      const csrfRegex = new RegExp("(^|; )csrftoken=([^;]*)");
+      function getCsrfToken() {
+        const match = document.cookie.match(csrfRegex);
+        return match ? decodeURIComponent(match[2]) : "";
+      }
+
+      const weekdayLabels = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+      function weekdayLabel(index) {
+        if (Number.isInteger(index) && index >= 0 && index < weekdayLabels.length) {
+          return weekdayLabels[index];
+        }
+        return "單次";
+      }
+
+      function isoToInputValue(isoString) {
+        if (!isoString) {
+          return "";
+        }
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) {
+          return "";
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
+      function formatCurrency(value) {
+        if (value === null || value === undefined) {
+          return "—";
+        }
+        const num = Number(value);
+        if (Number.isNaN(num)) {
+          return value;
+        }
+        return new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency: "TWD",
+          minimumFractionDigits: 0,
+        }).format(num);
+      }
+
+      function formatDateTime(isoString) {
+        if (!isoString) {
+          return "—";
+        }
+        try {
+          const date = new Date(isoString);
+          if (Number.isNaN(date.getTime())) {
+            return isoString;
+          }
+          return date.toLocaleString();
+        } catch (error) {
+          return isoString;
+        }
+      }
+
+      function setStep(step) {
+        currentStep = step;
+        sections.forEach((section) => {
+          section.classList.toggle("active", Number(section.dataset.step) === step);
+        });
+        stepIndicators.forEach((indicator, index) => {
+          const indicatorStep = index + 1;
+          indicator.classList.toggle("active", indicatorStep === step);
+          indicator.classList.toggle("completed", indicatorStep < step);
+        });
+      }
+
+      function refreshNextButtonsState() {
+        const treatmentsCount = Number(document.getElementById("treatment-count-badge").dataset.count || 0);
+        const workingCount = Number(document.getElementById("working-count-badge").dataset.count || 0);
+        const timeoffCount = Number(document.getElementById("timeoff-count-badge").dataset.count || 0);
+
+        document.getElementById("step-1-next").disabled = treatmentsCount === 0;
+        document.getElementById("step-2-next").disabled = workingCount === 0;
+        document.getElementById("step-3-next").disabled = timeoffCount === 0;
+      }
+
+      function renderEmptyRow(container, colspan, message) {
+        container.innerHTML = `
+          <tr>
+            <td colspan="${colspan}" class="text-center py-4 text-body-secondary">
+              ${message}
+            </td>
+          </tr>
+        `;
+      }
+
+      function hydrateCountBadge(elementId, count, emptyLabel) {
+        const badge = document.getElementById(elementId);
+        badge.dataset.count = count;
+        const label = count === 0 ? emptyLabel : `${count} ${emptyLabel.replace("0 ", "")}`;
+        badge.textContent = label;
+      }
+
+      /* Treatments logic */
+      const treatmentsList = document.getElementById("treatments-list");
+      const treatmentForm = document.getElementById("treatment-form");
+      const treatmentErrors = document.getElementById("treatment-form-errors");
+      const resetTreatmentBtn = document.getElementById("reset-treatment-form");
+      const treatmentFields = {
+        id: document.getElementById("treatment-id"),
+        name: document.getElementById("treatment-name"),
+        duration: document.getElementById("treatment-duration"),
+        preparation: document.getElementById("treatment-preparation"),
+        price: document.getElementById("treatment-price"),
+        notes: document.getElementById("treatment-notes"),
+        active: document.getElementById("treatment-active"),
+      };
+
+      function resetTreatmentForm() {
+        treatmentForm.reset();
+        treatmentErrors.innerHTML = "";
+        treatmentFields.id.value = "";
+        treatmentFields.preparation.value = treatmentFields.preparation.value || 10;
+        treatmentFields.active.checked = true;
+      }
+
+      function showFieldErrors(container, payload) {
+        if (!payload || typeof payload !== "object") {
+          container.innerHTML = "";
+          return;
+        }
+        const messages = Object.entries(payload)
+          .map(([field, errors]) => {
+            const text = Array.isArray(errors) ? errors.join(" ") : String(errors);
+            const label = field === "non_field_errors" ? "一般" : field;
+            return `<div class="alert alert-danger mb-2 py-2 px-3" role="alert"><strong>${label}</strong> ${text}</div>`;
+          })
+          .join("");
+        container.innerHTML = messages || "";
+      }
+
+      async function loadTreatments() {
+        renderEmptyRow(treatmentsList, 6, "載入中…");
+        try {
+          const response = await fetch(config.urls.treatments, {
+            headers: { Accept: "application/json" },
+          });
+          if (!response.ok) {
+            throw new Error("Unable to fetch treatments");
+          }
+          const data = await response.json();
+          const items = Array.isArray(data) ? data : data.results || [];
+          store.treatments = items;
+          if (items.length === 0) {
+            renderEmptyRow(treatmentsList, 6, "目前尚未建立療程。");
+          } else {
+            treatmentsList.innerHTML = items
+              .map((item) => {
+                const badge = item.is_active
+                  ? '<span class="badge text-bg-success">顯示中</span>'
+                  : '<span class="badge text-bg-secondary">已隱藏</span>';
+                return `
+                  <tr data-id="${item.id}">
+                    <td>${item.name}</td>
+                    <td>${item.duration_minutes} 分鐘 + ${item.preparation_minutes ?? 0} 分鐘準備</td>
+                    <td>${formatCurrency(item.price)}</td>
+                    <td>${item.notes || "—"}</td>
+                    <td class="text-center">${badge}</td>
+                    <td class="text-end">
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary" data-action="edit">編輯</button>
+                        <button class="btn btn-outline-danger" data-action="delete">刪除</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("");
+          }
+          hydrateCountBadge("treatment-count-badge", items.length, "0 個療程");
+        } catch (error) {
+          renderEmptyRow(treatmentsList, 6, "載入失敗，請稍候再試。");
+        } finally {
+          refreshNextButtonsState();
+        }
+      }
+
+      async function submitTreatment(event) {
+        event.preventDefault();
+        showFieldErrors(treatmentErrors, null);
+
+        const payload = {
+          name: treatmentFields.name.value.trim(),
+          duration_minutes: Number(treatmentFields.duration.value),
+          preparation_minutes: Number(treatmentFields.preparation.value || 0),
+          price: treatmentFields.price.value,
+          notes: treatmentFields.notes.value.trim(),
+          is_active: treatmentFields.active.checked,
+        };
+
+        const isEditing = Boolean(treatmentFields.id.value);
+        const url = isEditing
+          ? `${config.urls.treatments}${payloadIdSegment(treatmentFields.id.value)}/`
+          : config.urls.treatments;
+        const method = isEditing ? "PATCH" : "POST";
+
+        try {
+          const response = await fetch(url, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCsrfToken(),
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            showFieldErrors(treatmentErrors, errorData);
+            return;
+          }
+          resetTreatmentForm();
+          await loadTreatments();
+        } catch (error) {
+          showFieldErrors(treatmentErrors, { __all__: ["儲存失敗，請稍候再試。"] });
+        }
+      }
+
+      async function deleteTreatment(id) {
+        if (!window.confirm("確定要刪除此療程嗎？刪除後客戶將無法再預約。")) {
+          return;
+        }
+        try {
+          const response = await fetch(`${config.urls.treatments}${payloadIdSegment(id)}/`, {
+            method: "DELETE",
+            headers: {
+              "X-CSRFToken": getCsrfToken(),
+            },
+          });
+          if (!response.ok && response.status !== 204) {
+            throw new Error("Failed to delete");
+          }
+          if (treatmentFields.id.value === String(id)) {
+            resetTreatmentForm();
+          }
+          await loadTreatments();
+        } catch (error) {
+          alert("刪除失敗，請稍候再試。");
+        }
+      }
+
+      treatmentsList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+        const row = button.closest("tr[data-id]");
+        if (!row) {
+          return;
+        }
+        const id = row.dataset.id;
+        if (button.dataset.action === "edit") {
+          const record = store.treatments.find((item) => String(item.id) === String(id));
+          if (!record) {
+            return;
+          }
+          treatmentFields.id.value = record.id;
+          treatmentFields.name.value = record.name;
+          treatmentFields.duration.value = record.duration_minutes ?? 60;
+          treatmentFields.preparation.value = record.preparation_minutes ?? 0;
+          treatmentFields.price.value = record.price;
+          treatmentFields.notes.value = record.notes || "";
+          treatmentFields.active.checked = Boolean(record.is_active);
+          treatmentFields.name.focus();
+        } else if (button.dataset.action === "delete") {
+          deleteTreatment(id);
+        }
+      });
+
+      treatmentForm.addEventListener("submit", submitTreatment);
+      resetTreatmentBtn.addEventListener("click", resetTreatmentForm);
+
+      /* Working hours logic */
+      const workingList = document.getElementById("working-hours-list");
+      const workingForm = document.getElementById("working-hours-form");
+      const workingErrors = document.getElementById("working-form-errors");
+      const resetWorkingBtn = document.getElementById("reset-working-form");
+      const workingFields = {
+        uuid: document.getElementById("working-hours-id"),
+        startsAt: document.getElementById("working-start"),
+        endsAt: document.getElementById("working-end"),
+        note: document.getElementById("working-note"),
+        weekday: document.getElementById("working-weekday"),
+        repeatInterval: document.getElementById("working-repeat-interval"),
+        repeatUntil: document.getElementById("working-repeat-until"),
+      };
+
+      function syncWorkingRepeatFields() {
+        const shouldEnable = Boolean(workingFields.weekday.value);
+        workingFields.repeatInterval.disabled = !shouldEnable;
+        workingFields.repeatUntil.disabled = !shouldEnable;
+      }
+
+      function resetWorkingForm() {
+        workingForm.reset();
+        workingErrors.innerHTML = "";
+        workingFields.uuid.value = "";
+        workingFields.weekday.disabled = false;
+        syncWorkingRepeatFields();
+      }
+
+      workingFields.weekday.addEventListener("change", syncWorkingRepeatFields);
+
+      async function loadWorkingHours() {
+        renderEmptyRow(workingList, 4, "載入中…");
+        try {
+          const response = await fetch(config.urls.workingHours, {
+            headers: { Accept: "application/json" },
+          });
+          if (!response.ok) {
+            throw new Error("Unable to fetch working hours");
+          }
+          const data = await response.json();
+          const items = Array.isArray(data) ? data : data.results || [];
+          store.workingHours = items;
+          if (items.length === 0) {
+            renderEmptyRow(workingList, 4, "尚未設定上班時間。");
+          } else {
+            workingList.innerHTML = items
+              .map((item) => {
+                const recurrence = item.series_uuid ? `循環 · ${weekdayLabel(item.weekday)}` : weekdayLabel(item.weekday);
+                const note = item.note || "—";
+                return `
+                  <tr data-uuid="${item.uuid}" data-series="${item.series_uuid || ""}">
+                    <td>${formatDateTime(item.starts_at)} 至 ${formatDateTime(item.ends_at)}</td>
+                    <td>${recurrence}</td>
+                    <td>${note}</td>
+                    <td class="text-end">
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary" data-action="edit">編輯</button>
+                        <button class="btn btn-outline-danger" data-action="delete">刪除</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("");
+          }
+          hydrateCountBadge("working-count-badge", items.length, "0 段時段");
+        } catch (error) {
+          renderEmptyRow(workingList, 4, "載入失敗，請稍候再試。");
+        } finally {
+          refreshNextButtonsState();
+        }
+      }
+
+      async function submitWorkingHours(event) {
+        event.preventDefault();
+        showFieldErrors(workingErrors, null);
+
+        const payload = {
+          starts_at: workingFields.startsAt.value,
+          ends_at: workingFields.endsAt.value,
+          note: workingFields.note.value.trim(),
+        };
+
+        if (workingFields.weekday.value) {
+          payload.weekday = Number(workingFields.weekday.value);
+          if (workingFields.repeatInterval.value) {
+            payload.repeat_interval = Number(workingFields.repeatInterval.value);
+          }
+          if (workingFields.repeatUntil.value) {
+            payload.repeat_until = workingFields.repeatUntil.value;
+          }
+        }
+
+        const isEditing = Boolean(workingFields.uuid.value);
+        const url = isEditing
+          ? `${config.urls.workingHours}${payloadIdSegment(workingFields.uuid.value)}/`
+          : config.urls.workingHours;
+        const method = isEditing ? "PATCH" : "POST";
+
+        try {
+          const response = await fetch(url, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCsrfToken(),
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            showFieldErrors(workingErrors, errorData);
+            return;
+          }
+          resetWorkingForm();
+          await loadWorkingHours();
+        } catch (error) {
+          showFieldErrors(workingErrors, { __all__: ["儲存失敗，請稍候再試。"] });
+        }
+      }
+
+      async function deleteWorkingHours(uuid, seriesUuid) {
+        if (!window.confirm("確定要刪除此上班時段嗎？")) {
+          return;
+        }
+        const deleteSeries =
+          Boolean(seriesUuid) &&
+          window.confirm("此時段屬於循環班表，要刪除整個循環嗎？按「取消」僅暫停這筆。");
+        const scope = deleteSeries ? "?scope=series" : "";
+        const endpoint = `${config.urls.workingHours}${payloadIdSegment(uuid)}/`;
+        const url = scope ? `${endpoint}${scope}` : endpoint;
+        try {
+          const response = await fetch(url, {
+            method: "DELETE",
+            headers: {
+              "X-CSRFToken": getCsrfToken(),
+            },
+          });
+          if (!response.ok && response.status !== 204) {
+            throw new Error("Failed to delete");
+          }
+          if (workingFields.uuid.value === String(uuid)) {
+            resetWorkingForm();
+          }
+          await loadWorkingHours();
+        } catch (error) {
+          alert("刪除失敗，請稍候再試。");
+        }
+      }
+
+      workingList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+        const row = button.closest("tr[data-uuid]");
+        if (!row) {
+          return;
+        }
+        const uuid = row.dataset.uuid;
+        if (button.dataset.action === "edit") {
+          const record = store.workingHours.find((item) => item.uuid === uuid);
+          if (!record) {
+            return;
+          }
+          workingFields.uuid.value = record.uuid;
+          workingFields.startsAt.value = isoToInputValue(record.starts_at);
+          workingFields.endsAt.value = isoToInputValue(record.ends_at);
+          workingFields.note.value = record.note || "";
+          workingFields.weekday.disabled = Boolean(record.series_uuid);
+          if (record.series_uuid) {
+            workingFields.weekday.value = "";
+            workingFields.repeatInterval.value = 1;
+            workingFields.repeatUntil.value = "";
+          } else {
+            workingFields.weekday.value = Number.isInteger(record.weekday) ? String(record.weekday) : "";
+            if (workingFields.weekday.value !== "") {
+              workingFields.repeatInterval.value = 1;
+              workingFields.repeatUntil.value = "";
+            }
+          }
+          syncWorkingRepeatFields();
+          workingFields.startsAt.focus();
+        } else if (button.dataset.action === "delete") {
+          deleteWorkingHours(uuid, row.dataset.series);
+        }
+      });
+
+      workingForm.addEventListener("submit", submitWorkingHours);
+      resetWorkingBtn.addEventListener("click", resetWorkingForm);
+
+      /* Time off logic */
+      const timeoffList = document.getElementById("timeoff-list");
+      const timeoffForm = document.getElementById("time-off-form");
+      const timeoffErrors = document.getElementById("timeoff-form-errors");
+      const resetTimeoffBtn = document.getElementById("reset-timeoff-form");
+      const timeoffFields = {
+        uuid: document.getElementById("time-off-id"),
+        startsAt: document.getElementById("timeoff-start"),
+        endsAt: document.getElementById("timeoff-end"),
+        note: document.getElementById("timeoff-note"),
+        repeatType: document.getElementById("timeoff-repeat-type"),
+        repeatInterval: document.getElementById("timeoff-repeat-interval"),
+        repeatUntil: document.getElementById("timeoff-repeat-until"),
+      };
+
+      function syncTimeoffRepeatFields() {
+        const enable = Boolean(timeoffFields.repeatType.value);
+        timeoffFields.repeatInterval.disabled = !enable;
+        timeoffFields.repeatUntil.disabled = !enable;
+      }
+
+      function resetTimeoffForm() {
+        timeoffForm.reset();
+        timeoffErrors.innerHTML = "";
+        timeoffFields.uuid.value = "";
+        timeoffFields.repeatType.disabled = false;
+        timeoffFields.repeatInterval.disabled = true;
+        timeoffFields.repeatUntil.disabled = true;
+        syncTimeoffRepeatFields();
+      }
+
+      timeoffFields.repeatType.addEventListener("change", syncTimeoffRepeatFields);
+
+      async function loadTimeOff() {
+        renderEmptyRow(timeoffList, 4, "載入中…");
+        try {
+          const response = await fetch(config.urls.timeOff, {
+            headers: { Accept: "application/json" },
+          });
+          if (!response.ok) {
+            throw new Error("Unable to fetch time off");
+          }
+          const data = await response.json();
+          const items = Array.isArray(data) ? data : data.results || [];
+          store.timeOff = items;
+          if (items.length === 0) {
+            renderEmptyRow(timeoffList, 4, "尚未設定休假。");
+          } else {
+            timeoffList.innerHTML = items
+              .map((item) => {
+                const repeat = item.series_uuid ? "循環" : "單次";
+                const note = item.note || "—";
+                return `
+                  <tr data-uuid="${item.uuid}" data-series="${item.series_uuid || ""}">
+                    <td>${formatDateTime(item.starts_at)} 至 ${formatDateTime(item.ends_at)}</td>
+                    <td>${repeat}</td>
+                    <td>${note}</td>
+                    <td class="text-end">
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary" data-action="edit">編輯</button>
+                        <button class="btn btn-outline-danger" data-action="delete">刪除</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("");
+          }
+          hydrateCountBadge("timeoff-count-badge", items.length, "0 段休假");
+        } catch (error) {
+          renderEmptyRow(timeoffList, 4, "載入失敗，請稍候再試。");
+        } finally {
+          refreshNextButtonsState();
+        }
+      }
+
+      async function submitTimeoff(event) {
+        event.preventDefault();
+        showFieldErrors(timeoffErrors, null);
+
+        const payload = {
+          starts_at: timeoffFields.startsAt.value,
+          ends_at: timeoffFields.endsAt.value,
+          note: timeoffFields.note.value.trim(),
+        };
+
+        if (timeoffFields.repeatType.value) {
+          payload.repeat_type = timeoffFields.repeatType.value;
+          if (timeoffFields.repeatInterval.value) {
+            payload.repeat_interval = Number(timeoffFields.repeatInterval.value);
+          }
+          if (timeoffFields.repeatUntil.value) {
+            payload.repeat_until = timeoffFields.repeatUntil.value;
+          }
+        }
+
+        const isEditing = Boolean(timeoffFields.uuid.value);
+        const url = isEditing
+          ? `${config.urls.timeOff}${payloadIdSegment(timeoffFields.uuid.value)}/`
+          : config.urls.timeOff;
+        const method = isEditing ? "PATCH" : "POST";
+
+        try {
+          const response = await fetch(url, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCsrfToken(),
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            showFieldErrors(timeoffErrors, errorData);
+            return;
+          }
+          resetTimeoffForm();
+          await loadTimeOff();
+        } catch (error) {
+          showFieldErrors(timeoffErrors, { __all__: ["儲存失敗，請稍候再試。"] });
+        }
+      }
+
+      async function deleteTimeoff(uuid, seriesUuid) {
+        if (!window.confirm("確定要刪除此休假時段嗎？")) {
+          return;
+        }
+        const deleteSeries =
+          Boolean(seriesUuid) &&
+          window.confirm("此休假屬於循環系列，要刪除整個系列嗎？按「取消」僅將此筆標記為跳過。");
+        const scope = deleteSeries ? "?scope=series" : "";
+        const endpoint = `${config.urls.timeOff}${payloadIdSegment(uuid)}/`;
+        const url = scope ? `${endpoint}${scope}` : endpoint;
+        try {
+          const response = await fetch(url, {
+            method: "DELETE",
+            headers: {
+              "X-CSRFToken": getCsrfToken(),
+            },
+          });
+          if (!response.ok && response.status !== 204) {
+            throw new Error("Failed to delete");
+          }
+          if (timeoffFields.uuid.value === String(uuid)) {
+            resetTimeoffForm();
+          }
+          await loadTimeOff();
+        } catch (error) {
+          alert("刪除失敗，請稍候再試。");
+        }
+      }
+
+      timeoffList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+        const row = button.closest("tr[data-uuid]");
+        if (!row) {
+          return;
+        }
+        const uuid = row.dataset.uuid;
+        if (button.dataset.action === "edit") {
+          const record = store.timeOff.find((item) => item.uuid === uuid);
+          if (!record) {
+            return;
+          }
+          timeoffFields.uuid.value = record.uuid;
+          timeoffFields.startsAt.value = isoToInputValue(record.starts_at);
+          timeoffFields.endsAt.value = isoToInputValue(record.ends_at);
+          timeoffFields.note.value = record.note || "";
+          const isSeries = Boolean(record.series_uuid);
+          timeoffFields.repeatType.disabled = isSeries;
+          timeoffFields.repeatInterval.disabled = isSeries;
+          timeoffFields.repeatUntil.disabled = isSeries;
+          if (isSeries) {
+            timeoffFields.repeatType.value = "";
+            timeoffFields.repeatInterval.value = 1;
+            timeoffFields.repeatUntil.value = "";
+          } else {
+            timeoffFields.repeatType.value = "";
+            timeoffFields.repeatInterval.value = 1;
+            timeoffFields.repeatUntil.value = "";
+          }
+          syncTimeoffRepeatFields();
+          timeoffFields.startsAt.focus();
+        } else if (button.dataset.action === "delete") {
+          deleteTimeoff(uuid, row.dataset.series);
+        }
+      });
+
+      timeoffForm.addEventListener("submit", submitTimeoff);
+      resetTimeoffBtn.addEventListener("click", resetTimeoffForm);
+
+      function payloadIdSegment(value) {
+        return String(value).replace(/\/+$/, "");
+      }
+
+      /* Navigation */
+      document.body.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+        const action = button.dataset.action;
+        if (action !== "next" && action !== "prev") {
+          return;
+        }
+        event.preventDefault();
+        const target = Number(button.dataset.targetStep);
+        if (!Number.isInteger(target)) {
+          return;
+        }
+        setStep(target);
+      });
+
+      async function initialize() {
+        setStep(currentStep);
+        await Promise.all([loadTreatments(), loadWorkingHours(), loadTimeOff()]);
+        refreshNextButtonsState();
+      }
+
+      initialize();
+    })();
+  </script>
+{% endblock %}

@@ -6,6 +6,7 @@ from django.views.generic import RedirectView
 
 from therapist_panel.views import (
     TherapistAppointmentSearchView,
+    TherapistOnboardingView,
     TherapistPanelIndexView,
     TherapistProfileUpdateView,
     TherapistQuestionnaireListView,
@@ -22,6 +23,7 @@ urlpatterns = [
     ),
     path("logout/", LogoutView.as_view(next_page="accounts:login"), name="logout"),
     path("", TherapistPanelIndexView.as_view(), name="index"),
+    path("onboarding/", TherapistOnboardingView.as_view(), name="onboarding"),
     path("profile/", TherapistProfileUpdateView.as_view(), name="profile_edit"),
     path("treatments/", TherapistTreatmentManagementView.as_view(), name="treatments"),
     path("reviews/", TherapistQuestionnaireListView.as_view(), name="reviews"),

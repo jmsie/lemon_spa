@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
@@ -9,9 +9,97 @@ from django.urls import reverse
 
 from accounts.constants import ROLE_THERAPIST, SESSION_ACTIVE_ROLE_KEY
 from appointments.models import Appointment, AppointmentQuestionnaireLog
+from scheduling.models import TherapistTimeOff, TherapistWorkingHours
 from scheduling.utils import to_utc
 from therapist_panel.constants import DEFAULT_THERAPIST_TIMEZONE
 from therapist_panel.models import Therapist, TherapistTreatment
+
+
+class TherapistOnboardingFlowTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username="therapist",
+            password="strongpass123",
+            email="therapist@example.com",
+            first_name="Terry",
+            last_name="Therapist",
+        )
+        self.index_url = reverse("therapist_panel:index")
+        self.onboarding_url = reverse("therapist_panel:onboarding")
+        self.therapist = Therapist.objects.create(
+            user=self.user,
+            last_name="Therapist",
+            first_name="Terry",
+            nickname="TT",
+            phone_number="0988111222",
+            address="Taipei City",
+            timezone=DEFAULT_THERAPIST_TIMEZONE,
+        )
+        self.tzinfo = ZoneInfo(self.therapist.timezone)
+
+    def _login_as_therapist(self):
+        logged_in = self.client.login(username="therapist", password="strongpass123")
+        self.assertTrue(logged_in, "Failed to log in therapist user for onboarding tests.")
+        session = self.client.session
+        session[SESSION_ACTIVE_ROLE_KEY] = ROLE_THERAPIST
+        session.save()
+
+    def test_redirects_to_onboarding_when_missing_setup(self):
+        self._login_as_therapist()
+
+        response = self.client.get(self.index_url)
+
+        self.assertRedirects(
+            response,
+            self.onboarding_url,
+            status_code=302,
+            target_status_code=200,
+        )
+
+    def test_onboarding_redirects_to_index_when_requirements_completed(self):
+        self._login_as_therapist()
+        TherapistTreatment.objects.create(
+            therapist=self.therapist,
+            name="Deep Tissue",
+            duration_minutes=60,
+            preparation_minutes=10,
+            price="1500.00",
+        )
+        working_start = datetime(2024, 7, 1, 9, 0, tzinfo=self.tzinfo)
+        TherapistWorkingHours.objects.create(
+            therapist=self.therapist,
+            starts_at=to_utc(working_start, self.therapist.timezone),
+            ends_at=to_utc(working_start + timedelta(hours=2), self.therapist.timezone),
+            note="Morning shift",
+        )
+        break_start = datetime(2024, 7, 1, 13, 0, tzinfo=self.tzinfo)
+        TherapistTimeOff.objects.create(
+            therapist=self.therapist,
+            starts_at=to_utc(break_start, self.therapist.timezone),
+            ends_at=to_utc(break_start + timedelta(hours=1), self.therapist.timezone),
+            note="Lunch break",
+        )
+
+        response = self.client.get(self.onboarding_url)
+
+        self.assertRedirects(
+            response,
+            self.index_url,
+            status_code=302,
+            target_status_code=200,
+        )
+
+    def test_onboarding_context_includes_api_endpoints(self):
+        self._login_as_therapist()
+
+        response = self.client.get(self.onboarding_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("treatments_api_url", response.context)
+        self.assertIn("working_hours_api_url", response.context)
+        self.assertIn("time_off_api_url", response.context)
+        self.assertIn("appointments_booking_path", response.context)
 
 
 class TherapistAppointmentSearchViewTests(TestCase):
@@ -48,6 +136,7 @@ class TherapistAppointmentSearchViewTests(TestCase):
         )
         self.tz_name = self.therapist.timezone
         self.tzinfo = ZoneInfo(self.tz_name)
+        self._create_onboarding_requirements()
         self.early_appointment = self._create_appointment(
             "Alice",
             "0912000111",
@@ -72,6 +161,22 @@ class TherapistAppointmentSearchViewTests(TestCase):
             start_time=to_utc(local_start, self.tz_name),
             customer_name=customer_name,
             customer_phone=customer_phone,
+        )
+
+    def _create_onboarding_requirements(self):
+        working_start = datetime(2024, 4, 1, 9, 0, tzinfo=self.tzinfo)
+        TherapistWorkingHours.objects.create(
+            therapist=self.therapist,
+            starts_at=to_utc(working_start, self.tz_name),
+            ends_at=to_utc(working_start + timedelta(hours=4), self.tz_name),
+            note="Initial shift",
+        )
+        time_off_start = datetime(2024, 4, 2, 12, 0, tzinfo=self.tzinfo)
+        TherapistTimeOff.objects.create(
+            therapist=self.therapist,
+            starts_at=to_utc(time_off_start, self.tz_name),
+            ends_at=to_utc(time_off_start + timedelta(hours=1), self.tz_name),
+            note="Break",
         )
 
     def _login_as_therapist(self):

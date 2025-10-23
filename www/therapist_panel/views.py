@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Exists, OuterRef
 from django.http import Http404
+from django.shortcuts import redirect
 from django.utils import timezone
 from django.urls import reverse, reverse_lazy
 from django.views.generic import FormView, TemplateView
@@ -17,17 +18,35 @@ from appointments.models import Appointment, AppointmentQuestionnaireLog
 from scheduling.utils import to_utc
 from therapist_panel.api.views import TherapistViewSet
 from therapist_panel.forms import AppointmentSearchForm, TherapistProfileForm
-from therapist_panel.services import get_today_appointments
+from therapist_panel.services import (
+    get_onboarding_status,
+    get_today_appointments,
+    needs_onboarding,
+)
 
 
 class TherapistPanelContextMixin(TherapistRoleRequiredMixin):
     """Inject common context needed across therapist panel pages."""
+
+    skip_onboarding_redirect = False
 
     def get_therapist_profile(self):
         profile = getattr(self.request.user, "therapist_profile", None)
         if profile and profile.user_id != self.request.user.id:
             return None
         return profile
+
+    def dispatch(self, request, *args, **kwargs):
+        therapist = self.get_therapist_profile()
+        if (
+            therapist
+            and not self.skip_onboarding_redirect
+            and needs_onboarding(therapist)
+        ):
+            onboarding_url = reverse("therapist_panel:onboarding")
+            if request.path != onboarding_url:
+                return redirect(onboarding_url)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -60,6 +79,48 @@ class TherapistPanelIndexView(TherapistPanelContextMixin, TemplateView):
     """Simple landing page after successful login."""
 
     template_name = "therapist_panel/index.html"
+
+
+class TherapistOnboardingView(TherapistPanelContextMixin, TemplateView):
+    """Step-by-step onboarding guide for therapists without initial data."""
+
+    template_name = "therapist_panel/onboarding.html"
+    skip_onboarding_redirect = True
+
+    def dispatch(self, request, *args, **kwargs):
+        therapist = self.get_therapist_profile()
+        if therapist is None:
+            raise Http404("Therapist profile not found.")
+        if not needs_onboarding(therapist):
+            return redirect("therapist_panel:index")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        therapist = self.get_therapist_profile()
+        if therapist is None:
+            raise Http404("Therapist profile not found.")
+
+        onboarding_status = get_onboarding_status(therapist)
+        context.update(
+            {
+                "onboarding_status": onboarding_status,
+                "treatments_api_url": reverse(
+                    "therapist_panel:api:treatments:treatment-list"
+                ),
+                "working_hours_api_url": reverse(
+                    "therapist_panel:api:working_hours:working-hours-list"
+                ),
+                "time_off_api_url": reverse(
+                    "therapist_panel:api:time_off:time-off-list"
+                ),
+                "therapist_uuid": therapist.uuid,
+                "appointments_booking_path": reverse(
+                    "appointments:book_with_therapist", args=[therapist.uuid]
+                ),
+            }
+        )
+        return context
 
 
 class TherapistProfileUpdateView(TherapistPanelContextMixin, FormView):
@@ -194,4 +255,5 @@ __all__ = [
     "TherapistTreatmentManagementView",
     "TherapistQuestionnaireListView",
     "TherapistAppointmentSearchView",
+    "TherapistOnboardingView",
 ]
