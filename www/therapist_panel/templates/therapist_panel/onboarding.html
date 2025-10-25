@@ -214,18 +214,18 @@
                 <input type="time" class="form-control" id="working-end-time" step="1800" value="17:00" required>
               </div>
               <div class="col-md-3">
-                <label for="working-repeat-interval" class="form-label">每幾週重複</label>
-                <select class="form-select" id="working-repeat-interval">
-                  <option value="1">每 1 週</option>
-                  <option value="2">每 2 週</option>
-                  <option value="3">每 3 週</option>
-                  <option value="4">每 4 週</option>
-                  <option value="5">每 5 週</option>
-                  <option value="6">每 6 週</option>
-                  <option value="7">每 7 週</option>
-                  <option value="8">每 8 週</option>
+                <label for="working-repeat-weeks" class="form-label">持續週數</label>
+                <select class="form-select" id="working-repeat-weeks">
+                  <option value="1">1 週（本週）</option>
+                  <option value="2">2 週</option>
+                  <option value="3">3 週</option>
+                  <option value="4">4 週</option>
+                  <option value="5">5 週</option>
+                  <option value="6">6 週</option>
+                  <option value="7">7 週</option>
+                  <option value="8">8 週</option>
                 </select>
-                <div class="form-text">1 代表每週重複一次，最多可每 8 週重複。</div>
+                <div class="form-text">系統會每週排班，最多可一次建立 8 週。</div>
               </div>
               <div class="col-md-3">
                 <label for="working-note" class="form-label">備註（選填）</label>
@@ -251,6 +251,7 @@
             <h3 class="h5 mb-0">已設定的上班時間</h3>
             <span class="badge text-bg-light" id="working-count-badge">0 段時段</span>
           </div>
+          <div id="working-log" class="mb-3 small text-body-secondary"></div>
           <div class="table-responsive">
             <table class="table table-hover table-borderless align-middle collection-table">
               <thead class="table-light">
@@ -332,16 +333,16 @@
                 <input type="time" class="form-control" id="timeoff-end-time" step="1800" value="13:00" required>
               </div>
               <div class="col-md-4">
-                <label for="timeoff-repeat-interval" class="form-label">每幾週重複</label>
-                <select class="form-select" id="timeoff-repeat-interval">
-                  <option value="1">每 1 週</option>
-                  <option value="2">每 2 週</option>
-                  <option value="3">每 3 週</option>
-                  <option value="4">每 4 週</option>
-                  <option value="5">每 5 週</option>
-                  <option value="6">每 6 週</option>
-                  <option value="7">每 7 週</option>
-                  <option value="8">每 8 週</option>
+                <label for="timeoff-repeat-weeks" class="form-label">持續週數</label>
+                <select class="form-select" id="timeoff-repeat-weeks">
+                  <option value="1">1 週（本週）</option>
+                  <option value="2">2 週</option>
+                  <option value="3">3 週</option>
+                  <option value="4">4 週</option>
+                  <option value="5">5 週</option>
+                  <option value="6">6 週</option>
+                  <option value="7">7 週</option>
+                  <option value="8">8 週</option>
                 </select>
               </div>
               <div class="col-12">
@@ -349,7 +350,7 @@
                 <input type="text" class="form-control" id="timeoff-note" placeholder="例如：午休、外出、進修">
               </div>
             </div>
-            <div class="form-text mt-2">系統會從最近的該星期開始設定休假，並依照間隔重複。</div>
+            <div class="form-text mt-2">系統會從最近的該星期開始設定休假，並每週套用，最多 8 週。</div>
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
               <div id="timeoff-form-errors" class="flex-grow-1"></div>
               <div class="d-flex gap-2">
@@ -368,6 +369,7 @@
             <h3 class="h5 mb-0">已設定的休假/封鎖時段</h3>
             <span class="badge text-bg-light" id="timeoff-count-badge">0 段休假</span>
           </div>
+          <div id="timeoff-log" class="mb-3 small text-body-secondary"></div>
           <div class="table-responsive">
             <table class="table table-hover table-borderless align-middle collection-table">
               <thead class="table-light">
@@ -507,6 +509,22 @@
         }).format(date);
       }
 
+      function addWeeksToDateString(dateStr, weeksMinusOne) {
+        if (!dateStr) {
+          return null;
+        }
+        const [year, month, day] = dateStr.split("-").map(Number);
+        if ([year, month, day].some((value) => Number.isNaN(value))) {
+          return null;
+        }
+        const date = new Date(Date.UTC(year, month - 1, day));
+        date.setUTCDate(date.getUTCDate() + weeksMinusOne * 7);
+        const resultYear = date.getUTCFullYear();
+        const resultMonth = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const resultDay = String(date.getUTCDate()).padStart(2, "0");
+        return `${resultYear}-${resultMonth}-${resultDay}`;
+      }
+
       function getNextDateStringForWeekday(weekday, timeZone) {
         const now = new Date();
         const tzNow = new Date(now.toLocaleString("en-US", { timeZone }));
@@ -594,6 +612,31 @@
             }
           });
         });
+      }
+
+      function formatWeeksText(weeks) {
+        const safeWeeks = Number.isFinite(Number(weeks)) ? Number(weeks) : 1;
+        return `持續${safeWeeks}週`;
+      }
+
+      function appendLogEntries(container, entries) {
+        if (!container || !entries.length) {
+          return;
+        }
+        const content = entries.map((line) => `<div>${line}</div>`).join("");
+        container.insertAdjacentHTML("beforeend", content);
+      }
+
+      function buildWorkingSummary(weekday, startTime, endTime, note, weeks) {
+        const label = Number.isInteger(weekday) ? weekdayLabel(weekday) : "單次";
+        const noteText = note ? ` ${note}` : "";
+        return `${label} 上班時間 ${startTime}~${endTime}${noteText} ${formatWeeksText(weeks)}`;
+      }
+
+      function buildTimeoffSummary(weekday, startTime, endTime, note, weeks) {
+        const label = Number.isInteger(weekday) ? weekdayLabel(weekday) : "單次";
+        const noteText = note ? ` ${note}` : "";
+        return `${label} 休假時間 ${startTime}~${endTime}${noteText} ${formatWeeksText(weeks)}`;
       }
 
       function formatCurrency(value) {
@@ -846,6 +889,7 @@
 
       /* Working hours logic */
       const workingList = document.getElementById("working-hours-list");
+      const workingLog = document.getElementById("working-log");
       const workingForm = document.getElementById("working-hours-form");
       const workingErrors = document.getElementById("working-form-errors");
       const resetWorkingBtn = document.getElementById("reset-working-form");
@@ -859,7 +903,7 @@
         weekdays: workingCheckboxes,
         startTime: document.getElementById("working-start-time"),
         endTime: document.getElementById("working-end-time"),
-        repeatInterval: document.getElementById("working-repeat-interval"),
+        repeatWeeks: document.getElementById("working-repeat-weeks"),
         note: document.getElementById("working-note"),
       };
 
@@ -870,8 +914,8 @@
         resetCheckboxes(workingFields.weekdays);
         workingFields.startTime.value = "09:00";
         workingFields.endTime.value = "17:00";
-        workingFields.repeatInterval.disabled = false;
-        workingFields.repeatInterval.value = "1";
+        workingFields.repeatWeeks.disabled = false;
+        workingFields.repeatWeeks.value = "1";
         workingFields.note.value = "";
       }
 
@@ -944,9 +988,10 @@
           return;
         }
 
-        const repeatInterval = Number(workingFields.repeatInterval.value) || 1;
+        const repeatWeeks = Number(workingFields.repeatWeeks.value) || 1;
         const note = workingFields.note.value.trim();
         const isEditing = Boolean(workingFields.uuid.value);
+        const newLogEntries = [];
 
         if (isEditing) {
           const record = store.workingHours.find((item) => item.uuid === workingFields.uuid.value);
@@ -979,6 +1024,13 @@
               showFieldErrors(workingErrors, errorData);
               return;
             }
+            const editWeekday =
+              typeof record.weekday === "number"
+                ? record.weekday
+                : getWeekdayIndexFromISO(record.starts_at, therapistTimeZone);
+            appendLogEntries(workingLog, [
+              buildWorkingSummary(editWeekday, startTime, endTime, note, repeatWeeks),
+            ]);
             resetWorkingForm();
             await loadWorkingHours();
           } catch (error) {
@@ -995,8 +1047,14 @@
               ends_at: `${dateStr}T${appendSecondsToTime(endTime)}`,
               note,
               weekday,
-              repeat_interval: repeatInterval,
+              repeat_interval: 1,
             };
+            if (repeatWeeks > 1) {
+              const repeatUntil = addWeeksToDateString(dateStr, repeatWeeks - 1);
+              if (repeatUntil) {
+                payload.repeat_until = repeatUntil;
+              }
+            }
             const response = await fetch(config.urls.workingHours, {
               method: "POST",
               headers: {
@@ -1011,7 +1069,11 @@
               showFieldErrors(workingErrors, errorData);
               return;
             }
+            newLogEntries.push(
+              buildWorkingSummary(weekday, startTime, endTime, note, repeatWeeks)
+            );
           }
+          appendLogEntries(workingLog, newLogEntries);
           resetWorkingForm();
           await loadWorkingHours();
         } catch (error) {
@@ -1058,24 +1120,24 @@
         return;
       }
       const uuid = row.dataset.uuid;
-      if (button.dataset.action === "edit") {
-        const record = store.workingHours.find((item) => item.uuid === uuid);
-        if (!record) {
-          return;
-        }
-        workingFields.uuid.value = record.uuid;
-        const weekdayIndex =
-          row.dataset.weekday !== ""
-            ? Number(row.dataset.weekday)
-            : getWeekdayIndexFromISO(record.starts_at, therapistTimeZone);
-        if (weekdayIndex !== null && !Number.isNaN(weekdayIndex)) {
-          setCheckboxSelection(workingFields.weekdays, [weekdayIndex], true);
-        }
-        workingFields.startTime.value = isoToTime(record.starts_at) || "09:00";
-        workingFields.endTime.value = isoToTime(record.ends_at) || "17:00";
-        workingFields.note.value = record.note || "";
-        workingFields.repeatInterval.disabled = Boolean(record.series_uuid);
-        workingFields.repeatInterval.value = record.repeat_interval || "1";
+        if (button.dataset.action === "edit") {
+          const record = store.workingHours.find((item) => item.uuid === uuid);
+          if (!record) {
+            return;
+          }
+          workingFields.uuid.value = record.uuid;
+          const weekdayIndex =
+            row.dataset.weekday !== ""
+              ? Number(row.dataset.weekday)
+              : getWeekdayIndexFromISO(record.starts_at, therapistTimeZone);
+          if (weekdayIndex !== null && !Number.isNaN(weekdayIndex)) {
+            setCheckboxSelection(workingFields.weekdays, [weekdayIndex], Boolean(record.series_uuid));
+          }
+          workingFields.startTime.value = isoToTime(record.starts_at) || "09:00";
+          workingFields.endTime.value = isoToTime(record.ends_at) || "17:00";
+          workingFields.note.value = record.note || "";
+        workingFields.repeatWeeks.disabled = Boolean(record.series_uuid);
+        workingFields.repeatWeeks.value = record.repeat_interval || "1";
         workingFields.startTime.focus();
       } else if (button.dataset.action === "delete") {
         deleteWorkingHours(uuid, row.dataset.series);
@@ -1087,6 +1149,7 @@
 
       /* Time off logic */
       const timeoffList = document.getElementById("timeoff-list");
+      const timeoffLog = document.getElementById("timeoff-log");
       const timeoffForm = document.getElementById("time-off-form");
       const timeoffErrors = document.getElementById("timeoff-form-errors");
       const resetTimeoffBtn = document.getElementById("reset-timeoff-form");
@@ -1100,7 +1163,7 @@
         weekdays: timeoffCheckboxes,
         startTime: document.getElementById("timeoff-start-time"),
         endTime: document.getElementById("timeoff-end-time"),
-        repeatInterval: document.getElementById("timeoff-repeat-interval"),
+        repeatWeeks: document.getElementById("timeoff-repeat-weeks"),
         note: document.getElementById("timeoff-note"),
       };
 
@@ -1111,8 +1174,8 @@
         resetCheckboxes(timeoffFields.weekdays);
         timeoffFields.startTime.value = "12:00";
         timeoffFields.endTime.value = "13:00";
-        timeoffFields.repeatInterval.disabled = false;
-        timeoffFields.repeatInterval.value = "1";
+        timeoffFields.repeatWeeks.disabled = false;
+        timeoffFields.repeatWeeks.value = "1";
         timeoffFields.note.value = "";
       }
 
@@ -1182,9 +1245,10 @@
           return;
         }
 
-        const repeatInterval = Number(timeoffFields.repeatInterval.value) || 1;
+        const repeatWeeks = Number(timeoffFields.repeatWeeks.value) || 1;
         const note = timeoffFields.note.value.trim();
         const isEditing = Boolean(timeoffFields.uuid.value);
+        const logEntries = [];
 
         if (isEditing) {
           const record = store.timeOff.find((item) => item.uuid === timeoffFields.uuid.value);
@@ -1217,6 +1281,10 @@
               showFieldErrors(timeoffErrors, errorData);
               return;
             }
+            const editWeekday = getWeekdayIndexFromISO(record.starts_at, therapistTimeZone);
+            appendLogEntries(timeoffLog, [
+              buildTimeoffSummary(editWeekday, startTime, endTime, note, repeatWeeks),
+            ]);
             resetTimeoffForm();
             await loadTimeOff();
           } catch (error) {
@@ -1232,9 +1300,15 @@
               starts_at: `${dateStr}T${appendSecondsToTime(startTime)}`,
               ends_at: `${dateStr}T${appendSecondsToTime(endTime)}`,
               note,
-              repeat_type: "weekly",
-              repeat_interval: repeatInterval,
             };
+            if (repeatWeeks > 1) {
+              const repeatUntil = addWeeksToDateString(dateStr, repeatWeeks - 1);
+              if (repeatUntil) {
+                payload.repeat_type = "weekly";
+                payload.repeat_interval = 1;
+                payload.repeat_until = repeatUntil;
+              }
+            }
             const response = await fetch(config.urls.timeOff, {
               method: "POST",
               headers: {
@@ -1249,7 +1323,11 @@
               showFieldErrors(timeoffErrors, errorData);
               return;
             }
+            logEntries.push(
+              buildTimeoffSummary(weekday, startTime, endTime, note, repeatWeeks)
+            );
           }
+          appendLogEntries(timeoffLog, logEntries);
           resetTimeoffForm();
           await loadTimeOff();
         } catch (error) {
@@ -1304,13 +1382,13 @@
           timeoffFields.uuid.value = record.uuid;
           const weekdayIndex = getWeekdayIndexFromISO(record.starts_at, therapistTimeZone);
           if (weekdayIndex !== null && !Number.isNaN(weekdayIndex)) {
-            setCheckboxSelection(timeoffFields.weekdays, [weekdayIndex], true);
+            setCheckboxSelection(timeoffFields.weekdays, [weekdayIndex], Boolean(record.series_uuid));
           }
           timeoffFields.startTime.value = isoToTime(record.starts_at) || "12:00";
           timeoffFields.endTime.value = isoToTime(record.ends_at) || "13:00";
           timeoffFields.note.value = record.note || "";
-          timeoffFields.repeatInterval.disabled = Boolean(record.series_uuid);
-          timeoffFields.repeatInterval.value = record.repeat_interval || "1";
+          timeoffFields.repeatWeeks.disabled = Boolean(record.series_uuid);
+          timeoffFields.repeatWeeks.value = record.repeat_interval || "1";
           timeoffFields.startTime.focus();
         } else if (button.dataset.action === "delete") {
           deleteTimeoff(uuid, row.dataset.series);
