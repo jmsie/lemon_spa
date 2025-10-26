@@ -125,10 +125,11 @@ class TherapistWorkingHoursAdmin(admin.ModelAdmin):
         "get_local_ends_at",
         "series",
         "is_generated",
+        "is_skipped",
         "note",
         "created_at",
     )
-    list_filter = ("therapist", "is_generated")
+    list_filter = ("therapist", "is_generated", "is_skipped")
     search_fields = (
         "therapist__nickname",
         "therapist__first_name",

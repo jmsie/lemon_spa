@@ -11,6 +11,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from scheduling.models import TherapistWorkingHours, TherapistWorkingHoursSeries
+from scheduling.services import ensure_working_hours_occurrences
+from scheduling.utils import to_utc
 from therapist_panel.constants import DEFAULT_THERAPIST_TIMEZONE
 from therapist_panel.models import Therapist
 
@@ -103,7 +105,7 @@ class TherapistWorkingHoursAPITests(APITestCase):
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(TherapistWorkingHours.objects.filter(series=series).count(), 3)
 
-    def test_delete_single_occurrence_from_series_is_forbidden(self):
+    def test_delete_single_occurrence_from_series_marks_as_skipped(self):
         payload = {
             "starts_at": "2024-03-07T10:00:00",
             "ends_at": "2024-03-07T18:00:00",
@@ -118,8 +120,62 @@ class TherapistWorkingHoursAPITests(APITestCase):
 
         delete_response = self.client.delete(detail_url)
 
-        self.assertEqual(delete_response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("Create a time off entry instead", str(delete_response.data))
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        record = TherapistWorkingHours.objects.get(uuid=occurrence_uuid)
+        self.assertTrue(record.is_skipped)
+        list_response = self.client.get(self.working_hours_url)
+        response_payload = list_response.data
+        if isinstance(response_payload, dict) and "results" in response_payload:
+            response_payload = response_payload["results"]
+        returned_ids = {item["uuid"] for item in response_payload}
+        self.assertNotIn(str(occurrence_uuid), returned_ids)
+
+    def test_update_single_occurrence_adjusts_time_without_regenerating_default(self):
+        payload = {
+            "starts_at": "2024-03-07T10:00:00",
+            "ends_at": "2024-03-07T18:00:00",
+            "weekday": 3,
+            "repeat_interval": 1,
+            "repeat_until": "2024-03-21",
+        }
+
+        response = self.client.post(self.working_hours_url, payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        occurrence_uuid = response.data["uuid"]
+        series_uuid = response.data["series_uuid"]
+        detail_url = reverse("therapist_panel:api:working_hours:working-hours-detail", args=[occurrence_uuid])
+
+        patch_payload = {
+            "starts_at": "2024-03-07T12:00:00",
+            "ends_at": "2024-03-07T20:00:00",
+            "note": "Adjusted",
+        }
+        patch_response = self.client.patch(detail_url, patch_payload, format="json")
+        self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
+
+        # Trigger regeneration within range to ensure no duplicate entry is created.
+        ensure_working_hours_occurrences(
+            self.therapist,
+            range_start=to_utc(datetime(2024, 3, 4, 0, 0), self.therapist.timezone),
+            range_end=to_utc(datetime(2024, 3, 21, 23, 0), self.therapist.timezone),
+        )
+
+        series = TherapistWorkingHoursSeries.objects.get(uuid=series_uuid)
+        day_start = to_utc(datetime(2024, 3, 7, 0, 0), self.therapist.timezone)
+        day_end = to_utc(datetime(2024, 3, 8, 0, 0), self.therapist.timezone)
+        day_occurrences = TherapistWorkingHours.objects.filter(
+            series=series,
+            starts_at__gte=day_start,
+            starts_at__lt=day_end,
+            is_skipped=False,
+        )
+        self.assertEqual(day_occurrences.count(), 1)
+        record = day_occurrences.first()
+        self.assertEqual(
+            record.starts_at,
+            to_utc(datetime(2024, 3, 7, 12, 0), self.therapist.timezone),
+        )
+        self.assertEqual(record.note, "Adjusted")
 
     def test_delete_series_deactivates_recurring_series(self):
         payload = {

@@ -229,6 +229,7 @@ class TherapistAvailabilityView(APIView):
                 therapist=therapist,
                 starts_at__lt=range_end_utc,
                 ends_at__gt=range_start_utc,
+                is_skipped=False,
             )
             .order_by("starts_at")
             .only("starts_at", "ends_at")

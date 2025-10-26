@@ -70,6 +70,7 @@ class TherapistWorkingHours(models.Model):
     ends_at = models.DateTimeField()
     note = models.TextField(blank=True)
     is_generated = models.BooleanField(default=False)
+    is_skipped = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -82,6 +83,7 @@ class TherapistWorkingHours(models.Model):
             models.Index(fields=["therapist", "ends_at"]),
             models.Index(fields=["series", "starts_at"]),
             models.Index(fields=["therapist", "is_generated"]),
+            models.Index(fields=["therapist", "is_skipped"]),
         ]
         constraints = [
             models.CheckConstraint(

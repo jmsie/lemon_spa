@@ -156,6 +156,21 @@ def ensure_working_hours_occurrences(therapist, range_start=None, range_end=None
             start_utc = to_utc(start_local_naive, therapist.timezone)
             end_utc = to_utc(end_local_naive, therapist.timezone)
 
+            day_start_local = datetime.combine(occurrence_date, datetime.min.time())
+            next_day_local = day_start_local + timedelta(days=1)
+            day_start_utc = to_utc(day_start_local, therapist.timezone)
+            day_end_utc = to_utc(next_day_local, therapist.timezone)
+
+            has_existing_occurrence = TherapistWorkingHours.objects.filter(
+                therapist=therapist,
+                series=series,
+                starts_at__gte=day_start_utc,
+                starts_at__lt=day_end_utc,
+                is_skipped=False,
+            ).exists()
+            if has_existing_occurrence:
+                continue
+
             TherapistWorkingHours.objects.get_or_create(
                 therapist=therapist,
                 series=series,

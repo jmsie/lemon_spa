@@ -55,6 +55,7 @@ class TherapistWorkingHoursViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = (
             TherapistWorkingHours.objects.select_related("therapist", "therapist__user", "series")
+            .filter(is_skipped=False)
             .order_by("starts_at")
         )
         user = self.request.user
@@ -112,12 +113,9 @@ class TherapistWorkingHoursViewSet(viewsets.ModelViewSet):
             return
 
         if instance.series_id:
-            raise ValidationError(
-                {
-                    "detail": "Single occurrences from recurring working hours cannot be removed. "
-                    "Create a time off entry instead."
-                }
-            )
+            instance.is_skipped = True
+            instance.save(update_fields=["is_skipped", "updated_at"])
+            return
 
         instance.delete()
 

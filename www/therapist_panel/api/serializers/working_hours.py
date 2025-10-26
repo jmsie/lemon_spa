@@ -40,6 +40,7 @@ class TherapistWorkingHoursSerializer(serializers.ModelSerializer):
             "series_uuid",
             "is_recurring",
             "is_generated",
+            "is_skipped",
             "weekday",
             "starts_at",
             "ends_at",
@@ -57,6 +58,7 @@ class TherapistWorkingHoursSerializer(serializers.ModelSerializer):
             "series_uuid",
             "is_recurring",
             "is_generated",
+            "is_skipped",
             "created_at",
             "updated_at",
         ]
@@ -194,7 +196,11 @@ class TherapistWorkingHoursSerializer(serializers.ModelSerializer):
         validated_data.pop("repeat_interval", None)
         validated_data.pop("repeat_until", None)
         validated_data.pop("weekday", None)
-        return super().update(instance, validated_data)
+        updated_instance = super().update(instance, validated_data)
+        if instance.is_generated and any(key in validated_data for key in ("starts_at", "ends_at")):
+            instance.is_generated = False
+            instance.save(update_fields=["is_generated", "updated_at"])
+        return updated_instance
 
     def to_representation(self, instance: TherapistWorkingHours) -> dict[str, Any]:
         data = super().to_representation(instance)

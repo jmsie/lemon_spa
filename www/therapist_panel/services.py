@@ -40,6 +40,7 @@ def get_onboarding_status(therapist: Therapist) -> dict[str, int | bool]:
     working_hours_count = TherapistWorkingHours.objects.filter(
         therapist=therapist,
         is_generated=False,
+        is_skipped=False,
     ).count()
     time_off_count = TherapistTimeOff.objects.filter(
         therapist=therapist,
