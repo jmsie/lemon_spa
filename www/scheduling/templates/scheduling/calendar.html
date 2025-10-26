@@ -198,7 +198,7 @@
           <form id="working-hours-form" novalidate>
             <input type="hidden" id="working-hours-id" name="uuid">
             <div class="row g-3">
-              <div class="col-12">
+              <div class="col-12" data-working-section="weekdays">
                 <label class="form-label d-block mb-2">選擇上班星期（可複選）</label>
                 <div class="d-flex flex-wrap gap-2" id="working-weekdays">
                   <div class="form-check form-check-inline">
@@ -231,9 +231,10 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-4" id="working-start-date-display">
                 <label for="working-start-date" class="form-label">開始日期</label>
                 <input type="date" class="form-control" id="working-start-date" required>
+                <div class="form-control-plaintext d-none px-2 py-1 border rounded" ></div>
                 <div class="form-text">系統會從此日期所在週開始排程。</div>
               </div>
               <div class="col-md-4">
@@ -244,7 +245,7 @@
                 <label for="working-end-time" class="form-label">結束時間</label>
                 <input type="time" class="form-control" id="working-end-time" step="1800" value="17:00" required>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-12" data-working-section="repeat-weeks">
                 <label for="working-repeat-weeks" class="form-label">持續週數</label>
                 <select class="form-select" id="working-repeat-weeks">
                   <option value="1">1 週（本週）</option>
@@ -257,13 +258,13 @@
                   <option value="8">8 週</option>
                 </select>
                 <div class="form-text">最多一次建立 8 週。</div>
+                <div class="form-text mt-2">系統會依照所選星期，自開始日期當週向後建立時段。</div>
               </div>
-              <div class="col-md-8">
+              <div class="col-md-12">
                 <label for="working-note" class="form-label">備註（選填）</label>
                 <input type="text" class="form-control" id="working-note" placeholder="例如：現場服務或線上諮詢">
               </div>
             </div>
-            <div class="form-text mt-2">系統會依照所選星期，自開始日期當週向後建立時段。</div>
             <div class="alert alert-info d-none mt-3 small" data-working-repeat-edit-warning>
               編輯重複上班時段時無法調整重複設定。如需變更，請刪除後重新建立。
             </div>
@@ -475,10 +476,13 @@
           workingHoursModalTitle: document.getElementById('workingHoursModalLabel'),
           workingHoursRepeatEditWarning: document.querySelector('[data-working-repeat-edit-warning]'),
           workingHoursWeekdayCheckboxes: Array.from(document.querySelectorAll('[data-working-weekday-checkbox]')),
+          workingHoursWeekdaySection: document.querySelector('[data-working-section="weekdays"]'),
           workingHoursStartDate: document.getElementById('working-start-date'),
+          workingHoursStartDateDisplay: document.getElementById('working-start-date-display'),
           workingHoursStartTime: document.getElementById('working-start-time'),
           workingHoursEndTime: document.getElementById('working-end-time'),
           workingHoursRepeatWeeks: document.getElementById('working-repeat-weeks'),
+          workingHoursRepeatWeeksSection: document.querySelector('[data-working-section="repeat-weeks"]'),
           workingHoursNote: document.getElementById('working-note'),
           workingHoursErrors: document.getElementById('working-form-errors'),
           workingHoursResetButton: document.getElementById('reset-working-form'),
@@ -889,11 +893,17 @@
         this.elements.workingHoursDelete?.classList.add('d-none');
 
         this.resetWorkingWeekdayButtons();
+        this.elements.workingHoursWeekdaySection?.classList.remove('d-none');
 
         const today = new Date();
         if (this.elements.workingHoursStartDate) {
           this.elements.workingHoursStartDate.value = this.formatDateValue(today);
           this.elements.workingHoursStartDate.removeAttribute('disabled');
+          this.elements.workingHoursStartDate.classList.remove('d-none');
+        }
+        if (this.elements.workingHoursStartDateDisplay) {
+          this.elements.workingHoursStartDateDisplay.textContent = '';
+          this.elements.workingHoursStartDateDisplay.classList.add('d-none');
         }
         if (this.elements.workingHoursStartTime) {
           this.elements.workingHoursStartTime.value = '09:00';
@@ -907,6 +917,7 @@
           this.elements.workingHoursRepeatWeeks.value = '1';
           this.elements.workingHoursRepeatWeeks.removeAttribute('disabled');
         }
+        this.elements.workingHoursRepeatWeeksSection?.classList.remove('d-none');
         if (this.elements.workingHoursNote) {
           this.elements.workingHoursNote.value = '';
         }
@@ -970,6 +981,16 @@
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         return `${hours}:${minutes}`;
+      }
+
+      formatDateWithWeekday(date) {
+        if (!date) return '';
+        return date.toLocaleDateString('zh-TW', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          weekday: 'short',
+        });
       }
 
       parseDateValue(value) {
@@ -1360,6 +1381,7 @@
         const startDate = event.start ? new Date(event.start) : null;
         const endDate = event.end ? new Date(event.end) : null;
 
+        let formattedDate = '';
         if (startDate) {
           if (this.elements.workingHoursStartDate) {
             this.elements.workingHoursStartDate.value = this.formatDateValue(startDate);
@@ -1367,6 +1389,8 @@
           if (this.elements.workingHoursStartTime) {
             this.elements.workingHoursStartTime.value = this.formatTimeValue(startDate);
           }
+          formattedDate = this.formatDateWithWeekday(startDate);
+          this.elements.workingHoursStartDateDisplay?.classList.add('d-none');
         }
         if (endDate && this.elements.workingHoursEndTime) {
           this.elements.workingHoursEndTime.value = this.formatTimeValue(endDate);
@@ -1378,6 +1402,7 @@
           this.elements.workingHoursRepeatWeeks.value = '1';
           this.elements.workingHoursRepeatWeeks.setAttribute('disabled', 'disabled');
         }
+        this.elements.workingHoursRepeatWeeksSection?.classList.add('d-none');
 
         const warningEl = this.elements.workingHoursRepeatEditWarning;
         const hasSeries = Boolean(event.extendedProps.seriesUuid);
@@ -1387,14 +1412,19 @@
           : (startDate ? this.getWeekdayIndex(startDate) : 0);
 
         if (this.elements.workingHoursModalTitle) {
-          this.elements.workingHoursModalTitle.textContent = '編輯上班時間';
+          this.elements.workingHoursModalTitle.textContent = formattedDate
+            ? `編輯上班時間 - ${formattedDate}`
+            : '編輯上班時間';
         }
         if (this.elements.workingHoursSave) {
           this.elements.workingHoursSave.textContent = '儲存上班時間';
         }
 
         this.setWorkingWeekdaySelection([eventWeekday], true);
+        this.elements.workingHoursWeekdaySection?.classList.add('d-none');
         this.elements.workingHoursStartDate?.setAttribute('disabled', 'disabled');
+        this.elements.workingHoursStartDate?.classList.add('d-none');
+        this.elements.workingHoursStartDateDisplay?.classList.add('d-none');
         this.elements.workingHoursStartTime?.removeAttribute('disabled');
         this.elements.workingHoursEndTime?.removeAttribute('disabled');
 
