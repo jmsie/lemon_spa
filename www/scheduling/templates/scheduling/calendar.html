@@ -319,14 +319,18 @@
         </div>
         <div class="modal-body">
           <form id="time-off-form" novalidate>
-            <div class="row g-2 mb-3">
-              <div class="col-md-6">
-                <label for="time-off-start" class="form-label">開始時間</label>
-                <input type="datetime-local" class="form-control" id="time-off-start" name="starts_at" step="1800" required>
+            <div class="row g-3 mb-3">
+              <div class="col-md-4" data-timeoff-section="date">
+                <label for="time-off-date" class="form-label">日期</label>
+                <input type="date" class="form-control" id="time-off-date" required>
               </div>
-              <div class="col-md-6">
-                <label for="time-off-end" class="form-label">結束時間</label>
-                <input type="datetime-local" class="form-control" id="time-off-end" name="ends_at" step="1800" required>
+              <div class="col-md-4">
+                <label for="time-off-start-time" class="form-label">開始時間</label>
+                <input type="time" class="form-control" id="time-off-start-time" step="1800" required>
+              </div>
+              <div class="col-md-4">
+                <label for="time-off-end-time" class="form-label">結束時間</label>
+                <input type="time" class="form-control" id="time-off-end-time" step="1800" required>
               </div>
             </div>
             <div class="mb-3">
@@ -488,6 +492,11 @@
           workingHoursResetButton: document.getElementById('reset-working-form'),
           workingHoursIdInput: document.getElementById('working-hours-id'),
           timeOffModalTitle: document.getElementById('timeOffModalLabel'),
+          timeOffRepeatSection: document.getElementById('time-off-repeat-section'),
+          timeOffDateSection: document.querySelector('[data-timeoff-section="date"]'),
+          timeOffDate: document.getElementById('time-off-date'),
+          timeOffStartTime: document.getElementById('time-off-start-time'),
+          timeOffEndTime: document.getElementById('time-off-end-time'),
           repeatType: document.getElementById('time-off-repeat-type'),
           repeatSettings: document.querySelector('[data-repeat-settings]'),
           repeatIntervalLabel: document.querySelector('[data-repeat-interval-label]'),
@@ -1449,26 +1458,45 @@
       }
 
       async handleTimeOffEdit(event) {
+        this.resetTimeOffModal();
         this.isEditingTimeOff = true;
         this.activeTimeOffEvent = event;
         const form = this.elements.timeOffForm;
-        
-        form.reset();
-        
-        // 填充表單
-        if (event.start) form.starts_at.value = this.toLocalInputValue(event.start);
-        if (event.end) form.ends_at.value = this.toLocalInputValue(event.end);
-        form.note.value = event.extendedProps.note || '';
-        
-        // 更新界面
-        this.elements.timeOffModalTitle.textContent = '編輯休假';
+        form?.reset?.();
+
+        const startDate = event.start ? new Date(event.start) : null;
+        const endDate = event.end ? new Date(event.end) : null;
+        if (startDate && this.elements.timeOffDate) {
+          this.elements.timeOffDate.value = this.formatDateValue(startDate);
+        }
+        if (startDate && this.elements.timeOffStartTime) {
+          this.elements.timeOffStartTime.value = this.formatTimeValue(startDate);
+        }
+        if (endDate && this.elements.timeOffEndTime) {
+          this.elements.timeOffEndTime.value = this.formatTimeValue(endDate);
+        }
+        if (form) {
+          form.note.value = event.extendedProps.note || '';
+        }
+
+        const formattedDate = startDate ? this.formatDateWithWeekday(startDate) : '';
+
+        this.elements.timeOffModalTitle.textContent = formattedDate
+          ? `編輯休假 - ${formattedDate}`
+          : '編輯休假';
         this.elements.timeOffSave.textContent = '儲存休假';
-        this.elements.timeOffDelete.classList.remove('d-none');
-        
-        // 禁用重複設定
-        this.elements.repeatType.disabled = true;
-        this.elements.repeatEditWarning.classList.remove('d-none');
-        
+        this.elements.timeOffDelete?.classList.remove('d-none');
+
+        this.elements.timeOffDate?.setAttribute('disabled', 'disabled');
+        this.elements.timeOffDate?.classList.add('d-none');
+        this.elements.timeOffDateSection?.classList.add('d-none');
+
+        if (this.elements.repeatType) {
+          this.elements.repeatType.disabled = true;
+        }
+        this.elements.repeatSettings?.classList.add('d-none');
+        this.elements.repeatEditWarning?.classList.remove('d-none');
+
         this.elements.timeOffModal.show();
       }
 
@@ -1729,24 +1757,27 @@
 
       showTimeOffModal() {
         this.resetTimeOffModal();
-        this.elements.timeOffForm.reset();
         
-        // 設定預設時間
         const now = new Date();
         const roundedStart = new Date(now);
         const minutes = roundedStart.getMinutes();
         const remainder = minutes % 30;
-        
         if (remainder !== 0) {
           roundedStart.setMinutes(minutes + (30 - remainder), 0, 0);
         } else {
           roundedStart.setSeconds(0, 0);
         }
-        
         const roundedEnd = new Date(roundedStart.getTime() + 60 * 60 * 1000);
-        
-        this.elements.timeOffForm.starts_at.value = this.toLocalInputValue(roundedStart);
-        this.elements.timeOffForm.ends_at.value = this.toLocalInputValue(roundedEnd);
+
+        if (this.elements.timeOffDate) {
+          this.elements.timeOffDate.value = this.formatDateValue(roundedStart);
+        }
+        if (this.elements.timeOffStartTime) {
+          this.elements.timeOffStartTime.value = this.formatTimeValue(roundedStart);
+        }
+        if (this.elements.timeOffEndTime) {
+          this.elements.timeOffEndTime.value = this.formatTimeValue(roundedEnd);
+        }
         
         this.elements.timeOffModal.show();
       }
@@ -1755,16 +1786,31 @@
         this.toggleButtonLoading(this.elements.timeOffSave, true);
         
         const form = this.elements.timeOffForm;
-        const startDate = new Date(form.starts_at.value);
-        const endDate = new Date(form.ends_at.value);
-        
-        // 驗證
-        if (!form.starts_at.value || !form.ends_at.value) {
-          this.showFeedback('請填寫開始與結束時間。', 'warning');
+        const dateValue = this.elements.timeOffDate?.value || '';
+        const startTimeValue = this.elements.timeOffStartTime?.value || '';
+        const endTimeValue = this.elements.timeOffEndTime?.value || '';
+
+        if (!dateValue || !startTimeValue || !endTimeValue) {
+          this.showFeedback('請填寫日期與開始/結束時間。', 'warning');
           this.toggleButtonLoading(this.elements.timeOffSave, false);
           return;
         }
-        
+
+        const baseDate = this.parseDateValue(dateValue);
+        if (!baseDate) {
+          this.showFeedback('請輸入有效的日期。', 'warning');
+          this.toggleButtonLoading(this.elements.timeOffSave, false);
+          return;
+        }
+
+        const startDate = this.combineDateAndTime(baseDate, startTimeValue);
+        const endDate = this.combineDateAndTime(baseDate, endTimeValue);
+        if (!startDate || !endDate) {
+          this.showFeedback('請輸入有效的時間。', 'warning');
+          this.toggleButtonLoading(this.elements.timeOffSave, false);
+          return;
+        }
+
         if (endDate <= startDate) {
           this.showFeedback('結束時間必須晚於開始時間。', 'warning');
           this.toggleButtonLoading(this.elements.timeOffSave, false);
@@ -1778,11 +1824,11 @@
         };
 
         // 重複設定
-        if (!this.isEditingTimeOff && this.elements.repeatType.value) {
+        if (!this.isEditingTimeOff && this.elements.repeatType?.value) {
           payload.repeat_type = this.elements.repeatType.value;
           
           const interval = Number.parseInt(form.repeat_interval?.value, 10);
-          payload.repeat_interval = isNaN(interval) || interval < 1 ? 1 : interval;
+          payload.repeat_interval = Number.isNaN(interval) || interval < 1 ? 1 : interval;
           
           if (form.repeat_until?.value) {
             payload.repeat_until = form.repeat_until.value;
@@ -1828,7 +1874,7 @@
         } else {
           this.elements.timeOffDeleteSeries.classList.add('d-none');
           document.getElementById('time-off-delete-message').textContent = '確定要刪除此休假嗎？';
-          this.elements.timeOffDeleteSingle.textContent = '刪除';
+          this.elements.timeOffDeleteSingle.textContent = '刪除此筆';
         }
         
         this.elements.timeOffDeleteConfirmModal.show();
@@ -1879,15 +1925,36 @@
       resetTimeOffModal() {
         this.isEditingTimeOff = false;
         this.activeTimeOffEvent = null;
+        this.elements.timeOffForm?.reset?.();
         
         this.elements.timeOffModalTitle.textContent = '新增休假';
         this.elements.timeOffSave.textContent = '建立休假';
         this.elements.timeOffDelete?.classList.add('d-none');
-        
+
+        const now = new Date();
+        if (this.elements.timeOffDate) {
+          this.elements.timeOffDate.value = this.formatDateValue(now);
+          this.elements.timeOffDate.removeAttribute('disabled');
+          this.elements.timeOffDate.classList.remove('d-none');
+        }
+        if (this.elements.timeOffStartTime) {
+          this.elements.timeOffStartTime.value = this.formatTimeValue(now);
+          this.elements.timeOffStartTime.removeAttribute('disabled');
+        }
+        if (this.elements.timeOffEndTime) {
+          const end = new Date(now.getTime() + 60 * 60 * 1000);
+          this.elements.timeOffEndTime.value = this.formatTimeValue(end);
+          this.elements.timeOffEndTime.removeAttribute('disabled');
+        }
+        this.elements.timeOffDateSection?.classList.remove('d-none');
+
         // 重置重複設定
         if (this.elements.repeatType) {
           this.elements.repeatType.disabled = false;
           this.elements.repeatType.value = '';
+        }
+        if (this.elements.repeatSettings) {
+          this.elements.repeatSettings.classList.add('d-none');
         }
         
         this.elements.repeatEditWarning?.classList.add('d-none');
