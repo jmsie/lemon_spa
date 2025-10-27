@@ -320,6 +320,39 @@
         <div class="modal-body">
           <form id="time-off-form" novalidate>
             <div class="row g-3 mb-3">
+              <div class="col-12" data-timeoff-section="weekdays">
+                <label class="form-label d-block mb-2">選擇休假星期（可複選）</label>
+                <div class="d-flex flex-wrap gap-2" id="time-off-weekdays">
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="0" id="time-off-weekday-0" data-timeoff-weekday-checkbox autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="time-off-weekday-0">週一</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="1" id="time-off-weekday-1" data-timeoff-weekday-checkbox autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="time-off-weekday-1">週二</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="2" id="time-off-weekday-2" data-timeoff-weekday-checkbox autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="time-off-weekday-2">週三</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="3" id="time-off-weekday-3" data-timeoff-weekday-checkbox autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="time-off-weekday-3">週四</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="4" id="time-off-weekday-4" data-timeoff-weekday-checkbox autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="time-off-weekday-4">週五</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="5" id="time-off-weekday-5" data-timeoff-weekday-checkbox autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="time-off-weekday-5">週六</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="btn-check" type="checkbox" value="6" id="time-off-weekday-6" data-timeoff-weekday-checkbox autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="time-off-weekday-6">週日</label>
+                  </div>
+                </div>
+              </div>
               <div class="col-md-4" data-timeoff-section="date">
                 <label for="time-off-date" class="form-label">日期</label>
                 <input type="date" class="form-control" id="time-off-date" required>
@@ -332,6 +365,20 @@
                 <label for="time-off-end-time" class="form-label">結束時間</label>
                 <input type="time" class="form-control" id="time-off-end-time" step="1800" required>
               </div>
+              <div class="col-md-4" data-timeoff-section="repeat-weeks">
+                <label for="time-off-repeat-weeks" class="form-label">持續週數</label>
+                <select class="form-select" id="time-off-repeat-weeks">
+                  <option value="1">1 週（本週）</option>
+                  <option value="2">2 週</option>
+                  <option value="3">3 週</option>
+                  <option value="4">4 週</option>
+                  <option value="5">5 週</option>
+                  <option value="6">6 週</option>
+                  <option value="7">7 週</option>
+                  <option value="8">8 週</option>
+                </select>
+                <div class="form-text">最多一次建立 8 週。</div>
+              </div>
             </div>
             <div class="mb-3">
               <label for="time-off-note" class="form-label">備註</label>
@@ -339,7 +386,7 @@
             </div>
             
             <!-- 重複設定區塊 -->
-            <div class="border-top pt-3" id="time-off-repeat-section">
+            <div class="border-top pt-3" id="time-off-repeat-section" hidden>
               <h6 class="mb-3">重複設定</h6>
               <div class="mb-3">
                 <select class="form-select" id="time-off-repeat-type" name="repeat_type">
@@ -493,10 +540,14 @@
           workingHoursIdInput: document.getElementById('working-hours-id'),
           timeOffModalTitle: document.getElementById('timeOffModalLabel'),
           timeOffRepeatSection: document.getElementById('time-off-repeat-section'),
+          timeOffWeekdaySection: document.querySelector('[data-timeoff-section="weekdays"]'),
+          timeOffWeekdayCheckboxes: Array.from(document.querySelectorAll('[data-timeoff-weekday-checkbox]')),
           timeOffDateSection: document.querySelector('[data-timeoff-section="date"]'),
           timeOffDate: document.getElementById('time-off-date'),
           timeOffStartTime: document.getElementById('time-off-start-time'),
           timeOffEndTime: document.getElementById('time-off-end-time'),
+          timeOffRepeatWeeks: document.getElementById('time-off-repeat-weeks'),
+          timeOffRepeatWeeksSection: document.querySelector('[data-timeoff-section="repeat-weeks"]'),
           repeatType: document.getElementById('time-off-repeat-type'),
           repeatSettings: document.querySelector('[data-repeat-settings]'),
           repeatIntervalLabel: document.querySelector('[data-repeat-interval-label]'),
@@ -511,6 +562,11 @@
           checkbox.addEventListener('change', () => this.updateWeekdayButtonState(checkbox));
           this.updateWeekdayButtonState(checkbox);
         });
+        this.elements.timeOffWeekdayCheckboxes?.forEach((checkbox) => {
+          checkbox.addEventListener('change', () => this.updateWeekdayButtonState(checkbox));
+          this.updateWeekdayButtonState(checkbox);
+        });
+        this.elements.timeOffDate?.addEventListener('change', () => this.syncTimeOffWeekdayFromDate());
       }
 
       // 主要初始化方法
@@ -1069,6 +1125,43 @@
         });
       }
 
+      resetTimeOffWeekdayButtons() {
+        this.elements.timeOffWeekdayCheckboxes?.forEach((checkbox) => {
+          checkbox.checked = false;
+          checkbox.disabled = false;
+          this.updateWeekdayButtonState(checkbox);
+        });
+      }
+
+      setTimeOffWeekdaySelection(values = [], disableAll = false) {
+        const valueSet = new Set(values.map(String));
+        this.elements.timeOffWeekdayCheckboxes?.forEach((checkbox) => {
+          checkbox.checked = valueSet.has(checkbox.value);
+          checkbox.disabled = disableAll;
+          this.updateWeekdayButtonState(checkbox);
+        });
+      }
+
+      getSelectedTimeOffWeekdays() {
+        return this.elements.timeOffWeekdayCheckboxes
+          ?.filter((checkbox) => checkbox.checked && !checkbox.disabled)
+          .map((checkbox) => Number(checkbox.value)) ?? [];
+      }
+
+      syncTimeOffWeekdayFromDate() {
+        if (this.isEditingTimeOff) return;
+        const dateValue = this.elements.timeOffDate?.value;
+        if (!dateValue) return;
+
+        const date = this.parseDateValue(dateValue);
+        if (!date) return;
+
+        const hasSelection = this.elements.timeOffWeekdayCheckboxes?.some((checkbox) => checkbox.checked);
+        if (hasSelection) return;
+
+        this.setTimeOffWeekdaySelection([this.getWeekdayIndex(date)]);
+      }
+
       updateWeekdayButtonState(checkbox) {
         if (!checkbox) return;
         const label = checkbox.nextElementSibling;
@@ -1313,6 +1406,47 @@
         return successCount;
       }
 
+      async createTimeOffEntries({ baseDate, startTimeValue, durationMs, note, repeatWeeks, selectedWeekdays }) {
+        const requests = [];
+        for (const weekday of selectedWeekdays) {
+          const firstOccurrenceDate = this.shiftDateToWeekday(baseDate, weekday);
+          const startDateTime = this.combineDateAndTime(firstOccurrenceDate, startTimeValue);
+          if (!startDateTime) {
+            throw new Error('請輸入有效的時間。');
+          }
+          const endDateTime = new Date(startDateTime.getTime() + durationMs);
+          const body = {
+            starts_at: startDateTime.toISOString(),
+            ends_at: endDateTime.toISOString(),
+            note,
+          };
+          if (repeatWeeks > 1) {
+            body.repeat_type = 'weekly';
+            body.repeat_interval = 1;
+            const repeatUntilDate = this.addWeeksToDate(firstOccurrenceDate, repeatWeeks - 1);
+            body.repeat_until = this.formatDateValue(repeatUntilDate);
+          }
+          requests.push(body);
+        }
+
+        let successCount = 0;
+        for (const body of requests) {
+          const response = await this.apiRequest(this.timeOffApiBase, {
+            method: 'POST',
+            body: JSON.stringify(body),
+          });
+          if (!response.ok) {
+            const message = await this.getErrorMessage(response, '休假建立失敗');
+            if (successCount > 0) {
+              throw new Error(`${message}（部分時段已建立）`);
+            }
+            throw new Error(message);
+          }
+          successCount += 1;
+        }
+        return successCount;
+      }
+
       showWorkingHoursDeleteConfirm() {
         if (!this.activeWorkingHoursEvent) return;
         const modal = this.elements.workingHoursDeleteConfirmModal;
@@ -1480,6 +1614,7 @@
         }
 
         const formattedDate = startDate ? this.formatDateWithWeekday(startDate) : '';
+        const eventWeekday = startDate ? this.getWeekdayIndex(startDate) : 0;
 
         this.elements.timeOffModalTitle.textContent = formattedDate
           ? `編輯休假 - ${formattedDate}`
@@ -1490,6 +1625,14 @@
         this.elements.timeOffDate?.setAttribute('disabled', 'disabled');
         this.elements.timeOffDate?.classList.add('d-none');
         this.elements.timeOffDateSection?.classList.add('d-none');
+        this.setTimeOffWeekdaySelection([eventWeekday], true);
+        this.elements.timeOffWeekdaySection?.classList.add('d-none');
+        if (this.elements.timeOffRepeatWeeks) {
+          this.elements.timeOffRepeatWeeks.value = '1';
+          this.elements.timeOffRepeatWeeks.setAttribute('disabled', 'disabled');
+        }
+        this.elements.timeOffRepeatWeeksSection?.classList.add('d-none');
+        this.elements.timeOffRepeatSection?.classList.add('d-none');
 
         if (this.elements.repeatType) {
           this.elements.repeatType.disabled = true;
@@ -1778,7 +1921,7 @@
         if (this.elements.timeOffEndTime) {
           this.elements.timeOffEndTime.value = this.formatTimeValue(roundedEnd);
         }
-        
+        this.syncTimeOffWeekdayFromDate();
         this.elements.timeOffModal.show();
       }
 
@@ -1789,6 +1932,8 @@
         const dateValue = this.elements.timeOffDate?.value || '';
         const startTimeValue = this.elements.timeOffStartTime?.value || '';
         const endTimeValue = this.elements.timeOffEndTime?.value || '';
+        const note = form?.note?.value?.trim() ?? '';
+        const isEditing = this.isEditingTimeOff && this.activeTimeOffEvent;
 
         if (!dateValue || !startTimeValue || !endTimeValue) {
           this.showFeedback('請填寫日期與開始/結束時間。', 'warning');
@@ -1817,41 +1962,51 @@
           return;
         }
 
-        const payload = {
-          starts_at: startDate.toISOString(),
-          ends_at: endDate.toISOString(),
-          note: form.note.value.trim()
-        };
-
-        // 重複設定
-        if (!this.isEditingTimeOff && this.elements.repeatType?.value) {
-          payload.repeat_type = this.elements.repeatType.value;
-          
-          const interval = Number.parseInt(form.repeat_interval?.value, 10);
-          payload.repeat_interval = Number.isNaN(interval) || interval < 1 ? 1 : interval;
-          
-          if (form.repeat_until?.value) {
-            payload.repeat_until = form.repeat_until.value;
-          }
-        }
+        const durationMs = endDate.getTime() - startDate.getTime();
+        const repeatWeeksRaw = Number.parseInt(this.elements.timeOffRepeatWeeks?.value ?? '1', 10);
+        const repeatWeeks = Number.isNaN(repeatWeeksRaw) ? 1 : Math.min(Math.max(repeatWeeksRaw, 1), 8);
+        const selectedWeekdays = this.getSelectedTimeOffWeekdays();
 
         try {
-          const isEditing = this.isEditingTimeOff && this.activeTimeOffEvent;
-          const endpoint = isEditing ? `${this.timeOffApiBase}${this.activeTimeOffEvent.id}/` : this.timeOffApiBase;
-          const method = isEditing ? 'PATCH' : 'POST';
-          
-          const response = await this.apiRequest(endpoint, {
-            method,
-            body: JSON.stringify(payload)
-          });
-
-          if (!response.ok) {
-            const message = await this.getErrorMessage(response, isEditing ? '休假更新失敗' : '休假建立失敗');
-            throw new Error(message);
+          if (isEditing) {
+            const payload = {
+              starts_at: startDate.toISOString(),
+              ends_at: endDate.toISOString(),
+              note,
+            };
+            const response = await this.apiRequest(
+              `${this.timeOffApiBase}${this.activeTimeOffEvent.id}/`,
+              { method: 'PATCH', body: JSON.stringify(payload) }
+            );
+            if (!response.ok) {
+              const message = await this.getErrorMessage(response, '休假更新失敗');
+              throw new Error(message);
+            }
+            this.elements.timeOffModal.hide();
+            this.showFeedback('休假已更新。', 'info');
+          } else {
+            if (!selectedWeekdays.length) {
+              this.showFeedback('請至少選擇一天。', 'warning');
+              this.toggleButtonLoading(this.elements.timeOffSave, false);
+              return;
+            }
+            const createdCount = await this.createTimeOffEntries({
+              baseDate,
+              startTimeValue,
+              durationMs,
+              note,
+              repeatWeeks,
+              selectedWeekdays,
+            });
+            this.elements.timeOffModal.hide();
+            if (createdCount > 1) {
+              this.showFeedback(`已建立 ${createdCount} 段重複休假。`, 'success');
+            } else {
+              this.showFeedback('休假已建立。', 'success');
+            }
           }
 
-          this.elements.timeOffModal.hide();
-          this.showFeedback(isEditing ? '休假已更新。' : '休假已建立。', isEditing ? 'info' : 'success');
+          this.activeTimeOffEvent = null;
           this.calendar.refetchEvents();
         } catch (error) {
           console.error(error);
@@ -1947,6 +2102,18 @@
           this.elements.timeOffEndTime.removeAttribute('disabled');
         }
         this.elements.timeOffDateSection?.classList.remove('d-none');
+        this.resetTimeOffWeekdayButtons();
+        this.elements.timeOffWeekdaySection?.classList.remove('d-none');
+        if (this.elements.timeOffRepeatWeeks) {
+          this.elements.timeOffRepeatWeeks.value = '1';
+          this.elements.timeOffRepeatWeeks.removeAttribute('disabled');
+        }
+        this.elements.timeOffRepeatWeeksSection?.classList.remove('d-none');
+        this.elements.timeOffRepeatSection?.classList.add('d-none');
+
+        if (this.elements.timeOffForm) {
+          this.elements.timeOffForm.note.value = '';
+        }
 
         // 重置重複設定
         if (this.elements.repeatType) {
@@ -1959,6 +2126,7 @@
         
         this.elements.repeatEditWarning?.classList.add('d-none');
         this.updateRepeatControls();
+        this.syncTimeOffWeekdayFromDate();
       }
     }
 
