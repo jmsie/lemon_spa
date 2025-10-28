@@ -170,9 +170,26 @@ class TherapistRegistrationView(TemplateView):
         return context
 
 
+class PasswordResetView(TemplateView):
+    """Render the phone-based password reset flow."""
+
+    template_name = "accounts/password_reset.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "send_code_url": reverse("accounts:password_reset_send_code"),
+                "confirm_url": reverse("accounts:password_reset_confirm"),
+            }
+        )
+        return context
+
+
 __all__ = [
     "RoleAwareLoginView",
     "RoleSelectionView",
     "SwitchRoleView",
     "TherapistRegistrationView",
+    "PasswordResetView",
 ]

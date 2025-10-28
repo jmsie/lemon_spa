@@ -34,7 +34,12 @@
       {{ form.password }}
       <button type="submit">Sign in</button>
     </form>
-    <p class="hint">請使用註冊時的手機號碼與密碼登入，登入後可切換對應的角色介面。</p>
+    <p class="hint">
+      請使用註冊時的手機號碼與密碼登入，登入後可切換對應的角色介面。
+      <br>
+      <a href="{% url 'accounts:register' %}">還沒有帳號？立即註冊</a><br>
+      <a href="{% url 'accounts:password_reset' %}">忘記密碼？重設密碼</a>
+    </p>
   </main>
 </body>
 </html>
