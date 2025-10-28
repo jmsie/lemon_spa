@@ -125,6 +125,13 @@ INSTALLED_APPS = [
     "scheduling",
 ]
 
+AUTH_USER_MODEL = "accounts.AccountUser"
+
+AUTHENTICATION_BACKENDS = [
+    "accounts.backends.PhoneNumberBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

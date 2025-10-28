@@ -20,8 +20,8 @@ class AppointmentAdmin(admin.ModelAdmin):
     search_fields = (
         "customer_name",
         "customer_phone",
-        "therapist__first_name",
-        "therapist__last_name",
+        "therapist__user__first_name",
+        "therapist__user__last_name",
         "therapist__nickname",
     )
     list_filter = ("therapist", "treatment", "is_cancelled")

@@ -20,13 +20,13 @@ class AppointmentFormPhoneTests(TestCase):
             username="therapist",
             password="password123",
             email="therapist@example.com",
+            first_name="Jane",
+            last_name="Doe",
+            phone_number="+886900000700",
         )
         self.therapist = Therapist.objects.create(
             user=self.user,
-            last_name="Doe",
-            first_name="Jane",
             nickname="JD",
-            phone_number="+886900000000",
             address="123 Main St",
             timezone=DEFAULT_THERAPIST_TIMEZONE,
         )

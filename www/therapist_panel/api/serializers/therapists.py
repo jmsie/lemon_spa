@@ -14,6 +14,9 @@ User = get_user_model()
 class TherapistSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     email = serializers.EmailField(source="user.email", read_only=True)
+    first_name = serializers.CharField(source="user.first_name", read_only=True)
+    last_name = serializers.CharField(source="user.last_name", read_only=True)
+    phone_number = serializers.CharField(source="user.phone_number", read_only=True)
 
     class Meta:
         model = Therapist
@@ -22,16 +25,24 @@ class TherapistSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "email",
-            "last_name",
             "first_name",
+            "last_name",
             "nickname",
-            "phone_number",
             "address",
             "timezone",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "uuid", "created_at", "updated_at", "email"]
+        read_only_fields = [
+            "id",
+            "uuid",
+            "created_at",
+            "updated_at",
+            "email",
+            "first_name",
+            "last_name",
+            "phone_number",
+        ]
 
     def validate_user(self, user: User) -> User:
         if self.instance and self.instance.user == user:

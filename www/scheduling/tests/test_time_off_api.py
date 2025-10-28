@@ -20,13 +20,15 @@ from therapist_panel.models import Therapist, TherapistTreatment
 class TherapistTimeOffAPITests(APITestCase):
     def setUp(self):
         User = get_user_model()
-        self.user = User.objects.create_user(username="therapist", password="pass1234", email="t@example.com")
+        self.user = User.objects.create_user(
+            username="therapist",
+            password="pass1234",
+            email="t@example.com",
+            phone_number="+886900000100",
+        )
         self.therapist = Therapist.objects.create(
             user=self.user,
-            last_name="Doe",
-            first_name="Jane",
             nickname="JD",
-            phone_number="123456789",
             address="123 Main St",
             timezone=DEFAULT_THERAPIST_TIMEZONE,
         )

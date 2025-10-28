@@ -28,13 +28,13 @@
       {% if next %}
         <input type="hidden" name="next" value="{{ next }}">
       {% endif %}
-      <label for="id_username">Email or Username</label>
+      <label for="id_username">{{ form.username.label }}</label>
       {{ form.username }}
       <label for="id_password">Password</label>
       {{ form.password }}
       <button type="submit">Sign in</button>
     </form>
-    <p class="hint">Use your assigned credentials to access either the therapist panel or the client dashboard.</p>
+    <p class="hint">請使用註冊時的手機號碼與密碼登入，登入後可切換對應的角色介面。</p>
   </main>
 </body>
 </html>

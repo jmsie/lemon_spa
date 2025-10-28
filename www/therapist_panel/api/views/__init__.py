@@ -1,5 +1,10 @@
 """Viewset exports for therapist panel API."""
 
+from .registration import (
+    TherapistRegistrationCompleteView,
+    TherapistRegistrationSendCodeView,
+    TherapistRegistrationVerifyView,
+)
 from .therapists import TherapistViewSet
 from .time_off import TherapistTimeOffViewSet
 from .treatments import TherapistTreatmentViewSet
@@ -10,4 +15,7 @@ __all__ = [
     "TherapistTreatmentViewSet",
     "TherapistTimeOffViewSet",
     "TherapistWorkingHoursViewSet",
+    "TherapistRegistrationSendCodeView",
+    "TherapistRegistrationVerifyView",
+    "TherapistRegistrationCompleteView",
 ]

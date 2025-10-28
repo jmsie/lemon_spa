@@ -9,8 +9,8 @@ from .models import Questionnaire
 class QuestionnaireAdmin(admin.ModelAdmin):
     list_display = ("therapist", "rating", "appointment", "created_at")
     search_fields = (
-        "therapist__first_name",
-        "therapist__last_name",
+        "therapist__user__first_name",
+        "therapist__user__last_name",
         "therapist__nickname",
         "appointment__uuid",
     )

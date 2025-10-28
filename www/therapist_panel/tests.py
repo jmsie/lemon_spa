@@ -4,11 +4,18 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
+from django.core import signing
+
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 from accounts.constants import ROLE_THERAPIST, SESSION_ACTIVE_ROLE_KEY
 from appointments.models import Appointment, AppointmentQuestionnaireLog
+from phone_verification.models import PhoneVerification
 from scheduling.models import TherapistTimeOff, TherapistWorkingHours
 from scheduling.utils import to_utc
 from therapist_panel.constants import DEFAULT_THERAPIST_TIMEZONE
@@ -24,15 +31,13 @@ class TherapistOnboardingFlowTests(TestCase):
             email="therapist@example.com",
             first_name="Terry",
             last_name="Therapist",
+            phone_number="+886900000001",
         )
         self.index_url = reverse("therapist_panel:index")
         self.onboarding_url = reverse("therapist_panel:onboarding")
         self.therapist = Therapist.objects.create(
             user=self.user,
-            last_name="Therapist",
-            first_name="Terry",
             nickname="TT",
-            phone_number="0988111222",
             address="Taipei City",
             timezone=DEFAULT_THERAPIST_TIMEZONE,
         )
@@ -113,18 +118,17 @@ class TherapistAppointmentSearchViewTests(TestCase):
             email="therapist@example.com",
             first_name="Jane",
             last_name="Doe",
+            phone_number="+886900000002",
         )
         self.other_user = User.objects.create_user(
             username="viewer",
             password="viewerpass123",
             email="viewer@example.com",
+            phone_number="+886900000010",
         )
         self.therapist = Therapist.objects.create(
             user=self.user,
-            last_name="Doe",
-            first_name="Jane",
             nickname="JD",
-            phone_number="123456789",
             address="123 Main St",
             timezone=DEFAULT_THERAPIST_TIMEZONE,
         )
@@ -271,3 +275,148 @@ class TherapistAppointmentSearchViewTests(TestCase):
         self.assertEqual(response.context["appointments_api_url"], self.api_base)
         self.assertContains(response, f'data-appointment-id="{self.mid_appointment.uuid}"')
         self.assertContains(response, self.api_base)
+
+
+class TherapistRegistrationAPITests(APITestCase):
+    def setUp(self):
+        self.send_url = reverse("therapist_panel:api:registration:send_code")
+        self.verify_url = reverse("therapist_panel:api:registration:verify_code")
+        self.complete_url = reverse("therapist_panel:api:registration:complete")
+        self.phone = "+886900000900"
+        self.code = "1234"
+
+    def _create_verification(self, *, phone: str | None = None, code: str | None = None, verified: bool = False):
+        return PhoneVerification.objects.create(
+            phone_number=phone or self.phone,
+            code_hash=make_password(code or self.code),
+            expires_at=timezone.now() + timedelta(minutes=5),
+            send_count=1,
+            attempt_count=0,
+            is_verified=verified,
+        )
+
+    def test_send_code_starts_verification(self):
+        phone = "+886900001000"
+
+        response = self.client.post(
+            self.send_url,
+            {"phone_number": phone},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+        self.assertTrue(PhoneVerification.objects.filter(phone_number=phone).exists())
+
+    def test_verify_code_returns_token(self):
+        self._create_verification()
+
+        response = self.client.post(
+            self.verify_url,
+            {"phone_number": self.phone, "code": self.code},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+        self.assertIn("registration_token", response.data)
+        self.assertGreater(response.data["expires_in"], 0)
+
+    def test_complete_creates_new_user_and_therapist(self):
+        self._create_verification()
+
+        verify_response = self.client.post(
+            self.verify_url,
+            {"phone_number": self.phone, "code": self.code},
+            format="json",
+        )
+        token = verify_response.data["registration_token"]
+
+        payload = {
+            "phone_token": token,
+            "password": "StrongPass123!",
+            "first_name": "New",
+            "last_name": "Therapist",
+            "nickname": "NewTherapist",
+            "address": "123 Massage Road",
+            "timezone": DEFAULT_THERAPIST_TIMEZONE,
+            "email": "therapist-new@example.com",
+        }
+
+        response = self.client.post(self.complete_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["success"])
+        user = get_user_model().objects.get(phone_number=self.phone)
+        self.assertTrue(user.check_password(payload["password"]))
+        self.assertTrue(hasattr(user, "therapist_profile"))
+        self.assertEqual(user.therapist_profile.nickname, payload["nickname"])
+
+    def test_complete_requires_existing_password(self):
+        User = get_user_model()
+        user = User.objects.create_user(
+            username="clientuser",
+            password="ClientPass123!",
+            phone_number=self.phone,
+            email="client@example.com",
+            first_name="Client",
+            last_name="User",
+        )
+        self._create_verification(verified=True)
+        token = signing.dumps(
+            {"phone_number": self.phone, "issued_at": timezone.now().isoformat()}
+        )
+
+        payload = {
+            "phone_token": token,
+            "password": "WrongPassword!!!",
+            "first_name": "Client",
+            "last_name": "User",
+            "nickname": "MassagePro",
+            "address": "456 Massage Lane",
+            "timezone": DEFAULT_THERAPIST_TIMEZONE,
+            "email": "client@example.com",
+        }
+
+        response = self.client.post(self.complete_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("password", response.data)
+        self.assertFalse(hasattr(user, "therapist_profile"))
+
+    def test_complete_rejects_existing_therapist(self):
+        User = get_user_model()
+        user = User.objects.create_user(
+            username="existingtherapist",
+            password="TherapistPass123!",
+            phone_number=self.phone,
+            email="therapist@example.com",
+            first_name="Existing",
+            last_name="Therapist",
+        )
+        Therapist.objects.create(
+            user=user,
+            nickname="ExistingPro",
+            address="789 Spa Street",
+            timezone=DEFAULT_THERAPIST_TIMEZONE,
+        )
+        self._create_verification(verified=True)
+        token = signing.dumps(
+            {"phone_number": self.phone, "issued_at": timezone.now().isoformat()}
+        )
+
+        payload = {
+            "phone_token": token,
+            "password": "TherapistPass123!",
+            "first_name": "Existing",
+            "last_name": "Therapist",
+            "nickname": "ExistingPro",
+            "address": "789 Spa Street",
+            "timezone": DEFAULT_THERAPIST_TIMEZONE,
+            "email": "therapist@example.com",
+        }
+
+        response = self.client.post(self.complete_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("phone_token", response.data)

@@ -22,24 +22,36 @@ class TherapistTreatmentInline(admin.TabularInline):
 class TherapistAdmin(admin.ModelAdmin):
     list_display = (
         "nickname",
-        "first_name",
-        "last_name",
+        "get_first_name",
+        "get_last_name",
         "user",
-        "phone_number",
+        "get_phone_number",
         "timezone",
         "get_email",
     )
     search_fields = (
-        "first_name",
-        "last_name",
+        "user__first_name",
+        "user__last_name",
         "nickname",
         "user__username",
         "user__email",
-        "phone_number",
+        "user__phone_number",
     )
     autocomplete_fields = ("user",)
     inlines = (TherapistTreatmentInline,)
     list_filter = ("timezone",)
+
+    @admin.display(description="First name", ordering="user__first_name")
+    def get_first_name(self, obj):
+        return obj.user.first_name
+
+    @admin.display(description="Last name", ordering="user__last_name")
+    def get_last_name(self, obj):
+        return obj.user.last_name
+
+    @admin.display(description="Phone number", ordering="user__phone_number")
+    def get_phone_number(self, obj):
+        return obj.user.phone_number
 
     @admin.display(description="Email", ordering="user__email")
     def get_email(self, obj):
@@ -57,7 +69,7 @@ class TherapistTreatmentAdmin(admin.ModelAdmin):
         "is_active",
     )
     list_filter = ("is_active",)
-    search_fields = ("name", "therapist__nickname", "therapist__first_name", "therapist__last_name")
+    search_fields = ("name", "therapist__nickname", "therapist__user__first_name", "therapist__user__last_name")
 
 
 @admin.register(TherapistTimeOff)
@@ -74,8 +86,8 @@ class TherapistTimeOffAdmin(admin.ModelAdmin):
     list_filter = ("therapist", "is_skipped")
     search_fields = (
         "therapist__nickname",
-        "therapist__first_name",
-        "therapist__last_name",
+        "therapist__user__first_name",
+        "therapist__user__last_name",
         "note",
     )
     ordering = ("-starts_at",)
@@ -110,8 +122,8 @@ class TherapistTimeOffSeriesAdmin(admin.ModelAdmin):
     list_filter = ("repeat_type", "is_active")
     search_fields = (
         "therapist__nickname",
-        "therapist__first_name",
-        "therapist__last_name",
+        "therapist__user__first_name",
+        "therapist__user__last_name",
         "note",
     )
     autocomplete_fields = ("therapist",)
@@ -132,8 +144,8 @@ class TherapistWorkingHoursAdmin(admin.ModelAdmin):
     list_filter = ("therapist", "is_generated", "is_skipped")
     search_fields = (
         "therapist__nickname",
-        "therapist__first_name",
-        "therapist__last_name",
+        "therapist__user__first_name",
+        "therapist__user__last_name",
         "note",
     )
     ordering = ("-starts_at",)
@@ -168,7 +180,7 @@ class TherapistWorkingHoursSeriesAdmin(admin.ModelAdmin):
     list_filter = ("weekday", "is_active")
     search_fields = (
         "therapist__nickname",
-        "therapist__first_name",
-        "therapist__last_name",
+        "therapist__user__first_name",
+        "therapist__user__last_name",
     )
     autocomplete_fields = ("therapist",)

@@ -1,0 +1,397 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>按摩師註冊</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Noto Sans TC", system-ui, sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f8fafc;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #ffffff;
+      width: min(520px, 92%);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
+      padding: 32px;
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 1.75rem;
+      color: #0f172a;
+    }
+    p.lead {
+      margin-top: 0;
+      margin-bottom: 24px;
+      color: #475569;
+      line-height: 1.6;
+    }
+    form {
+      display: grid;
+      gap: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    input, select, textarea, button {
+      font: inherit;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #cbd5f5;
+      background: #f8fbff;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+      background: #ffffff;
+    }
+    button {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    button.primary {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    button.primary:disabled {
+      background: #93c5fd;
+      cursor: wait;
+    }
+    button.secondary {
+      background: transparent;
+      border: 1px solid rgba(30, 64, 175, 0.35);
+      color: #1e3a8a;
+    }
+    .step {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .step.active {
+      display: grid;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+    }
+    .alert {
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.96rem;
+      display: none;
+    }
+    .alert.show {
+      display: block;
+    }
+    .alert.success {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+    .alert.error {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>註冊按摩師帳號</h1>
+    <p class="lead">以手機號碼註冊，完成驗證後即可設定密碼與基本資料。</p>
+
+    <div id="alert" class="alert" role="alert"></div>
+
+    <section id="step-send" class="step active" aria-labelledby="send-heading">
+      <form>
+        {% csrf_token %}
+        <div>
+          <label for="phone-input">手機號碼</label>
+          <input id="phone-input" type="tel" placeholder="+886 900 000 000" autocomplete="tel" required>
+        </div>
+        <div class="actions">
+          <button id="send-code-btn" class="primary" type="submit">寄送驗證碼</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="step-verify" class="step" aria-labelledby="verify-heading">
+      <form>
+        {% csrf_token %}
+        <div>
+          <label for="code-input">簡訊驗證碼</label>
+          <input id="code-input" type="text" inputmode="numeric" maxlength="6" placeholder="輸入驗證碼" required>
+        </div>
+        <div class="actions">
+          <button id="verify-code-btn" class="primary" type="submit">驗證手機</button>
+          <button id="resend-btn" class="secondary" type="button">重新寄送</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="step-complete" class="step" aria-labelledby="complete-heading">
+      <form>
+        {% csrf_token %}
+        <div>
+          <label for="password-input">密碼</label>
+          <input id="password-input" type="password" minlength="8" autocomplete="new-password" required>
+        </div>
+        <div>
+          <label for="confirm-password-input">確認密碼</label>
+          <input id="confirm-password-input" type="password" minlength="8" autocomplete="new-password" required>
+        </div>
+        <div>
+          <label for="first-name-input">名字</label>
+          <input id="first-name-input" type="text" autocomplete="given-name" required>
+        </div>
+        <div>
+          <label for="last-name-input">姓氏</label>
+          <input id="last-name-input" type="text" autocomplete="family-name" required>
+        </div>
+        <div>
+          <label for="nickname-input">顯示暱稱</label>
+          <input id="nickname-input" type="text" maxlength="150" required>
+        </div>
+        <div>
+          <label for="email-input">Email（可選）</label>
+          <input id="email-input" type="email" autocomplete="email" placeholder="you@example.com">
+        </div>
+        <div>
+          <label for="timezone-select">所在時區</label>
+          <select id="timezone-select" required>
+            <option value="" disabled selected>選擇時區</option>
+            {% for value, label in timezone_choices %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="address-input">服務地區 / 地址</label>
+          <textarea id="address-input" placeholder="例：台北市信義區..." required></textarea>
+        </div>
+        <div class="actions">
+          <button id="complete-btn" class="primary" type="submit">完成註冊</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="step-success" class="step" aria-live="polite">
+      <p class="lead">註冊成功！請以手機號碼登入系統，開始設定服務內容與時段。</p>
+      <div class="actions">
+        <a href="{% url 'accounts:login' %}">
+          <button class="primary" type="button">前往登入</button>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const endpoints = {
+      send: "{{ send_code_url }}",
+      verify: "{{ verify_code_url }}",
+      complete: "{{ complete_url }}"
+    };
+
+    const elements = {
+      alert: document.getElementById("alert"),
+      steps: {
+        send: document.getElementById("step-send"),
+        verify: document.getElementById("step-verify"),
+        complete: document.getElementById("step-complete"),
+        success: document.getElementById("step-success"),
+      },
+      phoneInput: document.getElementById("phone-input"),
+      codeInput: document.getElementById("code-input"),
+      passwordInput: document.getElementById("password-input"),
+      confirmPasswordInput: document.getElementById("confirm-password-input"),
+      firstNameInput: document.getElementById("first-name-input"),
+      lastNameInput: document.getElementById("last-name-input"),
+      nicknameInput: document.getElementById("nickname-input"),
+      emailInput: document.getElementById("email-input"),
+      timezoneSelect: document.getElementById("timezone-select"),
+      addressInput: document.getElementById("address-input"),
+      sendBtn: document.getElementById("send-code-btn"),
+      verifyBtn: document.getElementById("verify-code-btn"),
+      resendBtn: document.getElementById("resend-btn"),
+      completeBtn: document.getElementById("complete-btn"),
+    };
+
+    let registrationToken = null;
+    let normalizedPhone = null;
+
+    function getCsrfToken() {
+      const value = document.cookie?.match(/csrftoken=([^;]+)/);
+      if (value) {
+        return decodeURIComponent(value[1]);
+      }
+      const input = document.querySelector("input[name=csrfmiddlewaretoken]");
+      return input ? input.value : "";
+    }
+
+    function showAlert(message, type = "success") {
+      elements.alert.textContent = message;
+      elements.alert.className = `alert ${type} show`;
+    }
+
+    function hideAlert() {
+      elements.alert.classList.remove("show");
+    }
+
+    function switchStep(stepKey) {
+      Object.entries(elements.steps).forEach(([key, section]) => {
+        section.classList.toggle("active", key === stepKey);
+      });
+    }
+
+    async function postJSON(url, payload) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCsrfToken(),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = data.message || Object.values(data)[0] || "發生未知錯誤，請稍後重試。";
+        throw new Error(message);
+      }
+      return data;
+    }
+
+    elements.steps.send.querySelector("form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      hideAlert();
+      const phone = elements.phoneInput.value.trim();
+      if (!phone) {
+        showAlert("請輸入手機號碼。", "error");
+        return;
+      }
+      elements.sendBtn.disabled = true;
+      try {
+        await postJSON(endpoints.send, { phone_number: phone });
+        normalizedPhone = phone;
+        showAlert("驗證碼已寄出，請於 5 分鐘內輸入。");
+        switchStep("verify");
+        elements.codeInput.focus();
+      } catch (error) {
+        showAlert(error.message, "error");
+      } finally {
+        elements.sendBtn.disabled = false;
+      }
+    });
+
+    elements.resendBtn.addEventListener("click", async () => {
+      if (!normalizedPhone) return;
+      hideAlert();
+      elements.resendBtn.disabled = true;
+      try {
+        await postJSON(endpoints.send, { phone_number: normalizedPhone });
+        showAlert("新的驗證碼已寄出。");
+      } catch (error) {
+        showAlert(error.message, "error");
+      } finally {
+        elements.resendBtn.disabled = false;
+      }
+    });
+
+    elements.steps.verify.querySelector("form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      hideAlert();
+      if (!normalizedPhone) {
+        showAlert("請先輸入手機並取得驗證碼。", "error");
+        return;
+      }
+      const code = elements.codeInput.value.trim();
+      if (!code) {
+        showAlert("請輸入驗證碼。", "error");
+        return;
+      }
+      elements.verifyBtn.disabled = true;
+      try {
+        const data = await postJSON(endpoints.verify, {
+          phone_number: normalizedPhone,
+          code,
+        });
+        registrationToken = data.registration_token;
+        showAlert("手機驗證成功，請繼續填寫基本資料。");
+        switchStep("complete");
+        elements.firstNameInput.focus();
+      } catch (error) {
+        showAlert(error.message, "error");
+      } finally {
+        elements.verifyBtn.disabled = false;
+      }
+    });
+
+    elements.steps.complete.querySelector("form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      hideAlert();
+      if (!registrationToken) {
+        showAlert("請先完成手機驗證。", "error");
+        return;
+      }
+      const password = elements.passwordInput.value;
+      const confirmPassword = elements.confirmPasswordInput.value;
+      if (password !== confirmPassword) {
+        showAlert("兩次輸入的密碼不一致。", "error");
+        return;
+      }
+      const payload = {
+        phone_token: registrationToken,
+        password,
+        first_name: elements.firstNameInput.value.trim(),
+        last_name: elements.lastNameInput.value.trim(),
+        nickname: elements.nicknameInput.value.trim(),
+        email: elements.emailInput.value.trim(),
+        timezone: elements.timezoneSelect.value,
+        address: elements.addressInput.value.trim(),
+      };
+      if (!payload.first_name || !payload.last_name || !payload.nickname || !payload.timezone || !payload.address) {
+        showAlert("請完整填寫必填欄位。", "error");
+        return;
+      }
+      elements.completeBtn.disabled = true;
+      try {
+        await postJSON(endpoints.complete, payload);
+        hideAlert();
+        switchStep("success");
+      } catch (error) {
+        showAlert(error.message, "error");
+      } finally {
+        elements.completeBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

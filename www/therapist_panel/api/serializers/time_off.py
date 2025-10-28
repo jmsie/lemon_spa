@@ -23,7 +23,7 @@ class _RepeatPayload:
 class TherapistTimeOffSerializer(serializers.ModelSerializer):
     therapist_uuid = serializers.UUIDField(source="therapist.uuid", read_only=True)
     therapist_timezone = serializers.CharField(source="therapist.timezone", read_only=True)
-    series_uuid = serializers.UUIDField(source="series.uuid", read_only=True)
+    series_uuid = serializers.SerializerMethodField()
     is_recurring = serializers.SerializerMethodField()
 
     repeat_type = serializers.ChoiceField(
@@ -71,6 +71,10 @@ class TherapistTimeOffSerializer(serializers.ModelSerializer):
 
     def get_is_recurring(self, instance: TherapistTimeOff) -> bool:
         return bool(instance.series_id and not instance.is_skipped)
+
+    def get_series_uuid(self, instance: TherapistTimeOff):
+        series = getattr(instance, "series", None)
+        return getattr(series, "uuid", None) if series else None
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         context_therapist = self.context.get("therapist")

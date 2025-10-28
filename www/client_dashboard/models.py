@@ -18,3 +18,16 @@ class Client(models.Model):
 
     def __str__(self) -> str:
         return f"Client profile for {self.user.get_username()}"
+
+    @property
+    def phone_number(self) -> str:
+        return self.user.phone_number
+
+    @property
+    def email(self) -> str:
+        return self.user.email
+
+    @property
+    def full_name(self) -> str:
+        combined = f"{self.user.first_name} {self.user.last_name}".strip()
+        return combined or self.user.get_username()

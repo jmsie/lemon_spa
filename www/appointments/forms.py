@@ -84,7 +84,9 @@ class AppointmentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["therapist"].queryset = Therapist.objects.order_by("nickname", "first_name", "last_name")
+        self.fields["therapist"].queryset = Therapist.objects.select_related("user").order_by(
+            "nickname", "user__first_name", "user__last_name"
+        )
         self.fields["treatment"].queryset = (
             TherapistTreatment.objects.filter(is_active=True).select_related("therapist").order_by("name")
         )
