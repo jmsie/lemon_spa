@@ -28,6 +28,9 @@ class RoleRequiredMixin(LoginRequiredMixin):
         if self.required_role is None:
             raise ValueError("RoleRequiredMixin requires `required_role` to be set.")
 
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
         reset_active_role_if_missing(request)
 
         if not user_has_role(request.user, self.required_role):
