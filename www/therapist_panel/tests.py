@@ -308,6 +308,33 @@ class TherapistRegistrationAPITests(APITestCase):
         self.assertTrue(response.data["success"])
         self.assertTrue(PhoneVerification.objects.filter(phone_number=phone).exists())
 
+    def test_send_code_rejects_existing_therapist_phone(self):
+        User = get_user_model()
+        user = User.objects.create_user(
+            username="existingtherapist",
+            password="TherapistPass123!",
+            phone_number=self.phone,
+            email="therapist@example.com",
+            first_name="Existing",
+            last_name="Therapist",
+        )
+        Therapist.objects.create(
+            user=user,
+            nickname="ExistingPro",
+            address="123 Massage Road",
+            timezone=DEFAULT_THERAPIST_TIMEZONE,
+        )
+
+        response = self.client.post(
+            self.send_url,
+            {"phone_number": self.phone},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("phone_number", response.data)
+        self.assertIn("http://testserver/accounts/password-reset/", response.data["phone_number"][0])
+
     def test_verify_code_returns_token(self):
         self._create_verification()
 

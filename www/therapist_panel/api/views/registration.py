@@ -50,7 +50,9 @@ class TherapistRegistrationSendCodeView(TherapistRegistrationBaseView):
     """Send a verification code to start therapist registration."""
 
     def post(self, request, *args, **kwargs):
-        serializer = TherapistRegistrationSendCodeSerializer(data=request.data)
+        serializer = TherapistRegistrationSendCodeSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         phone_number = serializer.validated_data["phone_number"]
         service = self.get_service()

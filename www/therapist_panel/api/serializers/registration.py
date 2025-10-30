@@ -5,12 +5,14 @@ from __future__ import annotations
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import signing
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import serializers
 
 from phone_verification.models import PhoneVerification
 from phone_verification.utils import normalize_phone_number
 from therapist_panel.constants import THERAPIST_TIMEZONE_CHOICES
+from therapist_panel.models import Therapist
 
 User = get_user_model()
 
@@ -24,7 +26,15 @@ class TherapistRegistrationSendCodeSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=32)
 
     def validate_phone_number(self, value: str) -> str:
-        return normalize_phone_number(value)
+        normalized = normalize_phone_number(value)
+        if Therapist.objects.filter(user__phone_number=normalized).exists():
+            reset_path = reverse("accounts:password_reset")
+            request = self.context.get("request") if hasattr(self, "context") else None
+            reset_url = request.build_absolute_uri(reset_path) if request else reset_path
+            raise serializers.ValidationError(
+                f"此手機已註冊為按摩師，請直接登入，或是前往忘記密碼頁面改密碼：{reset_url}"
+            )
+        return normalized
 
 
 class TherapistRegistrationVerifySerializer(serializers.Serializer):
