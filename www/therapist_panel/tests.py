@@ -362,12 +362,9 @@ class TherapistRegistrationAPITests(APITestCase):
         payload = {
             "phone_token": token,
             "password": "StrongPass123!",
-            "first_name": "New",
-            "last_name": "Therapist",
             "nickname": "NewTherapist",
             "address": "123 Massage Road",
             "timezone": DEFAULT_THERAPIST_TIMEZONE,
-            "email": "therapist-new@example.com",
         }
 
         response = self.client.post(self.complete_url, payload, format="json")
@@ -376,6 +373,9 @@ class TherapistRegistrationAPITests(APITestCase):
         self.assertTrue(response.data["success"])
         user = get_user_model().objects.get(phone_number=self.phone)
         self.assertTrue(user.check_password(payload["password"]))
+        self.assertEqual(user.first_name, "")
+        self.assertEqual(user.last_name, "")
+        self.assertEqual(user.email, "")
         self.assertTrue(hasattr(user, "therapist_profile"))
         self.assertEqual(user.therapist_profile.nickname, payload["nickname"])
 

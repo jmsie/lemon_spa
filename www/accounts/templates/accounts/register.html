@@ -252,20 +252,9 @@
           <input id="confirm-password-input" type="password" minlength="8" autocomplete="new-password" required>
         </div>
         <div>
-          <label for="first-name-input">名字</label>
-          <input id="first-name-input" type="text" autocomplete="given-name" required>
-        </div>
-        <div>
-          <label for="last-name-input">姓氏</label>
-          <input id="last-name-input" type="text" autocomplete="family-name" required>
-        </div>
-        <div>
           <label for="nickname-input">顯示暱稱</label>
           <input id="nickname-input" type="text" maxlength="150" required>
-        </div>
-        <div>
-          <label for="email-input">Email（可選）</label>
-          <input id="email-input" type="email" autocomplete="email" placeholder="you@example.com">
+          <small>登入後可於資料管理設定真實姓名與其他資訊。</small>
         </div>
         <div>
           <label for="timezone-select">所在時區</label>
@@ -319,10 +308,7 @@
       codeInput: document.getElementById("code-input"),
       passwordInput: document.getElementById("password-input"),
       confirmPasswordInput: document.getElementById("confirm-password-input"),
-      firstNameInput: document.getElementById("first-name-input"),
-      lastNameInput: document.getElementById("last-name-input"),
       nicknameInput: document.getElementById("nickname-input"),
-      emailInput: document.getElementById("email-input"),
       timezoneSelect: document.getElementById("timezone-select"),
       addressInput: document.getElementById("address-input"),
       sendBtn: document.getElementById("send-code-btn"),
@@ -563,7 +549,7 @@
         // 自動偵測並設定時區
         detectAndSetTimezone();
         
-        elements.firstNameInput.focus();
+        elements.nicknameInput.focus();
       } catch (error) {
         showAlert(error.message, "error");
       } finally {
@@ -587,14 +573,11 @@
       const payload = {
         phone_token: registrationToken,
         password,
-        first_name: elements.firstNameInput.value.trim(),
-        last_name: elements.lastNameInput.value.trim(),
         nickname: elements.nicknameInput.value.trim(),
-        email: elements.emailInput.value.trim(),
         timezone: elements.timezoneSelect.value,
         address: elements.addressInput.value.trim(),
       };
-      if (!payload.first_name || !payload.last_name || !payload.nickname || !payload.timezone || !payload.address) {
+      if (!payload.nickname || !payload.timezone || !payload.address) {
         showAlert("請完整填寫必填欄位。", "error");
         return;
       }

@@ -48,8 +48,8 @@ class TherapistRegistrationVerifySerializer(serializers.Serializer):
 class TherapistRegistrationCompleteSerializer(serializers.Serializer):
     phone_token = serializers.CharField()
     password = serializers.CharField(write_only=True, min_length=8, max_length=128)
-    first_name = serializers.CharField(max_length=150)
-    last_name = serializers.CharField(max_length=150)
+    first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     nickname = serializers.CharField(max_length=150)
     address = serializers.CharField(max_length=255)
     timezone = serializers.ChoiceField(choices=THERAPIST_TIMEZONE_CHOICES)

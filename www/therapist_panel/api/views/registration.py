@@ -155,21 +155,25 @@ class TherapistRegistrationCompleteView(APIView):
 
         phone_number = data["phone_number"]
         password = data["password"]
-        first_name = data["first_name"]
-        last_name = data["last_name"]
+        first_name = data.get("first_name", "").strip()
+        last_name = data.get("last_name", "").strip()
         email = data.get("email", "").strip()
         nickname = data["nickname"]
         address = data["address"]
         timezone_value = data["timezone"]
 
         with transaction.atomic():
+            defaults: dict[str, str] = {}
+            if first_name:
+                defaults["first_name"] = first_name
+            if last_name:
+                defaults["last_name"] = last_name
+            if email:
+                defaults["email"] = email
+
             user, created = User.objects.get_or_create(
                 phone_number=phone_number,
-                defaults={
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "email": email,
-                },
+                defaults=defaults,
             )
 
             if not created:
@@ -197,8 +201,12 @@ class TherapistRegistrationCompleteView(APIView):
             else:
                 user.username = phone_number
                 user.set_password(password)
-                if not user.email and email:
+                if email and user.email != email:
                     user.email = email
+                if first_name and user.first_name != first_name:
+                    user.first_name = first_name
+                if last_name and user.last_name != last_name:
+                    user.last_name = last_name
                 user.save()
 
             therapist, therapist_created = Therapist.objects.get_or_create(
