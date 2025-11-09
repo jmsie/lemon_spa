@@ -33,9 +33,13 @@ class AccountUserManager(UserManager):
     def _create_user(self, username: str, email: str | None, password: str | None, **extra_fields: Any):
         fields = self._prepare_extra_fields(extra_fields)
         phone_number = fields.get("phone_number")
-        if not phone_number:
+        is_superuser = fields.get("is_superuser")
+        if not phone_number and not is_superuser:
             raise ValueError("The phone_number must be provided.")
-        username = username or phone_number
+        if not username:
+            username = phone_number
+        if not username:
+            raise ValueError("A username or phone_number must be provided.")
         return super()._create_user(username, email, password, **fields)
 
     def create_user(self, username: str | None = None, email: str | None = None, password: str | None = None, **extra_fields: Any):
@@ -53,6 +57,8 @@ class AccountUser(AbstractUser):
     phone_number = models.CharField(
         max_length=32,
         unique=True,
+        blank=True,
+        null=True,
         help_text=_("Normalized phone number stored in E.164 format."),
     )
 
@@ -76,7 +82,7 @@ class AccountUser(AbstractUser):
                 self.phone_number = normalize_phone_number(self.phone_number)
             except InvalidPhoneNumber as exc:
                 raise ValidationError({"phone_number": str(exc)}) from exc
-        if not self.username:
+        if not self.username and self.phone_number:
             self.username = self.phone_number
         super().save(*args, **kwargs)
 
