@@ -452,6 +452,12 @@
       color: #92400e;
       line-height: 1.5;
     }
+    .footer-recruit-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: center;
+    }
     .footer-recruit-button {
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: #ffffff;
@@ -465,10 +471,34 @@
       box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
       transition: all 0.2s ease;
       -webkit-tap-highlight-color: transparent;
+      width: 100%;
+      max-width: 280px;
     }
     .footer-recruit-button:active {
       transform: scale(0.97);
       box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    .footer-recruit-ig-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #92400e;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .footer-recruit-ig-link:active {
+      transform: scale(0.95);
+      background: rgba(146, 64, 14, 0.1);
+    }
+    .footer-recruit-ig-icon {
+      width: 1.25rem;
+      height: 1.25rem;
+      fill: currentColor;
     }
     @media (min-width: 640px) {
       .footer-recruit {
@@ -480,9 +510,20 @@
       .footer-recruit-description {
         font-size: 0.95rem;
       }
+      .footer-recruit-actions {
+        flex-direction: row;
+        justify-content: center;
+        gap: 1rem;
+      }
+      .footer-recruit-button {
+        width: auto;
+      }
       .footer-recruit-button:hover {
         box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
         transform: translateY(-1px);
+      }
+      .footer-recruit-ig-link:hover {
+        background: rgba(146, 64, 14, 0.1);
       }
     }
   </style>
@@ -650,7 +691,15 @@
       <div class="footer-recruit">
         <h3 class="footer-recruit-title">你也是按摩師嗎？</h3>
         <p class="footer-recruit-description">加入我們，輕鬆管理預約、提升客戶體驗，專注在你最擅長的療程上</p>
-        <a href="/" class="footer-recruit-button">了解如何建立專屬預約系統</a>
+        <div class="footer-recruit-actions">
+          <a href="/" class="footer-recruit-button">了解如何建立專屬預約系統</a>
+          <a href="https://www.instagram.com/lmspa.app" target="_blank" rel="noopener noreferrer" class="footer-recruit-ig-link">
+            <svg class="footer-recruit-ig-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            追蹤 IG
+          </a>
+        </div>
       </div>
     </section>
 
@@ -697,7 +746,15 @@
       <div class="footer-recruit">
         <h3 class="footer-recruit-title">你也是按摩師嗎？</h3>
         <p class="footer-recruit-description">加入我們，輕鬆管理預約、提升客戶體驗，專注在你最擅長的療程上</p>
-        <a href="/" class="footer-recruit-button">了解如何建立專屬預約系統</a>
+        <div class="footer-recruit-actions">
+          <a href="/" class="footer-recruit-button">了解如何建立專屬預約系統</a>
+          <a href="https://www.instagram.com/lmspa.app" target="_blank" rel="noopener noreferrer" class="footer-recruit-ig-link">
+            <svg class="footer-recruit-ig-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            追蹤 IG
+          </a>
+        </div>
       </div>
     </section>
   </main>
