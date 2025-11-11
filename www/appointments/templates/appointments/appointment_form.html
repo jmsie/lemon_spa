@@ -429,6 +429,62 @@
     @media (prefers-color-scheme: dark) {
       /* 暫時保持亮色主題，可以之後再加暗色模式 */
     }
+
+    /* Footer 招聘區塊 */
+    .footer-recruit {
+      margin-top: 2rem;
+      padding: 1.5rem 1rem;
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-radius: 1rem;
+      border: 1.5px solid #fbbf24;
+      text-align: center;
+    }
+    .footer-recruit-title {
+      margin: 0 0 0.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #78350f;
+      letter-spacing: -0.01em;
+    }
+    .footer-recruit-description {
+      margin: 0 0 1rem;
+      font-size: 0.875rem;
+      color: #92400e;
+      line-height: 1.5;
+    }
+    .footer-recruit-button {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 0.75rem;
+      padding: 0.875rem 1.75rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .footer-recruit-button:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    @media (min-width: 640px) {
+      .footer-recruit {
+        padding: 2rem;
+      }
+      .footer-recruit-title {
+        font-size: 1.125rem;
+      }
+      .footer-recruit-description {
+        font-size: 0.95rem;
+      }
+      .footer-recruit-button:hover {
+        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+        transform: translateY(-1px);
+      }
+    }
   </style>
 </head>
 <body>
@@ -589,6 +645,13 @@
           <p id="verification-error" class="verification-error visually-hidden"></p>
         </div>
       </section>
+
+      <!-- 招聘按摩師區塊 -->
+      <div class="footer-recruit">
+        <h3 class="footer-recruit-title">你也是按摩師嗎？</h3>
+        <p class="footer-recruit-description">加入我們，輕鬆管理預約、提升客戶體驗，專注在你最擅長的療程上</p>
+        <a href="/" class="footer-recruit-button">了解如何建立專屬預約系統</a>
+      </div>
     </section>
 
     <section id="appointment-success-card" class="card success-card visually-hidden" aria-live="polite">
@@ -628,6 +691,13 @@
       </div>
       <div class="actions">
         <button type="button" id="book-another">再預約一個時段</button>
+      </div>
+
+      <!-- 招聘按摩師區塊 -->
+      <div class="footer-recruit">
+        <h3 class="footer-recruit-title">你也是按摩師嗎？</h3>
+        <p class="footer-recruit-description">加入我們，輕鬆管理預約、提升客戶體驗，專注在你最擅長的療程上</p>
+        <a href="/" class="footer-recruit-button">了解如何建立專屬預約系統</a>
       </div>
     </section>
   </main>
