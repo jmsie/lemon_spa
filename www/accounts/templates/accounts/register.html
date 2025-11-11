@@ -126,3 +126,357 @@
                         驗證手機
                     </button>
                     <button id="resend-btn" type="button" class="flex-1 py-4 md:py-3 px-4 bg-white md:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 md:hover:bg-gray-100 active:bg-gray-100 disabled:bg-gray-100 disabled:text-gray-400 text-gray-700 text-base md:text-sm font-semibold rounded-xl md:rounded-lg transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100">
+                        重新寄送
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Step 3: 完成資料 -->
+        <section id="step-complete" class="step space-y-5 md:space-y-4">
+            <form class="space-y-5 md:space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label for="password-input" class="block text-sm md:text-xs font-semibold text-gray-700 mb-2">密碼</label>
+                    <input id="password-input" type="password" minlength="8" autocomplete="new-password" placeholder="至少 8 個字元" required>
+                </div>
+                <div>
+                    <label for="confirm-password-input" class="block text-sm md:text-xs font-semibold text-gray-700 mb-2">確認密碼</label>
+                    <input id="confirm-password-input" type="password" minlength="8" autocomplete="new-password" placeholder="再次輸入密碼" required>
+                </div>
+                <div>
+                    <label for="nickname-input" class="block text-sm md:text-xs font-semibold text-gray-700 mb-2">顯示暱稱</label>
+                    <input id="nickname-input" type="text" maxlength="150" placeholder="您的暱稱" required>
+                    <small class="block mt-2 text-gray-500 text-xs">登入後可於資料管理設定真實姓名與其他資訊</small>
+                </div>
+                <div>
+                    <label for="timezone-select" class="block text-sm md:text-xs font-semibold text-gray-700 mb-2">所在時區</label>
+                    <select id="timezone-select" required>
+                        <option value="" disabled selected>選擇時區</option>
+                        {% for value, label in timezone_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="block mt-2 text-gray-500 text-xs">正在偵測您的時區...</small>
+                </div>
+                <div>
+                    <label for="address-input" class="block text-sm md:text-xs font-semibold text-gray-700 mb-2">服務地區 / 地址</label>
+                    <textarea id="address-input" placeholder="例：台北市信義區..." required></textarea>
+                </div>
+                <button id="complete-btn" type="submit" class="w-full py-4 md:py-3 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-blue-300 text-white text-base md:text-sm font-semibold rounded-xl md:rounded-lg shadow-lg shadow-blue-500/30 transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100">
+                    完成註冊
+                </button>
+            </form>
+        </section>
+
+        <!-- Step 4: 註冊成功 -->
+        <section id="step-success" class="step text-center space-y-6 md:space-y-5 py-8" aria-live="polite">
+            <div class="inline-flex items-center justify-center w-20 h-20 md:w-16 md:h-16 bg-green-100 rounded-full">
+                <svg class="w-10 h-10 md:w-8 md:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-2xl md:text-xl font-bold text-gray-900 mb-2">註冊成功！</h2>
+                <p class="text-gray-600 text-sm md:text-xs leading-relaxed">請以手機號碼登入系統<br>開始設定服務內容與時段</p>
+            </div>
+            <a href="{% url 'accounts:login' %}" class="block">
+                <button type="button" class="w-full py-4 md:py-3 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base md:text-sm font-semibold rounded-xl md:rounded-lg shadow-lg shadow-blue-500/30 transition-all duration-200 active:scale-[0.98]">
+                    前往登入
+                </button>
+            </a>
+        </section>
+    </main>
+
+    <script>
+        const endpoints = {
+            send: "{{ send_code_url }}",
+            verify: "{{ verify_code_url }}",
+            complete: "{{ complete_url }}"
+        };
+
+        const elements = {
+            alert: document.getElementById("alert"),
+            steps: {
+                send: document.getElementById("step-send"),
+                verify: document.getElementById("step-verify"),
+                complete: document.getElementById("step-complete"),
+                success: document.getElementById("step-success"),
+            },
+            countryCodeSelect: document.getElementById("country-code-select"),
+            phoneInput: document.getElementById("phone-input"),
+            phonePreview: document.getElementById("phone-preview"),
+            phonePreviewText: document.getElementById("phone-preview-text"),
+            codeInput: document.getElementById("code-input"),
+            passwordInput: document.getElementById("password-input"),
+            confirmPasswordInput: document.getElementById("confirm-password-input"),
+            nicknameInput: document.getElementById("nickname-input"),
+            timezoneSelect: document.getElementById("timezone-select"),
+            addressInput: document.getElementById("address-input"),
+            sendBtn: document.getElementById("send-code-btn"),
+            verifyBtn: document.getElementById("verify-code-btn"),
+            resendBtn: document.getElementById("resend-btn"),
+            completeBtn: document.getElementById("complete-btn"),
+        };
+
+        let registrationToken = null;
+        let normalizedPhone = null;
+
+        function getCsrfToken() {
+            const value = document.cookie?.match(/csrftoken=([^;]+)/);
+            if (value) {
+                return decodeURIComponent(value[1]);
+            }
+            const input = document.querySelector("input[name=csrfmiddlewaretoken]");
+            return input ? input.value : "";
+        }
+
+        function showAlert(message, type = "success") {
+            elements.alert.textContent = message;
+            elements.alert.className = `p-4 md:p-3 rounded-xl md:rounded-lg text-sm md:text-xs font-medium ${
+                type === "success" 
+                    ? "bg-green-50 text-green-700 border-2 border-green-200" 
+                    : "bg-red-50 text-red-700 border-2 border-red-200"
+            }`;
+            elements.alert.classList.remove("hidden");
+        }
+
+        function hideAlert() {
+            elements.alert.classList.add("hidden");
+        }
+
+        function switchStep(stepKey) {
+            Object.entries(elements.steps).forEach(([key, section]) => {
+                section.classList.toggle("active", key === stepKey);
+            });
+        }
+
+        /**
+         * 格式化手機號碼為 E.164 格式
+         */
+        function formatPhoneE164(countryCode, phoneNumber) {
+            let cleanNumber = phoneNumber.replace(/\D/g, '');
+            if (cleanNumber.startsWith('0')) {
+                cleanNumber = cleanNumber.substring(1);
+            }
+            return `+${countryCode}${cleanNumber}`;
+        }
+
+        /**
+         * 正規化並顯示處理後的手機號碼
+         */
+        function normalizePhoneInput() {
+            const phone = elements.phoneInput.value.trim();
+            if (!phone) {
+                elements.phonePreview.classList.add('hidden');
+                return;
+            }
+            
+            let cleanNumber = phone.replace(/\D/g, '');
+            if (cleanNumber.startsWith('0')) {
+                cleanNumber = cleanNumber.substring(1);
+            }
+            
+            if (cleanNumber !== phone.replace(/\D/g, '')) {
+                elements.phoneInput.value = cleanNumber;
+            }
+            
+            if (cleanNumber) {
+                const countryCode = elements.countryCodeSelect.value;
+                const fullNumber = `+${countryCode}${cleanNumber}`;
+                elements.phonePreviewText.textContent = fullNumber;
+                elements.phonePreview.classList.remove('hidden');
+            } else {
+                elements.phonePreview.classList.add('hidden');
+            }
+        }
+
+        elements.phoneInput.addEventListener('blur', normalizePhoneInput);
+        elements.countryCodeSelect.addEventListener('change', normalizePhoneInput);
+
+        /**
+         * 自動偵測並設定用戶的瀏覽器時區
+         */
+        function detectAndSetTimezone() {
+            const hintElement = elements.timezoneSelect.nextElementSibling;
+            
+            try {
+                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                
+                if (!userTimezone) {
+                    if (hintElement) {
+                        hintElement.textContent = '無法自動偵測時區，請手動選擇';
+                        hintElement.className = 'block mt-2 text-amber-600 text-xs';
+                    }
+                    return;
+                }
+                
+                const options = elements.timezoneSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === userTimezone) {
+                        elements.timezoneSelect.selectedIndex = i;
+                        if (hintElement) {
+                            hintElement.textContent = `已自動偵測為「${options[i].text}」，如不正確請修改`;
+                            hintElement.className = 'block mt-2 text-green-600 text-xs';
+                        }
+                        console.log('自動設定時區為:', userTimezone);
+                        return;
+                    }
+                }
+                
+                const cityName = userTimezone.split('/').pop();
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value.includes(cityName)) {
+                        elements.timezoneSelect.selectedIndex = i;
+                        if (hintElement) {
+                            hintElement.textContent = `已自動偵測為「${options[i].text}」，如不正確請修改`;
+                            hintElement.className = 'block mt-2 text-green-600 text-xs';
+                        }
+                        console.log('自動設定時區為:', options[i].value, '(根據城市匹配)');
+                        return;
+                    }
+                }
+                
+                if (hintElement) {
+                    hintElement.textContent = `偵測到時區為 ${userTimezone}，但列表中無此選項，請手動選擇`;
+                    hintElement.className = 'block mt-2 text-amber-600 text-xs';
+                }
+                console.log('無法找到匹配的時區:', userTimezone);
+            } catch (error) {
+                console.error('無法偵測時區:', error);
+                if (hintElement) {
+                    hintElement.textContent = '無法自動偵測時區，請手動選擇';
+                    hintElement.className = 'block mt-2 text-amber-600 text-xs';
+                }
+            }
+        }
+
+        async function postJSON(url, payload) {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken(),
+                },
+                body: JSON.stringify(payload),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const message = data.message || Object.values(data)[0] || "發生未知錯誤，請稍後重試。";
+                throw new Error(message);
+            }
+            return data;
+        }
+
+        elements.steps.send.querySelector("form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            hideAlert();
+            
+            const countryCode = elements.countryCodeSelect.value;
+            const phone = elements.phoneInput.value.trim();
+            
+            if (!phone) {
+                showAlert("請輸入手機號碼。", "error");
+                return;
+            }
+            
+            const formattedPhone = formatPhoneE164(countryCode, phone);
+            
+            elements.sendBtn.disabled = true;
+            try {
+                await postJSON(endpoints.send, { phone_number: formattedPhone });
+                normalizedPhone = formattedPhone;
+                showAlert("驗證碼已寄出，請於 5 分鐘內輸入。");
+                switchStep("verify");
+                elements.codeInput.focus();
+            } catch (error) {
+                showAlert(error.message, "error");
+            } finally {
+                elements.sendBtn.disabled = false;
+            }
+        });
+
+        elements.resendBtn.addEventListener("click", async () => {
+            if (!normalizedPhone) return;
+            hideAlert();
+            elements.resendBtn.disabled = true;
+            try {
+                await postJSON(endpoints.send, { phone_number: normalizedPhone });
+                showAlert("新的驗證碼已寄出。");
+            } catch (error) {
+                showAlert(error.message, "error");
+            } finally {
+                elements.resendBtn.disabled = false;
+            }
+        });
+
+        elements.steps.verify.querySelector("form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            hideAlert();
+            if (!normalizedPhone) {
+                showAlert("請先輸入手機並取得驗證碼。", "error");
+                return;
+            }
+            const code = elements.codeInput.value.trim();
+            if (!code) {
+                showAlert("請輸入驗證碼。", "error");
+                return;
+            }
+            elements.verifyBtn.disabled = true;
+            try {
+                const data = await postJSON(endpoints.verify, {
+                    phone_number: normalizedPhone,
+                    code,
+                });
+                registrationToken = data.registration_token;
+                showAlert("手機驗證成功，請繼續填寫基本資料。");
+                switchStep("complete");
+                
+                detectAndSetTimezone();
+                
+                elements.nicknameInput.focus();
+            } catch (error) {
+                showAlert(error.message, "error");
+            } finally {
+                elements.verifyBtn.disabled = false;
+            }
+        });
+
+        elements.steps.complete.querySelector("form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            hideAlert();
+            if (!registrationToken) {
+                showAlert("請先完成手機驗證。", "error");
+                return;
+            }
+            const password = elements.passwordInput.value;
+            const confirmPassword = elements.confirmPasswordInput.value;
+            if (password !== confirmPassword) {
+                showAlert("兩次輸入的密碼不一致。", "error");
+                return;
+            }
+            const payload = {
+                phone_token: registrationToken,
+                password,
+                nickname: elements.nicknameInput.value.trim(),
+                timezone: elements.timezoneSelect.value,
+                address: elements.addressInput.value.trim(),
+            };
+            if (!payload.nickname || !payload.timezone || !payload.address) {
+                showAlert("請完整填寫必填欄位。", "error");
+                return;
+            }
+            elements.completeBtn.disabled = true;
+            try {
+                await postJSON(endpoints.complete, payload);
+                hideAlert();
+                switchStep("success");
+            } catch (error) {
+                showAlert(error.message, "error");
+            } finally {
+                elements.completeBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
