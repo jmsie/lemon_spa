@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Lemon Spa</title>
+    <title>Lemon Spa - 你的按摩事業好幫手</title>
     <style>
         :root {
-            color-scheme: light dark;
             --accent: #f4b942;
             --background: #fefbf4;
             --text: #1f1f1f;
-            --muted: #555555;
+            --muted: #666666;
         }
 
         * {
@@ -19,128 +18,276 @@
 
         body {
             margin: 0;
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-family: "Helvetica Neue", "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
             color: var(--text);
             background: var(--background);
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         header {
-            padding: 4rem 1.5rem 3rem;
+            padding: 5rem 1.5rem 4rem;
             text-align: center;
-            background: radial-gradient(circle at top, rgba(244, 185, 66, 0.35), transparent 65%);
+            background: radial-gradient(circle at top, rgba(244, 185, 66, 0.25), transparent 70%);
         }
 
         header h1 {
-            margin-bottom: 1rem;
-            font-size: clamp(2rem, 6vw, 3.5rem);
+            margin: 0 0 1.5rem;
+            font-size: clamp(2.2rem, 7vw, 3.8rem);
+            font-weight: 700;
+            line-height: 1.2;
         }
 
-        header p {
-            margin: 0 auto;
-            max-width: 40rem;
+        header .subtitle {
+            margin: 0 auto 2.5rem;
+            max-width: 45rem;
             color: var(--muted);
-            font-size: 1.1rem;
+            font-size: clamp(1.1rem, 3vw, 1.35rem);
+            font-weight: 400;
+        }
+
+        .hero-emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
         }
 
         main {
-            padding: 0 1.5rem 4rem;
-            max-width: 70rem;
+            padding: 0 1.5rem 5rem;
+            max-width: 65rem;
             margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: clamp(1.6rem, 4vw, 2rem);
+            margin: 4rem 0 3rem;
+            font-weight: 600;
         }
 
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-            gap: 1.5rem;
-            margin: 3rem 0;
+            grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+            gap: 2rem;
+            margin: 0 0 4rem;
         }
 
         .feature-card {
-            padding: 1.75rem;
+            padding: 2.5rem 2rem;
             background: #ffffff;
-            border-radius: 1rem;
-            border: 1px solid rgba(31, 31, 31, 0.05);
-            box-shadow: 0 14px 30px rgba(31, 31, 31, 0.08);
+            border-radius: 1.2rem;
+            border: 1px solid rgba(31, 31, 31, 0.06);
+            box-shadow: 0 8px 24px rgba(31, 31, 31, 0.07);
+            transition: transform 200ms ease, box-shadow 200ms ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(31, 31, 31, 0.12);
+        }
+
+        .feature-icon {
+            font-size: 2.8rem;
+            margin-bottom: 1.2rem;
+            display: block;
         }
 
         .feature-card h3 {
-            margin-top: 0;
-            margin-bottom: 0.75rem;
-            font-size: 1.3rem;
+            margin: 0 0 1rem;
+            font-size: 1.5rem;
+            font-weight: 600;
         }
 
         .feature-card p {
+            margin: 0 0 1.2rem;
+            color: var(--muted);
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .feature-benefit {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(31, 31, 31, 0.08);
+            color: var(--accent);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .benefit-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .how-it-works {
+            background: #ffffff;
+            border-radius: 1.2rem;
+            padding: 3rem 2.5rem;
+            margin: 3rem 0;
+            box-shadow: 0 4px 16px rgba(31, 31, 31, 0.06);
+        }
+
+        .steps {
+            display: grid;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+
+        .step-number {
+            flex-shrink: 0;
+            width: 3rem;
+            height: 3rem;
+            background: linear-gradient(135deg, #f8d06a, #f4b942);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #1f1f1f;
+        }
+
+        .step-content h4 {
+            margin: 0 0 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .step-content p {
             margin: 0;
             color: var(--muted);
+            line-height: 1.6;
         }
 
         .cta {
             text-align: center;
-            margin-top: 4rem;
+            margin-top: 5rem;
+            padding: 3rem 2rem;
+            background: linear-gradient(135deg, rgba(248, 208, 106, 0.15), rgba(244, 185, 66, 0.15));
+            border-radius: 1.2rem;
+        }
+
+        .cta h2 {
+            margin: 0 0 1rem;
+            font-size: clamp(1.8rem, 4vw, 2.4rem);
+            font-weight: 600;
+        }
+
+        .cta p {
+            margin: 0 auto 2rem;
+            max-width: 35rem;
+            color: var(--muted);
+            font-size: 1.1rem;
         }
 
         .cta a {
             display: inline-block;
-            padding: 0.85rem 2.5rem;
-            font-size: 1.05rem;
+            padding: 1rem 3rem;
+            font-size: 1.15rem;
             font-weight: 600;
             color: #1f1f1f;
             background: linear-gradient(135deg, #f8d06a, #f4b942);
             border-radius: 999px;
             text-decoration: none;
-            box-shadow: 0 10px 25px rgba(244, 185, 66, 0.35);
+            box-shadow: 0 8px 24px rgba(244, 185, 66, 0.4);
             transition: transform 150ms ease, box-shadow 150ms ease;
         }
 
         .cta a:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(244, 185, 66, 0.45);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(244, 185, 66, 0.5);
         }
 
         footer {
-            padding: 2rem 1.5rem;
+            padding: 2.5rem 1.5rem;
             text-align: center;
             color: var(--muted);
             font-size: 0.9rem;
+        }
+
+        @media (max-width: 640px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>讓療癒真正發生</h1>
-        <p>我們把治療師、個案與照護團隊聚集在同一個平台，打造兼具清晰、安心與可追蹤成效的完整療程體驗。</p>
+        <div class="hero-emoji">🍋✨</div>
+        <h1>讓客人隨時找到你<br>讓口碑自己累積</h1>
+        <p class="subtitle">一個專屬預約頁面，放在IG、Line就能24小時接單<br>客人留下的每一則好評，都是你的事業基石</p>
     </header>
 
     <main>
+        <h2 class="section-title">就這麼簡單的兩件事 💪</h2>
+        
         <section class="features">
             <article class="feature-card">
-                <h3>接單系統</h3>
-                <p>一鍵生成專屬預約連結，輕鬆放在 IG、Line 等各種社群，讓客人隨時都能預約。</p>
+                <span class="feature-icon">📱</span>
+                <h3>24小時預約頁面</h3>
+                <p>給你一個專屬的預約連結，可以放在 Instagram 個人簡介、Line 狀態、Threads 貼文⋯⋯任何地方！</p>
+                <p>客人想預約的時候，隨時點進去就能看到你的空檔時間，直接預約，不用再私訊來回問。</p>
+                <div class="feature-benefit">
+                    <span class="benefit-icon">✓</span>
+                    <span>就算你在忙、在睡覺，也不會錯過任何預約</span>
+                </div>
             </article>
+
             <article class="feature-card">
-                <h3>問卷系統</h3>
-                <p>療程結束自動寄出問卷，第一時間掌握客人回饋，持續優化服務品質。</p>
-            </article>
-            <article class="feature-card">
-                <h3>排班好簡單</h3>
-                <p>用月曆式介面管理班表與空檔，支援拖拉調整與同步提醒，排班變得直覺又快速。</p>
-            </article>
-            <article class="feature-card">
-                <h3>Call 客工具</h3>
-                <p>自動彙整空檔，主動發送優惠或邀請訊息，讓按摩師也能做主動行銷。</p>
+                <span class="feature-icon">⭐</span>
+                <h3>累積客人真實評論</h3>
+                <p>服務結束後，客人可以在你的頁面留下評論和星星評分。</p>
+                <p>每一則好評都會顯示在你的預約頁面上，新客人看到滿滿的五星評價，自然更信任你、更願意預約！</p>
+                <div class="feature-benefit">
+                    <span class="benefit-icon">✓</span>
+                    <span>口碑就是最好的行銷，幫你吸引更多新客人</span>
+                </div>
             </article>
         </section>
 
+        <section class="how-it-works">
+            <h2 class="section-title" style="margin-top: 0;">怎麼開始？</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>註冊帳號，設定你的服務項目</h4>
+                        <p>填寫你的按摩項目、時長、價格，系統會自動生成你的專屬預約頁面</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>把連結放在你的社群媒體</h4>
+                        <p>複製你的預約連結，貼到 IG 個人簡介、Line 狀態、Threads⋯⋯想放哪就放哪</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>開始接單，累積評論</h4>
+                        <p>客人預約後你會收到通知，服務完成後他們可以留下評論，幫你建立專業形象</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="cta">
-            <h2>準備好開始了嗎？</h2>
-            <p>登入即可進入您的專屬工作空間。</p>
-            <a href="{% url 'accounts:login' %}">前往登入</a>
+            <h2>準備好經營你的按摩事業了嗎？</h2>
+            <p>現在就開始，讓客人更容易找到你 🎯</p>
+            <a href="{% url 'accounts:login' %}">免費開始使用</a>
         </section>
     </main>
 
     <footer>
-        &copy; {% now "Y" %} Lemon Spa. All rights reserved.
+        &copy; {% now "Y" %} Lemon Spa. 讓按摩師專注在手藝，其他交給我們 🍋
     </footer>
 </body>
 </html>
