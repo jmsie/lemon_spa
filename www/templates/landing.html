@@ -120,6 +120,79 @@
             flex-shrink: 0;
         }
 
+        .pricing {
+            margin: 4rem 0;
+        }
+
+        .pricing-card {
+            background: #ffffff;
+            border-radius: 1.2rem;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 8px 24px rgba(31, 31, 31, 0.08);
+            max-width: 42rem;
+            margin: 0 auto;
+        }
+
+        .pricing-highlight {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .pricing-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-highlight h3 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .pricing-details {
+            background: linear-gradient(135deg, rgba(248, 208, 106, 0.1), rgba(244, 185, 66, 0.1));
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+        }
+
+        .price-label {
+            font-size: 1.1rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .price-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        .price-divider {
+            height: 1px;
+            background: rgba(31, 31, 31, 0.1);
+            margin: 0.5rem 0;
+        }
+
+        .pricing-note {
+            text-align: center;
+            color: var(--muted);
+            font-size: 1rem;
+            margin: 0;
+            line-height: 1.6;
+        }
+
         .how-it-works {
             background: #ffffff;
             border-radius: 1.2rem;
@@ -250,6 +323,28 @@
                     <span>口碑就是最好的行銷，幫你吸引更多新客人</span>
                 </div>
             </article>
+        </section>
+
+        <section class="pricing">
+            <h2 class="section-title">定價方案</h2>
+            <div class="pricing-card">
+                <div class="pricing-highlight">
+                    <span class="pricing-icon">🎉</span>
+                    <h3>超划算的彈性收費</h3>
+                </div>
+                <div class="pricing-details">
+                    <div class="price-item">
+                        <span class="price-label">每月前 100 個預約</span>
+                        <span class="price-value">完全免費</span>
+                    </div>
+                    <div class="price-divider"></div>
+                    <div class="price-item">
+                        <span class="price-label">第 101 個預約開始</span>
+                        <span class="price-value">每個預約 NT$10</span>
+                    </div>
+                </div>
+                <p class="pricing-note">💡 沒有月費、沒有年費，只有在你真正有生意的時候才收費</p>
+            </div>
         </section>
 
         <section class="how-it-works">
