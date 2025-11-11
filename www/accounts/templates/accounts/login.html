@@ -16,19 +16,37 @@
             min-height: -webkit-fill-available;
         }
         input[type="text"],
-        input[type="password"] {
+        input[type="tel"],
+        input[type="password"],
+        select {
             width: 100%;
-            padding: 1rem 1rem 1rem 3rem;
+            padding: 0.875rem 1rem;
             font-size: 1rem;
             border: 2px solid #e5e7eb;
             border-radius: 0.75rem;
             transition: all 0.2s;
         }
         input[type="text"]:focus,
-        input[type="password"]:focus {
+        input[type="tel"]:focus,
+        input[type="password"]:focus,
+        select:focus {
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        input[type="password"] {
+            padding-left: 3rem;
+        }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+            cursor: pointer;
+        }
+        #id_username {
+            display: none;
         }
         .errorlist {
             margin: 0;
@@ -79,17 +97,40 @@
                 
                 <!-- 手機號碼輸入 -->
                 <div>
-                    <label for="{{ form.username.id_for_label }}" class="block text-sm md:text-xs font-semibold text-gray-700 mb-2">
+                    <label for="country-code-select" class="block text-sm md:text-xs font-semibold text-gray-700 mb-2">
                         {{ form.username.label }}
                     </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 md:pl-3 flex items-center pointer-events-none z-10">
-                            <svg class="w-5 h-5 md:w-4 md:h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                            </svg>
-                        </div>
-                        {{ form.username }}
+
+                    <!-- 隱藏的原始表單欄位 -->
+                    {{ form.username }}
+
+                    <!-- 國碼選擇器 -->
+                    <div class="mb-3 md:mb-2">
+                        <label for="country-code-select" class="block text-xs md:text-xs font-medium text-gray-600 mb-1.5">國碼</label>
+                        <select id="country-code-select" required>
+                            <option value="886" selected>🇹🇼 台灣 (+886)</option>
+                            <option value="86">🇨🇳 中國 (+86)</option>
+                            <option value="852">🇭🇰 香港 (+852)</option>
+                            <option value="853">🇲🇴 澳門 (+853)</option>
+                            <option value="65">🇸🇬 新加坡 (+65)</option>
+                            <option value="60">🇲🇾 馬來西亞 (+60)</option>
+                            <option value="1">🇺🇸 美國/加拿大 (+1)</option>
+                            <option value="81">🇯🇵 日本 (+81)</option>
+                            <option value="82">🇰🇷 韓國 (+82)</option>
+                            <option value="44">🇬🇧 英國 (+44)</option>
+                        </select>
                     </div>
+
+                    <!-- 手機號碼輸入框 -->
+                    <div>
+                        <label for="phone-input" class="block text-xs md:text-xs font-medium text-gray-600 mb-1.5">手機號碼</label>
+                        <input id="phone-input" type="tel" placeholder="900000000" autocomplete="tel" required>
+                        <small class="block mt-1.5 text-gray-500 text-xs">請勿輸入開頭的 0，系統會自動處理</small>
+                        <small id="phone-preview" class="hidden mt-1 text-blue-600 font-semibold text-xs">
+                            完整號碼：<span id="phone-preview-text"></span>
+                        </small>
+                    </div>
+
                     {% if form.username.errors %}
                     <ul class="errorlist mt-2">
                         {% for error in form.username.errors %}
@@ -157,5 +198,102 @@
             </p>
         </div>
     </main>
+
+    <script>
+        // 取得 DOM 元素
+        const countryCodeSelect = document.getElementById('country-code-select');
+        const phoneInput = document.getElementById('phone-input');
+        const phonePreview = document.getElementById('phone-preview');
+        const phonePreviewText = document.getElementById('phone-preview-text');
+        const usernameField = document.getElementById('{{ form.username.id_for_label }}');
+        const loginForm = document.querySelector('form');
+
+        /**
+         * 格式化手機號碼為 E.164 格式
+         * @param {string} countryCode - 國碼（不含 + 號）
+         * @param {string} phoneNumber - 手機號碼
+         * @returns {string} E.164 格式的完整號碼
+         */
+        function formatPhoneE164(countryCode, phoneNumber) {
+            let cleanNumber = phoneNumber.replace(/\D/g, '');
+            if (cleanNumber.startsWith('0')) {
+                cleanNumber = cleanNumber.substring(1);
+            }
+            return `+${countryCode}${cleanNumber}`;
+        }
+
+        /**
+         * 正規化並顯示處理後的手機號碼
+         */
+        function normalizePhoneInput() {
+            const phone = phoneInput.value.trim();
+            if (!phone) {
+                phonePreview.classList.add('hidden');
+                return;
+            }
+
+            // 移除非數字字元
+            let cleanNumber = phone.replace(/\D/g, '');
+
+            // 移除開頭的 0
+            if (cleanNumber.startsWith('0')) {
+                cleanNumber = cleanNumber.substring(1);
+            }
+
+            // 如果號碼被修改，更新輸入框
+            if (cleanNumber !== phone.replace(/\D/g, '')) {
+                phoneInput.value = cleanNumber;
+            }
+
+            // 顯示完整號碼預覽
+            if (cleanNumber) {
+                const countryCode = countryCodeSelect.value;
+                const fullNumber = `+${countryCode}${cleanNumber}`;
+                phonePreviewText.textContent = fullNumber;
+                phonePreview.classList.remove('hidden');
+            } else {
+                phonePreview.classList.add('hidden');
+            }
+        }
+
+        // 監聽輸入框失焦事件
+        phoneInput.addEventListener('blur', normalizePhoneInput);
+
+        // 監聽國碼選擇器變更事件
+        countryCodeSelect.addEventListener('change', normalizePhoneInput);
+
+        // 表單送出前，將組合後的完整號碼填入隱藏欄位
+        loginForm.addEventListener('submit', (event) => {
+            const countryCode = countryCodeSelect.value;
+            const phone = phoneInput.value.trim();
+
+            if (phone) {
+                const fullPhoneNumber = formatPhoneE164(countryCode, phone);
+                usernameField.value = fullPhoneNumber;
+            }
+        });
+
+        // 頁面載入時，如果隱藏欄位有值（例如表單驗證失敗後重新載入），解析並填回
+        window.addEventListener('DOMContentLoaded', () => {
+            const existingValue = usernameField.value;
+            if (existingValue && existingValue.startsWith('+')) {
+                // 嘗試解析已有的 E.164 格式號碼
+                const match = existingValue.match(/^\+(\d+)(\d+)$/);
+                if (match) {
+                    // 這裡簡單處理，實際上可能需要更複雜的邏輯來判斷國碼長度
+                    // 由於我們的國碼選擇器有固定的值，可以嘗試匹配
+                    const fullNumber = match[0].substring(1); // 去掉 +
+                    for (let option of countryCodeSelect.options) {
+                        if (fullNumber.startsWith(option.value)) {
+                            countryCodeSelect.value = option.value;
+                            phoneInput.value = fullNumber.substring(option.value.length);
+                            normalizePhoneInput();
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
