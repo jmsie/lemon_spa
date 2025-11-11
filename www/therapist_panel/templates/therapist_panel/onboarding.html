@@ -4,33 +4,48 @@
 
 {% block extra_head %}
   <style>
+    /* 步骤指示器 - 响应式设计 */
     .onboarding-stepper {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0.5rem;
       margin-bottom: 2rem;
     }
+    @media (min-width: 768px) {
+      .onboarding-stepper {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
     .onboarding-stepper .step-indicator {
       position: relative;
-      padding: 0.75rem;
+      padding: 0.875rem 0.5rem;
       border-radius: 0.75rem;
       background-color: var(--bs-secondary-bg);
       color: var(--bs-secondary-color);
       text-align: center;
-      font-weight: 500;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+    @media (min-width: 768px) {
+      .onboarding-stepper .step-indicator {
+        padding: 0.875rem;
+        font-size: 0.95rem;
+      }
     }
     .onboarding-stepper .step-indicator.active {
       background: var(--bs-primary);
       color: #fff;
-      box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.1);
+      box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.15);
+      transform: translateY(-2px);
     }
     .onboarding-stepper .step-indicator.completed {
-      background: rgba(13, 110, 253, 0.2);
+      background: rgba(13, 110, 253, 0.15);
       color: var(--bs-primary);
     }
     .onboarding-section {
       display: none;
-      animation: fadeInUp 250ms ease-out;
+      animation: fadeInUp 300ms ease-out;
     }
     .onboarding-section.active {
       display: block;
@@ -38,90 +53,194 @@
     @keyframes fadeInUp {
       from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(16px);
       }
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
+    
+    /* 表格响应式优化 */
     .collection-table td,
     .collection-table th {
       vertical-align: middle;
     }
+    @media (max-width: 767.98px) {
+      .table-responsive {
+        border-radius: 0.5rem;
+      }
+      .collection-table {
+        font-size: 0.875rem;
+      }
+      .collection-table .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+      }
+    }
+    
+    /* 周选择器优化 */
+    .weekday-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .weekday-selector .form-check-inline {
+      margin: 0;
+    }
+    .weekday-selector .btn {
+      min-width: 3rem;
+      font-weight: 600;
+    }
+    @media (max-width: 575.98px) {
+      .weekday-selector .btn {
+        min-width: 2.5rem;
+        font-size: 0.875rem;
+        padding: 0.5rem 0.25rem;
+      }
+    }
+    
+    /* 表单提示文字 */
     .form-hint {
       font-size: 0.875rem;
       color: var(--bs-secondary-color);
+      margin-top: 0.25rem;
+    }
+    
+    /* 操作按钮组响应式 */
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    @media (min-width: 576px) {
+      .action-buttons {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+    
+    /* 卡片优化 */
+    .card {
+      border: none;
+      box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.075);
+    }
+    @media (max-width: 767.98px) {
+      .card {
+        border-radius: 1rem;
+      }
+      .card-body {
+        padding: 1.5rem !important;
+      }
+    }
+    
+    /* 成功页面样式 */
+    .success-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    @media (min-width: 768px) {
+      .success-icon {
+        font-size: 4rem;
+      }
     }
   </style>
 {% endblock %}
 
 {% block content %}
-  <div class="container-fluid px-0 px-md-2">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+  <div class="container-fluid px-3 px-md-4 py-4">
+    <!-- 页面标题 -->
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
       <div>
-        <h1 class="h3 mb-1">歡迎加入 Lemon Spa！</h1>
+        <h1 class="h3 h2-md mb-2">歡迎加入 Lemon Spa！</h1>
         <p class="mb-0 text-body-secondary">只要 4 個步驟，建立療程、上班時間與休假，馬上開啟線上預約。</p>
       </div>
       <div>
-        <span class="badge text-bg-light border">
+        <span class="badge text-bg-light border fs-6 py-2 px-3">
+          <i class="bi bi-info-circle me-1"></i>
           導覽完成後即可取得預約連結
         </span>
       </div>
     </div>
 
+    <!-- 步骤指示器 -->
     <div class="onboarding-stepper mb-4" id="onboarding-stepper">
-      <div class="step-indicator active" data-step-index="1">1. 建立療程</div>
-      <div class="step-indicator" data-step-index="2">2. 上班時間</div>
-      <div class="step-indicator" data-step-index="3">3. 休假設定</div>
-      <div class="step-indicator" data-step-index="4">4. 完成</div>
+      <div class="step-indicator active" data-step-index="1">
+        <span class="d-none d-md-inline">1. </span>建立療程
+      </div>
+      <div class="step-indicator" data-step-index="2">
+        <span class="d-none d-md-inline">2. </span>上班時間
+      </div>
+      <div class="step-indicator" data-step-index="3">
+        <span class="d-none d-md-inline">3. </span>休假設定
+      </div>
+      <div class="step-indicator" data-step-index="4">
+        <span class="d-none d-md-inline">4. </span>完成
+      </div>
     </div>
 
-    <div class="card shadow-sm">
-      <div class="card-body p-4 p-lg-5">
+    <!-- 主卡片 -->
+    <div class="card">
+      <div class="card-body p-3 p-md-4 p-lg-5">
+        
+        <!-- Step 1: 建立療程 -->
         <section class="onboarding-section active" data-step="1">
           <header class="mb-4">
-            <h2 class="h4 mb-1">Step 1：新增你提供的療程</h2>
+            <h2 class="h4 h3-md mb-2">Step 1：新增你提供的療程</h2>
             <p class="text-body-secondary mb-0">至少需要一個療程，才能讓客戶選擇服務項目。</p>
           </header>
 
           <form id="treatment-form" class="needs-validation" novalidate>
             <input type="hidden" name="id" id="treatment-id">
             <div class="row g-3">
-              <div class="col-md-6">
-                <label for="treatment-name" class="form-label">療程名稱</label>
-                <input type="text" class="form-control" id="treatment-name" name="name" required placeholder="例如：深層按摩 60 分鐘">
+              <div class="col-12 col-md-6">
+                <label for="treatment-name" class="form-label fw-semibold">療程名稱</label>
+                <input type="text" class="form-control form-control-lg" id="treatment-name" name="name" required placeholder="例如：深層按摩 60 分鐘">
               </div>
-              <div class="col-md-3">
-                <label for="treatment-duration" class="form-label">服務時間（分鐘）</label>
-                <input type="number" class="form-control" id="treatment-duration" name="duration_minutes" min="1" required value="60">
+              <div class="col-6 col-md-3">
+                <label for="treatment-duration" class="form-label fw-semibold">服務時間</label>
+                <div class="input-group input-group-lg">
+                  <input type="number" class="form-control" id="treatment-duration" name="duration_minutes" min="1" required value="60">
+                  <span class="input-group-text">分鐘</span>
+                </div>
               </div>
-              <div class="col-md-3">
-                <label for="treatment-preparation" class="form-label">預留準備時間（分鐘）</label>
-                <input type="number" class="form-control" id="treatment-preparation" name="preparation_minutes" min="0" value="10">
+              <div class="col-6 col-md-3">
+                <label for="treatment-preparation" class="form-label fw-semibold">預留準備</label>
+                <div class="input-group input-group-lg">
+                  <input type="number" class="form-control" id="treatment-preparation" name="preparation_minutes" min="0" value="10">
+                  <span class="input-group-text">分鐘</span>
+                </div>
               </div>
-              <div class="col-md-3">
-                <label for="treatment-price" class="form-label">價格</label>
-                <input type="number" class="form-control" id="treatment-price" name="price" min="0" step="0.01" required placeholder="例如：1500">
+              <div class="col-12 col-md-4">
+                <label for="treatment-price" class="form-label fw-semibold">價格</label>
+                <div class="input-group input-group-lg">
+                  <span class="input-group-text">NT$</span>
+                  <input type="number" class="form-control" id="treatment-price" name="price" min="0" step="0.01" required placeholder="1500">
+                </div>
               </div>
-              <div class="col-md-6">
-                <label for="treatment-notes" class="form-label">備註（選填）</label>
+              <div class="col-12 col-md-8">
+                <label for="treatment-notes" class="form-label fw-semibold">備註 <span class="text-muted fw-normal">(選填)</span></label>
                 <textarea class="form-control" id="treatment-notes" name="notes" rows="2" placeholder="提供可選加值項目或注意事項"></textarea>
               </div>
               <div class="col-12">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" value="1" id="treatment-active" name="is_active" checked>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" role="switch" value="1" id="treatment-active" name="is_active" checked>
                   <label class="form-check-label" for="treatment-active">
                     上架此療程（若稍後要暫停，可取消勾選）
                   </label>
                 </div>
               </div>
             </div>
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+            
+            <div class="action-buttons mt-4">
               <div id="treatment-form-errors" class="flex-grow-1"></div>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary" id="reset-treatment-form">清除</button>
-                <button type="submit" class="btn btn-primary" id="submit-treatment-btn">
+              <div class="d-flex gap-2 flex-grow-1 flex-sm-grow-0">
+                <button type="button" class="btn btn-outline-secondary flex-fill flex-sm-grow-0" id="reset-treatment-form">
+                  <i class="bi bi-x-circle me-1"></i>
+                  清除
+                </button>
+                <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0" id="submit-treatment-btn">
                   <i class="bi bi-plus-circle me-1"></i>
                   儲存療程
                 </button>
@@ -131,41 +250,46 @@
 
           <hr class="my-4">
 
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-3">
             <h3 class="h5 mb-0">已建立的療程</h3>
-            <span class="badge text-bg-light" id="treatment-count-badge">0 個療程</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-6 py-2 px-3" id="treatment-count-badge">0 個療程</span>
           </div>
+          
           <div class="table-responsive">
-            <table class="table table-hover table-borderless align-middle collection-table">
+            <table class="table table-hover align-middle collection-table">
               <thead class="table-light">
                 <tr>
                   <th scope="col">名稱</th>
-                  <th scope="col">時間</th>
+                  <th scope="col" class="d-none d-md-table-cell">時間</th>
                   <th scope="col">價格</th>
-                  <th scope="col">備註</th>
+                  <th scope="col" class="d-none d-lg-table-cell">備註</th>
                   <th scope="col" class="text-center">狀態</th>
                   <th scope="col" class="text-end">操作</th>
                 </tr>
               </thead>
               <tbody id="treatments-list">
                 <tr>
-                  <td colspan="6" class="text-center py-4 text-body-secondary">目前尚未建立療程。</td>
+                  <td colspan="6" class="text-center py-5 text-body-secondary">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                    目前尚未建立療程
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
 
           <div class="d-flex justify-content-end mt-4">
-            <button class="btn btn-primary" data-action="next" data-target-step="2" id="step-1-next" disabled>
+            <button class="btn btn-primary btn-lg" data-action="next" data-target-step="2" id="step-1-next" disabled>
               下一步：設定上班時間
-              <i class="bi bi-arrow-right ms-1"></i>
+              <i class="bi bi-arrow-right ms-2"></i>
             </button>
           </div>
         </section>
 
+        <!-- Step 2: 設定上班時間 -->
         <section class="onboarding-section" data-step="2">
           <header class="mb-4">
-            <h2 class="h4 mb-1">Step 2：設定上班時間</h2>
+            <h2 class="h4 h3-md mb-2">Step 2：設定上班時間</h2>
             <p class="text-body-secondary mb-0">建立至少一段可預約的時段，客戶才能在這些時間預約你。</p>
           </header>
 
@@ -173,49 +297,51 @@
             <input type="hidden" name="uuid" id="working-hours-id">
             <div class="row g-3">
               <div class="col-12">
-                <label class="form-label d-block mb-2">選擇上班星期（可複選）</label>
-                <div class="d-flex flex-wrap gap-2" id="working-weekdays">
+                <label class="form-label fw-semibold d-block mb-3">選擇上班星期（可複選）</label>
+                <div class="weekday-selector" id="working-weekdays">
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="0" id="working-weekday-0" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="working-weekday-0">週一</label>
+                    <label class="btn btn-outline-primary" for="working-weekday-0">週一</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="1" id="working-weekday-1" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="working-weekday-1">週二</label>
+                    <label class="btn btn-outline-primary" for="working-weekday-1">週二</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="2" id="working-weekday-2" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="working-weekday-2">週三</label>
+                    <label class="btn btn-outline-primary" for="working-weekday-2">週三</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="3" id="working-weekday-3" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="working-weekday-3">週四</label>
+                    <label class="btn btn-outline-primary" for="working-weekday-3">週四</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="4" id="working-weekday-4" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="working-weekday-4">週五</label>
+                    <label class="btn btn-outline-primary" for="working-weekday-4">週五</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="5" id="working-weekday-5" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="working-weekday-5">週六</label>
+                    <label class="btn btn-outline-primary" for="working-weekday-5">週六</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="6" id="working-weekday-6" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="working-weekday-6">週日</label>
+                    <label class="btn btn-outline-primary" for="working-weekday-6">週日</label>
                   </div>
                 </div>
               </div>
-              <div class="col-md-3">
-                <label for="working-start-time" class="form-label">開始時間</label>
-                <input type="time" class="form-control" id="working-start-time" step="1800" value="09:00" required>
+              
+              <!-- 手機版：每個欄位獨立一行 | 桌面版：三欄並排 -->
+              <div class="col-12 col-md-4">
+                <label for="working-start-time" class="form-label fw-semibold">開始時間</label>
+                <input type="time" class="form-control form-control-lg" id="working-start-time" step="1800" value="09:00" required>
               </div>
-              <div class="col-md-3">
-                <label for="working-end-time" class="form-label">結束時間</label>
-                <input type="time" class="form-control" id="working-end-time" step="1800" value="17:00" required>
+              <div class="col-12 col-md-4">
+                <label for="working-end-time" class="form-label fw-semibold">結束時間</label>
+                <input type="time" class="form-control form-control-lg" id="working-end-time" step="1800" value="17:00" required>
               </div>
-              <div class="col-md-3">
-                <label for="working-repeat-weeks" class="form-label">持續週數</label>
-                <select class="form-select" id="working-repeat-weeks">
+              <div class="col-12 col-md-4">
+                <label for="working-repeat-weeks" class="form-label fw-semibold">持續週數</label>
+                <select class="form-select form-select-lg" id="working-repeat-weeks">
                   <option value="1">1 週（本週）</option>
                   <option value="2">2 週</option>
                   <option value="3">3 週</option>
@@ -225,19 +351,27 @@
                   <option value="7">7 週</option>
                   <option value="8">8 週</option>
                 </select>
-                <div class="form-text">系統會每週排班，最多可一次建立 8 週。</div>
+                <div class="form-text">系統會每週排班，最多可一次建立 8 週</div>
               </div>
-              <div class="col-md-3">
-                <label for="working-note" class="form-label">備註（選填）</label>
-                <input type="text" class="form-control" id="working-note" placeholder="例如：現場服務或線上諮詢">
+              
+              <div class="col-12">
+                <label for="working-note" class="form-label fw-semibold">備註 <span class="text-muted fw-normal">(選填)</span></label>
+                <input type="text" class="form-control form-control-lg" id="working-note" placeholder="例如：現場服務">
               </div>
             </div>
-            <div class="form-text mt-2">系統會自動從最近的對應星期開始排程。</div>
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+            <div class="form-text mt-3">
+              <i class="bi bi-info-circle me-1"></i>
+              系統會自動從最近的對應星期開始排程
+            </div>
+            
+            <div class="action-buttons mt-4">
               <div id="working-form-errors" class="flex-grow-1"></div>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary" id="reset-working-form">清除</button>
-                <button type="submit" class="btn btn-primary" id="submit-working-btn">
+              <div class="d-flex gap-2 flex-grow-1 flex-sm-grow-0">
+                <button type="button" class="btn btn-outline-secondary flex-fill flex-sm-grow-0" id="reset-working-form">
+                  <i class="bi bi-x-circle me-1"></i>
+                  清除
+                </button>
+                <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0" id="submit-working-btn">
                   <i class="bi bi-plus-circle me-1"></i>
                   儲存時段
                 </button>
@@ -247,44 +381,49 @@
 
           <hr class="my-4">
 
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-3">
             <h3 class="h5 mb-0">已設定的上班時間</h3>
-            <span class="badge text-bg-light" id="working-count-badge">0 段時段</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-6 py-2 px-3" id="working-count-badge">0 段時段</span>
           </div>
           <div id="working-log" class="mb-3 small text-body-secondary"></div>
+          
           <div class="table-responsive">
-            <table class="table table-hover table-borderless align-middle collection-table">
+            <table class="table table-hover align-middle collection-table">
               <thead class="table-light">
                 <tr>
                   <th scope="col">時間區間</th>
-                  <th scope="col">星期 / 循環</th>
-                  <th scope="col">備註</th>
+                  <th scope="col" class="d-none d-md-table-cell">星期 / 循環</th>
+                  <th scope="col" class="d-none d-lg-table-cell">備註</th>
                   <th scope="col" class="text-end">操作</th>
                 </tr>
               </thead>
               <tbody id="working-hours-list">
                 <tr>
-                  <td colspan="4" class="text-center py-4 text-body-secondary">尚未設定上班時間。</td>
+                  <td colspan="4" class="text-center py-5 text-body-secondary">
+                    <i class="bi bi-calendar3 fs-1 d-block mb-2 opacity-50"></i>
+                    尚未設定上班時間
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <div class="d-flex justify-content-between mt-4">
-            <button class="btn btn-outline-secondary" data-action="prev" data-target-step="1">
-              <i class="bi bi-arrow-left me-1"></i>
+          <div class="d-flex flex-column flex-sm-row justify-content-between gap-3 mt-4">
+            <button class="btn btn-outline-secondary btn-lg order-2 order-sm-1" data-action="prev" data-target-step="1">
+              <i class="bi bi-arrow-left me-2"></i>
               上一步
             </button>
-            <button class="btn btn-primary" data-action="next" data-target-step="3" id="step-2-next" disabled>
+            <button class="btn btn-primary btn-lg order-1 order-sm-2" data-action="next" data-target-step="3" id="step-2-next" disabled>
               下一步：設定休假
-              <i class="bi bi-arrow-right ms-1"></i>
+              <i class="bi bi-arrow-right ms-2"></i>
             </button>
           </div>
         </section>
 
+        <!-- Step 3: 建立休假 -->
         <section class="onboarding-section" data-step="3">
           <header class="mb-4">
-            <h2 class="h4 mb-1">Step 3：建立休假與不可預約時間</h2>
+            <h2 class="h4 h3-md mb-2">Step 3：建立休假與不可預約時間</h2>
             <p class="text-body-secondary mb-0">避免客戶在你不在的時段預約，至少新增一段休假。</p>
           </header>
 
@@ -292,49 +431,51 @@
             <input type="hidden" name="uuid" id="time-off-id">
             <div class="row g-3">
               <div class="col-12">
-                <label class="form-label d-block mb-2">選擇休假星期（可複選）</label>
-                <div class="d-flex flex-wrap gap-2" id="timeoff-weekdays">
+                <label class="form-label fw-semibold d-block mb-3">選擇休假星期（可複選）</label>
+                <div class="weekday-selector" id="timeoff-weekdays">
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="0" id="timeoff-weekday-0" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="timeoff-weekday-0">週一</label>
+                    <label class="btn btn-outline-primary" for="timeoff-weekday-0">週一</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="1" id="timeoff-weekday-1" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="timeoff-weekday-1">週二</label>
+                    <label class="btn btn-outline-primary" for="timeoff-weekday-1">週二</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="2" id="timeoff-weekday-2" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="timeoff-weekday-2">週三</label>
+                    <label class="btn btn-outline-primary" for="timeoff-weekday-2">週三</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="3" id="timeoff-weekday-3" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="timeoff-weekday-3">週四</label>
+                    <label class="btn btn-outline-primary" for="timeoff-weekday-3">週四</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="4" id="timeoff-weekday-4" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="timeoff-weekday-4">週五</label>
+                    <label class="btn btn-outline-primary" for="timeoff-weekday-4">週五</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="5" id="timeoff-weekday-5" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="timeoff-weekday-5">週六</label>
+                    <label class="btn btn-outline-primary" for="timeoff-weekday-5">週六</label>
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="btn-check" type="checkbox" value="6" id="timeoff-weekday-6" autocomplete="off">
-                    <label class="btn btn-outline-secondary" for="timeoff-weekday-6">週日</label>
+                    <label class="btn btn-outline-primary" for="timeoff-weekday-6">週日</label>
                   </div>
                 </div>
               </div>
-              <div class="col-md-4">
-                <label for="timeoff-start-time" class="form-label">開始時間</label>
-                <input type="time" class="form-control" id="timeoff-start-time" step="1800" value="12:00" required>
+              
+              <!-- 手機版：每個欄位獨立一行 | 桌面版：三欄並排 -->
+              <div class="col-12 col-md-4">
+                <label for="timeoff-start-time" class="form-label fw-semibold">開始時間</label>
+                <input type="time" class="form-control form-control-lg" id="timeoff-start-time" step="1800" value="12:00" required>
               </div>
-              <div class="col-md-4">
-                <label for="timeoff-end-time" class="form-label">結束時間</label>
-                <input type="time" class="form-control" id="timeoff-end-time" step="1800" value="13:00" required>
+              <div class="col-12 col-md-4">
+                <label for="timeoff-end-time" class="form-label fw-semibold">結束時間</label>
+                <input type="time" class="form-control form-control-lg" id="timeoff-end-time" step="1800" value="13:00" required>
               </div>
-              <div class="col-md-4">
-                <label for="timeoff-repeat-weeks" class="form-label">持續週數</label>
-                <select class="form-select" id="timeoff-repeat-weeks">
+              <div class="col-12 col-md-4">
+                <label for="timeoff-repeat-weeks" class="form-label fw-semibold">持續週數</label>
+                <select class="form-select form-select-lg" id="timeoff-repeat-weeks">
                   <option value="1">1 週（本週）</option>
                   <option value="2">2 週</option>
                   <option value="3">3 週</option>
@@ -345,17 +486,25 @@
                   <option value="8">8 週</option>
                 </select>
               </div>
+              
               <div class="col-12">
-                <label for="timeoff-note" class="form-label">備註（選填）</label>
-                <input type="text" class="form-control" id="timeoff-note" placeholder="例如：午休、外出、進修">
+                <label for="timeoff-note" class="form-label fw-semibold">備註 <span class="text-muted fw-normal">(選填)</span></label>
+                <input type="text" class="form-control form-control-lg" id="timeoff-note" placeholder="例如：午休、外出、進修">
               </div>
             </div>
-            <div class="form-text mt-2">系統會從最近的該星期開始設定休假，並每週套用，最多 8 週。</div>
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+            <div class="form-text mt-3">
+              <i class="bi bi-info-circle me-1"></i>
+              系統會從最近的該星期開始設定休假，並每週套用，最多 8 週
+            </div>
+            
+            <div class="action-buttons mt-4">
               <div id="timeoff-form-errors" class="flex-grow-1"></div>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary" id="reset-timeoff-form">清除</button>
-                <button type="submit" class="btn btn-primary" id="submit-timeoff-btn">
+              <div class="d-flex gap-2 flex-grow-1 flex-sm-grow-0">
+                <button type="button" class="btn btn-outline-secondary flex-fill flex-sm-grow-0" id="reset-timeoff-form">
+                  <i class="bi bi-x-circle me-1"></i>
+                  清除
+                </button>
+                <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0" id="submit-timeoff-btn">
                   <i class="bi bi-plus-circle me-1"></i>
                   儲存休假
                 </button>
@@ -365,79 +514,93 @@
 
           <hr class="my-4">
 
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-3">
             <h3 class="h5 mb-0">已設定的休假/封鎖時段</h3>
-            <span class="badge text-bg-light" id="timeoff-count-badge">0 段休假</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-6 py-2 px-3" id="timeoff-count-badge">0 段休假</span>
           </div>
           <div id="timeoff-log" class="mb-3 small text-body-secondary"></div>
+          
           <div class="table-responsive">
-            <table class="table table-hover table-borderless align-middle collection-table">
+            <table class="table table-hover align-middle collection-table">
               <thead class="table-light">
                 <tr>
                   <th scope="col">時間區間</th>
-                  <th scope="col">循環</th>
-                  <th scope="col">備註</th>
+                  <th scope="col" class="d-none d-md-table-cell">循環</th>
+                  <th scope="col" class="d-none d-lg-table-cell">備註</th>
                   <th scope="col" class="text-end">操作</th>
                 </tr>
               </thead>
               <tbody id="timeoff-list">
                 <tr>
-                  <td colspan="4" class="text-center py-4 text-body-secondary">尚未設定休假。</td>
+                  <td colspan="4" class="text-center py-5 text-body-secondary">
+                    <i class="bi bi-moon-stars fs-1 d-block mb-2 opacity-50"></i>
+                    尚未設定休假
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <div class="d-flex justify-content-between mt-4">
-            <button class="btn btn-outline-secondary" data-action="prev" data-target-step="2">
-              <i class="bi bi-arrow-left me-1"></i>
+          <div class="d-flex flex-column flex-sm-row justify-content-between gap-3 mt-4">
+            <button class="btn btn-outline-secondary btn-lg order-2 order-sm-1" data-action="prev" data-target-step="2">
+              <i class="bi bi-arrow-left me-2"></i>
               上一步
             </button>
-            <button class="btn btn-primary" data-action="next" data-target-step="4" id="step-3-next" disabled>
+            <button class="btn btn-success btn-lg order-1 order-sm-2" data-action="next" data-target-step="4" id="step-3-next" disabled>
               完成設定
-              <i class="bi bi-check-circle ms-1"></i>
+              <i class="bi bi-check-circle ms-2"></i>
             </button>
           </div>
         </section>
 
+        <!-- Step 4: 完成 -->
         <section class="onboarding-section" data-step="4">
-          <header class="mb-4 text-center">
-            <div class="display-6 mb-3 text-success"><i class="bi bi-stars"></i></div>
-            <h2 class="h4 mb-2">恭喜完成！你的預約頁面準備好了</h2>
-            <p class="text-body-secondary mb-0">以下提供你的專屬預約連結，將網址分享給客戶即可開始接受預約。</p>
-          </header>
+          <div class="text-center mb-5">
+            <div class="success-icon text-success">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h2 class="h3 h2-md mb-3">恭喜完成！你的預約頁面準備好了</h2>
+            <p class="text-body-secondary mb-0 fs-5 fs-6-sm">以下提供你的專屬預約連結<br class="d-md-none">將網址分享給客戶即可開始接受預約</p>
+          </div>
 
-          <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-              <h3 class="h6 text-uppercase text-body-secondary mb-2">專屬預約連結</h3>
-              <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center">
-                <code class="text-wrap bg-body-secondary px-3 py-2 rounded flex-grow-1" id="booking-link-display">
+          <div class="card border-2 border-primary bg-primary-subtle mb-4">
+            <div class="card-body p-4">
+              <h3 class="h6 text-uppercase text-body-secondary mb-3 d-flex align-items-center">
+                <i class="bi bi-link-45deg me-2"></i>
+                專屬預約連結，放在IG/Threads/Line上分享給你的客戶吧！
+              </h3>
+              <div class="d-flex flex-column flex-lg-row gap-3 align-items-stretch align-items-lg-center mb-3">
+                <code class="text-wrap bg-white border p-3 rounded flex-grow-1 fs-6 user-select-all" id="booking-link-display">
                   {{ appointment_booking_url|default:appointments_booking_path }}
                 </code>
                 <a
                   href="{{ appointment_booking_url|default:appointments_booking_path }}"
-                  class="btn btn-outline-primary"
+                  class="btn btn-primary btn-lg"
                   target="_blank"
                   rel="noopener"
                 >
+                  <i class="bi bi-box-arrow-up-right me-2"></i>
                   開啟預約頁面
                 </a>
               </div>
-              <hr>
-              <p class="mb-0 text-body-secondary">
-                有空時也歡迎前往 <a href="{% url 'therapist_panel:treatments' %}">療程管理</a> 或 <a href="{% url 'therapist_panel:appointments' %}">預約總覽</a> 持續更新你的資訊。
-              </p>
+              <div class="alert alert-light border mb-0" role="alert">
+                <i class="bi bi-lightbulb me-2"></i>
+                <strong>提示：</strong>有空時也歡迎前往 
+                <a href="{% url 'therapist_panel:treatments' %}" class="alert-link">療程管理</a> 或 
+                <a href="{% url 'therapist_panel:appointments' %}" class="alert-link">預約總覽</a> 
+                持續更新你的資訊。
+              </div>
             </div>
           </div>
 
-          <div class="d-flex justify-content-between">
-            <button class="btn btn-outline-secondary" data-action="prev" data-target-step="3">
-              <i class="bi bi-arrow-left me-1"></i>
+          <div class="d-flex flex-column flex-sm-row justify-content-between gap-3">
+            <button class="btn btn-outline-secondary btn-lg order-2 order-sm-1" data-action="prev" data-target-step="3">
+              <i class="bi bi-arrow-left me-2"></i>
               回上一頁
             </button>
-            <a class="btn btn-success" href="{% url 'therapist_panel:index' %}">
+            <a class="btn btn-success btn-lg order-1 order-sm-2" href="{% url 'therapist_panel:index' %}">
               進入治療師主控台
-              <i class="bi bi-box-arrow-in-right ms-1"></i>
+              <i class="bi bi-box-arrow-in-right ms-2"></i>
             </a>
           </div>
         </section>
@@ -528,7 +691,7 @@
       function getNextDateStringForWeekday(weekday, timeZone) {
         const now = new Date();
         const tzNow = new Date(now.toLocaleString("en-US", { timeZone }));
-        const currentWeekday = (tzNow.getDay() + 6) % 7; // convert Sunday=0 to 6
+        const currentWeekday = (tzNow.getDay() + 6) % 7;
         const diff = (weekday - currentWeekday + 7) % 7;
         tzNow.setDate(tzNow.getDate() + diff);
         return formatDateInTimeZone(tzNow, timeZone);
@@ -569,11 +732,6 @@
           const isSelected = valueSet.has(input.value);
           input.checked = isSelected;
           input.disabled = disableOthers ? !isSelected : false;
-          const label = input.nextElementSibling;
-          if (label && label.classList.contains("btn")) {
-            label.classList.toggle("btn-primary", isSelected);
-            label.classList.toggle("btn-outline-secondary", !isSelected);
-          }
         });
       }
 
@@ -581,11 +739,6 @@
         inputs.forEach((input) => {
           input.checked = false;
           input.disabled = false;
-          const label = input.nextElementSibling;
-          if (label && label.classList.contains("btn")) {
-            label.classList.remove("btn-primary");
-            label.classList.add("btn-outline-secondary");
-          }
         });
       }
 
@@ -594,24 +747,6 @@
           return "";
         }
         return timeValue.length === 5 ? `${timeValue}:00` : timeValue;
-      }
-
-      function attachToggleStyling(inputs) {
-        inputs.forEach((input) => {
-          input.addEventListener("change", () => {
-            const label = input.nextElementSibling;
-            if (!label || !label.classList.contains("btn")) {
-              return;
-            }
-            if (input.checked) {
-              label.classList.add("btn-primary");
-              label.classList.remove("btn-outline-secondary");
-            } else if (!input.disabled) {
-              label.classList.remove("btn-primary");
-              label.classList.add("btn-outline-secondary");
-            }
-          });
-        });
       }
 
       function formatWeeksText(weeks) {
@@ -623,19 +758,19 @@
         if (!container || !entries.length) {
           return;
         }
-        const content = entries.map((line) => `<div>${line}</div>`).join("");
+        const content = entries.map((line) => `<div class="alert alert-success py-2 px-3 mb-2"><i class="bi bi-check-circle me-2"></i>${line}</div>`).join("");
         container.insertAdjacentHTML("beforeend", content);
       }
 
       function buildWorkingSummary(weekday, startTime, endTime, note, weeks) {
         const label = Number.isInteger(weekday) ? weekdayLabel(weekday) : "單次";
-        const noteText = note ? ` ${note}` : "";
+        const noteText = note ? ` (${note})` : "";
         return `${label} 上班時間 ${startTime}~${endTime}${noteText} ${formatWeeksText(weeks)}`;
       }
 
       function buildTimeoffSummary(weekday, startTime, endTime, note, weeks) {
         const label = Number.isInteger(weekday) ? weekdayLabel(weekday) : "單次";
-        const noteText = note ? ` ${note}` : "";
+        const noteText = note ? ` (${note})` : "";
         return `${label} 休假時間 ${startTime}~${endTime}${noteText} ${formatWeeksText(weeks)}`;
       }
 
@@ -663,7 +798,13 @@
           if (Number.isNaN(date.getTime())) {
             return isoString;
           }
-          return date.toLocaleString();
+          return date.toLocaleString('zh-TW', {
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          });
         } catch (error) {
           return isoString;
         }
@@ -679,6 +820,7 @@
           indicator.classList.toggle("active", indicatorStep === step);
           indicator.classList.toggle("completed", indicatorStep < step);
         });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
       function refreshNextButtonsState() {
@@ -694,7 +836,7 @@
       function renderEmptyRow(container, colspan, message) {
         container.innerHTML = `
           <tr>
-            <td colspan="${colspan}" class="text-center py-4 text-body-secondary">
+            <td colspan="${colspan}" class="text-center py-5 text-body-secondary">
               ${message}
             </td>
           </tr>
@@ -706,6 +848,21 @@
         badge.dataset.count = count;
         const label = count === 0 ? emptyLabel : `${count} ${emptyLabel.replace("0 ", "")}`;
         badge.textContent = label;
+      }
+
+      function showFieldErrors(container, payload) {
+        if (!payload || typeof payload !== "object") {
+          container.innerHTML = "";
+          return;
+        }
+        const messages = Object.entries(payload)
+          .map(([field, errors]) => {
+            const text = Array.isArray(errors) ? errors.join(" ") : String(errors);
+            const label = field === "non_field_errors" ? "錯誤" : field;
+            return `<div class="alert alert-danger mb-2 py-2 px-3" role="alert"><i class="bi bi-exclamation-triangle me-2"></i><strong>${label}:</strong> ${text}</div>`;
+          })
+          .join("");
+        container.innerHTML = messages || "";
       }
 
       /* Treatments logic */
@@ -731,23 +888,8 @@
         treatmentFields.active.checked = true;
       }
 
-      function showFieldErrors(container, payload) {
-        if (!payload || typeof payload !== "object") {
-          container.innerHTML = "";
-          return;
-        }
-        const messages = Object.entries(payload)
-          .map(([field, errors]) => {
-            const text = Array.isArray(errors) ? errors.join(" ") : String(errors);
-            const label = field === "non_field_errors" ? "一般" : field;
-            return `<div class="alert alert-danger mb-2 py-2 px-3" role="alert"><strong>${label}</strong> ${text}</div>`;
-          })
-          .join("");
-        container.innerHTML = messages || "";
-      }
-
       async function loadTreatments() {
-        renderEmptyRow(treatmentsList, 6, "載入中…");
+        renderEmptyRow(treatmentsList, 6, '<div class="spinner-border spinner-border-sm me-2" role="status"></div>載入中...');
         try {
           const response = await fetch(config.urls.treatments, {
             headers: { Accept: "application/json" },
@@ -759,24 +901,31 @@
           const items = Array.isArray(data) ? data : data.results || [];
           store.treatments = items;
           if (items.length === 0) {
-            renderEmptyRow(treatmentsList, 6, "目前尚未建立療程。");
+            renderEmptyRow(treatmentsList, 6, '<i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>目前尚未建立療程');
           } else {
             treatmentsList.innerHTML = items
               .map((item) => {
                 const badge = item.is_active
-                  ? '<span class="badge text-bg-success">顯示中</span>'
-                  : '<span class="badge text-bg-secondary">已隱藏</span>';
+                  ? '<span class="badge bg-success"><i class="bi bi-eye me-1"></i>顯示中</span>'
+                  : '<span class="badge bg-secondary"><i class="bi bi-eye-slash me-1"></i>已隱藏</span>';
+                const timeInfo = `${item.duration_minutes} 分 <span class="d-none d-md-inline">+ ${item.preparation_minutes ?? 0} 分準備</span>`;
                 return `
                   <tr data-id="${item.id}">
-                    <td>${item.name}</td>
-                    <td>${item.duration_minutes} 分鐘 + ${item.preparation_minutes ?? 0} 分鐘準備</td>
+                    <td class="fw-semibold">${item.name}</td>
+                    <td class="d-none d-md-table-cell">${timeInfo}</td>
                     <td>${formatCurrency(item.price)}</td>
-                    <td>${item.notes || "—"}</td>
+                    <td class="d-none d-lg-table-cell text-truncate" style="max-width: 200px;">${item.notes || "—"}</td>
                     <td class="text-center">${badge}</td>
                     <td class="text-end">
                       <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-primary" data-action="edit">編輯</button>
-                        <button class="btn btn-outline-danger" data-action="delete">刪除</button>
+                        <button class="btn btn-outline-primary" data-action="edit" title="編輯">
+                          <i class="bi bi-pencil"></i>
+                          <span class="d-none d-lg-inline ms-1">編輯</span>
+                        </button>
+                        <button class="btn btn-outline-danger" data-action="delete" title="刪除">
+                          <i class="bi bi-trash"></i>
+                          <span class="d-none d-lg-inline ms-1">刪除</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -786,7 +935,7 @@
           }
           hydrateCountBadge("treatment-count-badge", items.length, "0 個療程");
         } catch (error) {
-          renderEmptyRow(treatmentsList, 6, "載入失敗，請稍候再試。");
+          renderEmptyRow(treatmentsList, 6, '<i class="bi bi-exclamation-triangle fs-1 d-block mb-2 text-danger opacity-50"></i>載入失敗，請稍候再試');
         } finally {
           refreshNextButtonsState();
         }
@@ -879,6 +1028,7 @@
           treatmentFields.notes.value = record.notes || "";
           treatmentFields.active.checked = Boolean(record.is_active);
           treatmentFields.name.focus();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (button.dataset.action === "delete") {
           deleteTreatment(id);
         }
@@ -896,7 +1046,6 @@
       const workingCheckboxes = Array.from(
         document.querySelectorAll("#working-weekdays input[type='checkbox']")
       );
-      attachToggleStyling(workingCheckboxes);
 
       const workingFields = {
         uuid: document.getElementById("working-hours-id"),
@@ -920,7 +1069,7 @@
       }
 
       async function loadWorkingHours() {
-        renderEmptyRow(workingList, 4, "載入中…");
+        renderEmptyRow(workingList, 4, '<div class="spinner-border spinner-border-sm me-2" role="status"></div>載入中...');
         try {
           const response = await fetch(config.urls.workingHours, {
             headers: { Accept: "application/json" },
@@ -932,7 +1081,7 @@
           const items = Array.isArray(data) ? data : data.results || [];
           store.workingHours = items;
           if (items.length === 0) {
-            renderEmptyRow(workingList, 4, "尚未設定上班時間。");
+            renderEmptyRow(workingList, 4, '<i class="bi bi-calendar3 fs-1 d-block mb-2 opacity-50"></i>尚未設定上班時間');
           } else {
             workingList.innerHTML = items
               .map((item) => {
@@ -941,17 +1090,27 @@
                     ? item.weekday
                     : getWeekdayIndexFromISO(item.starts_at, therapistTimeZone);
                 const weekdayText = weekdayIndex !== null ? weekdayLabel(weekdayIndex) : "單次";
-                const repeatText = item.series_uuid ? `${weekdayText} · 循環` : weekdayText;
+                const repeatBadge = item.series_uuid ? '<span class="badge bg-info-subtle text-info ms-2"><i class="bi bi-arrow-repeat me-1"></i>循環</span>' : '';
                 const note = item.note || "—";
+                const dateTime = `${formatDateTime(item.starts_at)} ~ ${formatDateTime(item.ends_at)}`;
                 return `
                   <tr data-uuid="${item.uuid}" data-series="${item.series_uuid || ""}" data-weekday="${weekdayIndex ?? ""}">
-                    <td>${formatDateTime(item.starts_at)} 至 ${formatDateTime(item.ends_at)}</td>
-                    <td>${repeatText}</td>
-                    <td>${note}</td>
+                    <td>
+                      <div class="fw-semibold">${dateTime}</div>
+                      <small class="text-muted d-md-none">${weekdayText}${repeatBadge}</small>
+                    </td>
+                    <td class="d-none d-md-table-cell">${weekdayText}${repeatBadge}</td>
+                    <td class="d-none d-lg-table-cell text-truncate" style="max-width: 150px;">${note}</td>
                     <td class="text-end">
                       <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-primary" data-action="edit">編輯</button>
-                        <button class="btn btn-outline-danger" data-action="delete">刪除</button>
+                        <button class="btn btn-outline-primary" data-action="edit" title="編輯">
+                          <i class="bi bi-pencil"></i>
+                          <span class="d-none d-lg-inline ms-1">編輯</span>
+                        </button>
+                        <button class="btn btn-outline-danger" data-action="delete" title="刪除">
+                          <i class="bi bi-trash"></i>
+                          <span class="d-none d-lg-inline ms-1">刪除</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -961,7 +1120,7 @@
           }
           hydrateCountBadge("working-count-badge", items.length, "0 段時段");
         } catch (error) {
-          renderEmptyRow(workingList, 4, "載入失敗，請稍候再試。");
+          renderEmptyRow(workingList, 4, '<i class="bi bi-exclamation-triangle fs-1 d-block mb-2 text-danger opacity-50"></i>載入失敗，請稍候再試');
         } finally {
           refreshNextButtonsState();
         }
@@ -1116,10 +1275,10 @@
           return;
         }
         const row = button.closest("tr[data-uuid]");
-      if (!row) {
-        return;
-      }
-      const uuid = row.dataset.uuid;
+        if (!row) {
+          return;
+        }
+        const uuid = row.dataset.uuid;
         if (button.dataset.action === "edit") {
           const record = store.workingHours.find((item) => item.uuid === uuid);
           if (!record) {
@@ -1136,13 +1295,14 @@
           workingFields.startTime.value = isoToTime(record.starts_at) || "09:00";
           workingFields.endTime.value = isoToTime(record.ends_at) || "17:00";
           workingFields.note.value = record.note || "";
-        workingFields.repeatWeeks.disabled = Boolean(record.series_uuid);
-        workingFields.repeatWeeks.value = record.repeat_interval || "1";
-        workingFields.startTime.focus();
-      } else if (button.dataset.action === "delete") {
-        deleteWorkingHours(uuid, row.dataset.series);
-      }
-    });
+          workingFields.repeatWeeks.disabled = Boolean(record.series_uuid);
+          workingFields.repeatWeeks.value = record.repeat_interval || "1";
+          workingFields.startTime.focus();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (button.dataset.action === "delete") {
+          deleteWorkingHours(uuid, row.dataset.series);
+        }
+      });
 
       workingForm.addEventListener("submit", submitWorkingHours);
       resetWorkingBtn.addEventListener("click", resetWorkingForm);
@@ -1156,7 +1316,6 @@
       const timeoffCheckboxes = Array.from(
         document.querySelectorAll("#timeoff-weekdays input[type='checkbox']")
       );
-      attachToggleStyling(timeoffCheckboxes);
 
       const timeoffFields = {
         uuid: document.getElementById("time-off-id"),
@@ -1180,7 +1339,7 @@
       }
 
       async function loadTimeOff() {
-        renderEmptyRow(timeoffList, 4, "載入中…");
+        renderEmptyRow(timeoffList, 4, '<div class="spinner-border spinner-border-sm me-2" role="status"></div>載入中...');
         try {
           const response = await fetch(config.urls.timeOff, {
             headers: { Accept: "application/json" },
@@ -1192,23 +1351,33 @@
           const items = Array.isArray(data) ? data : data.results || [];
           store.timeOff = items;
           if (items.length === 0) {
-            renderEmptyRow(timeoffList, 4, "尚未設定休假。");
+            renderEmptyRow(timeoffList, 4, '<i class="bi bi-moon-stars fs-1 d-block mb-2 opacity-50"></i>尚未設定休假');
           } else {
             timeoffList.innerHTML = items
               .map((item) => {
                 const weekdayIndex = getWeekdayIndexFromISO(item.starts_at, therapistTimeZone);
                 const weekdayText = weekdayIndex !== null ? weekdayLabel(weekdayIndex) : "單次";
-                const repeat = item.series_uuid ? `${weekdayText} · 循環` : weekdayText;
+                const repeatBadge = item.series_uuid ? '<span class="badge bg-warning-subtle text-warning ms-2"><i class="bi bi-arrow-repeat me-1"></i>循環</span>' : '';
                 const note = item.note || "—";
+                const dateTime = `${formatDateTime(item.starts_at)} ~ ${formatDateTime(item.ends_at)}`;
                 return `
                   <tr data-uuid="${item.uuid}" data-series="${item.series_uuid || ""}" data-weekday="${weekdayIndex ?? ""}">
-                    <td>${formatDateTime(item.starts_at)} 至 ${formatDateTime(item.ends_at)}</td>
-                    <td>${repeat}</td>
-                    <td>${note}</td>
+                    <td>
+                      <div class="fw-semibold">${dateTime}</div>
+                      <small class="text-muted d-md-none">${weekdayText}${repeatBadge}</small>
+                    </td>
+                    <td class="d-none d-md-table-cell">${weekdayText}${repeatBadge}</td>
+                    <td class="d-none d-lg-table-cell text-truncate" style="max-width: 150px;">${note}</td>
                     <td class="text-end">
                       <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-primary" data-action="edit">編輯</button>
-                        <button class="btn btn-outline-danger" data-action="delete">刪除</button>
+                        <button class="btn btn-outline-primary" data-action="edit" title="編輯">
+                          <i class="bi bi-pencil"></i>
+                          <span class="d-none d-lg-inline ms-1">編輯</span>
+                        </button>
+                        <button class="btn btn-outline-danger" data-action="delete" title="刪除">
+                          <i class="bi bi-trash"></i>
+                          <span class="d-none d-lg-inline ms-1">刪除</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1218,7 +1387,7 @@
           }
           hydrateCountBadge("timeoff-count-badge", items.length, "0 段休假");
         } catch (error) {
-          renderEmptyRow(timeoffList, 4, "載入失敗，請稍候再試。");
+          renderEmptyRow(timeoffList, 4, '<i class="bi bi-exclamation-triangle fs-1 d-block mb-2 text-danger opacity-50"></i>載入失敗，請稍候再試');
         } finally {
           refreshNextButtonsState();
         }
@@ -1390,6 +1559,7 @@
           timeoffFields.repeatWeeks.disabled = Boolean(record.series_uuid);
           timeoffFields.repeatWeeks.value = record.repeat_interval || "1";
           timeoffFields.startTime.focus();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (button.dataset.action === "delete") {
           deleteTimeoff(uuid, row.dataset.series);
         }
@@ -1429,4 +1599,4 @@
       initialize();
     })();
   </script>
-{% endblock %}
+{% endblock %}  
