@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <title>Client Dashboard</title>
+  <title>客戶主控台</title>
   <style>
     body { font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
     header { padding: 1.5rem 2rem; background: #0ea5e9; color: #f8fafc; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -23,28 +23,28 @@
 </head>
 <body>
   <header>
-    <strong>Client Dashboard</strong>
+    <strong>客戶主控台</strong>
     <div class="user-bar">
       <span>{{ user.get_username }}</span>
       <div class="actions">
         {% if has_therapist_role %}
           <form method="post" action="{% url 'accounts:switch_role' 'therapist' %}">
             {% csrf_token %}
-            <button type="submit" class="switch-button">Go to Therapist Panel</button>
+            <button type="submit" class="switch-button">前往治療師面板</button>
           </form>
         {% endif %}
         <form method="post" action="{% url 'therapist_panel:logout' %}">
           {% csrf_token %}
-          <button type="submit" class="logout-button">Sign out</button>
+          <button type="submit" class="logout-button">登出</button>
         </form>
       </div>
     </div>
   </header>
   <main>
     <section class="card">
-      <h1>Welcome {{ user.first_name|default:user.get_username }}</h1>
-      <p class="role">Active role: {{ active_role_label }}</p>
-      <p>This is the placeholder client dashboard. Replace this section with the real client tools and bookings overview.</p>
+      <h1>歡迎 {{ user.first_name|default:user.get_username }}</h1>
+      <p class="role">目前角色：{{ active_role_label }}</p>
+      <p>這裡是客戶主控台的示意區域，可依需求放上客戶工具或預約概覽。</p>
     </section>
   </main>
 </body>

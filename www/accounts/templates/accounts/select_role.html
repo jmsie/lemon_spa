@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <title>Select Role</title>
+  <title>選擇角色</title>
   <style>
     body { font-family: system-ui, sans-serif; background: #f4f4f5; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
     .container { background: #ffffff; padding: 2.5rem; border-radius: 0.85rem; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12); width: min(420px, 95%); }
@@ -18,8 +18,8 @@
 </head>
 <body>
   <section class="container">
-    <h1>Choose your role</h1>
-    <p>Select which workspace you’d like to open. You can switch later from the header.</p>
+    <h1>選擇你的角色</h1>
+    <p>請挑選要開啟的工作介面，之後也可以在頁面頂端隨時切換。</p>
     {% if roles %}
       {% for role in roles %}
         <form method="post">
@@ -32,9 +32,9 @@
         </form>
       {% endfor %}
     {% else %}
-      <p>No roles available. Please contact support.</p>
+      <p>目前沒有可用角色，請聯絡客服協助。</p>
     {% endif %}
-    <p class="hint">Your selection becomes the active role for this session.</p>
+    <p class="hint">此選擇將成為這次登入的使用角色。</p>
   </section>
 </body>
 </html>

@@ -1,6 +1,6 @@
 {% extends "therapist_panel/base.html" %}
 
-{% block title %}Edit Profile | Therapist Panel{% endblock %}
+{% block title %}編輯檔案 | 治療師面板{% endblock %}
 
 {% block content %}
   <div class="row justify-content-center">
@@ -8,11 +8,11 @@
       <div class="card shadow-sm">
         <div class="card-header">
           <h1 class="h4 mb-0">
-            <i class="bi bi-person-gear me-2"></i>Edit contact information
+            <i class="bi bi-person-gear me-2"></i>編輯聯絡資訊
           </h1>
         </div>
         <div class="card-body">
-          <p class="text-body-secondary mb-4">Keep your clients in the loop with up to date details.</p>
+          <p class="text-body-secondary mb-4">保持聯絡資訊最新，讓客戶掌握你的最新動態。</p>
           <form method="post" novalidate>
             {% csrf_token %}
             {% for field in form %}
@@ -31,10 +31,10 @@
             <!-- 響應式按鈕布局 -->
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 gap-sm-3 mt-4">
               <a href="{% url 'therapist_panel:index' %}" class="btn btn-outline-secondary order-sm-first">
-                <i class="bi bi-arrow-left me-1"></i>Cancel
+                <i class="bi bi-arrow-left me-1"></i>取消
               </a>
               <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-circle me-1"></i>Save changes
+                <i class="bi bi-check-circle me-1"></i>儲存變更
               </button>
             </div>
           </form>

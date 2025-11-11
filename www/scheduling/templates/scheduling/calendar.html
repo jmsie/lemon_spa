@@ -1,6 +1,6 @@
 {% extends "therapist_panel/base.html" %}
 
-{% block title %}Schedule | Therapist Panel{% endblock %}
+{% block title %}行程排程 | 治療師面板{% endblock %}
 
 {% block extra_head %}
   {{ block.super }}
@@ -657,7 +657,7 @@
         
         try {
           const response = await this.apiRequest(this.treatmentsApiUrl);
-          if (!response.ok) throw new Error('Failed to load treatments');
+          if (!response.ok) throw new Error('無法載入療程資料');
           
           this.cachedTreatments = await response.json();
           return this.cachedTreatments;
@@ -734,7 +734,7 @@
               url.searchParams.set('end', info.endStr);
 
               const response = await this.apiRequest(url.toString());
-              if (!response.ok) throw new Error('Failed to load working hours');
+              if (!response.ok) throw new Error('無法載入上班時段');
 
               const data = await response.json();
               const events = data.map(item => {
@@ -781,7 +781,7 @@
               url.searchParams.set('end', info.endStr);
               
               const response = await this.apiRequest(url.toString());
-              if (!response.ok) throw new Error('Failed to load appointments');
+              if (!response.ok) throw new Error('無法載入預約資料');
               
               const data = await response.json();
               const events = data.map(item => ({
@@ -820,7 +820,7 @@
               url.searchParams.set('end', info.endStr);
               
               const response = await this.apiRequest(url.toString());
-              if (!response.ok) throw new Error('Failed to load time off');
+              if (!response.ok) throw new Error('無法載入休假資料');
               
               const data = await response.json();
               const events = data.map(item => {

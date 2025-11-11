@@ -1,7 +1,7 @@
 {% extends "therapist_panel/base.html" %}
 {% load tz %}
 
-{% block title %}Orders | Therapist Panel{% endblock %}
+{% block title %}預約清單 | 治療師面板{% endblock %}
 
 {% block content %}
   <div class="row g-4">
@@ -165,7 +165,7 @@
             <div class="small text-muted">
               第 {{ page_obj.number }} / {{ paginator.num_pages }} 頁
             </div>
-            <nav aria-label="Appointment pagination">
+            <nav aria-label="預約分頁">
               <ul class="pagination mb-0">
                 {% if page_obj.has_previous %}
                   <li class="page-item">

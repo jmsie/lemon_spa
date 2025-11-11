@@ -1,15 +1,15 @@
 {% extends "therapist_panel/base.html" %}
 
-{% block title %}Service Reviews | Therapist Panel{% endblock %}
+{% block title %}服務評價 | 治療師面板{% endblock %}
 
 {% block content %}
   <!-- 頁面標題 -->
   <div class="row align-items-center mb-4">
     <div class="col-12">
       <h1 class="h3 mb-1">
-        <i class="bi bi-star me-2 text-warning"></i>Service Reviews
+        <i class="bi bi-star me-2 text-warning"></i>服務評價
       </h1>
-      <p class="text-body-secondary mb-0">View feedback from your clients and track overall satisfaction.</p>
+      <p class="text-body-secondary mb-0">查看客戶回饋，掌握整體滿意度走向。</p>
     </div>
   </div>
 
@@ -19,7 +19,7 @@
       <div class="card border-primary">
         <div class="card-header bg-primary text-white">
           <h5 class="card-title mb-0">
-            <i class="bi bi-graph-up me-2"></i>Average Rating
+            <i class="bi bi-graph-up me-2"></i>平均評分
           </h5>
         </div>
         <div class="card-body text-center">
@@ -31,7 +31,7 @@
             <i class="bi bi-star-fill text-warning"></i>
             <i class="bi bi-star-fill text-warning"></i>
           </div>
-          <small class="text-body-secondary" id="rating-count">Based on 0 reviews</small>
+          <small class="text-body-secondary" id="rating-count">來自 0 則評論</small>
         </div>
       </div>
     </div>
@@ -44,7 +44,7 @@
   <div class="card">
     <div class="card-header">
       <h5 class="card-title mb-0">
-        <i class="bi bi-chat-quote me-2"></i>Customer Reviews
+        <i class="bi bi-chat-quote me-2"></i>客戶評論
       </h5>
     </div>
     <div class="card-body p-0">
@@ -52,17 +52,17 @@
         <table class="table table-hover table-borderless mb-0 align-middle">
           <thead class="table-light">
             <tr>
-              <th scope="col" class="px-3" style="width: 120px;">Rating</th>
-              <th scope="col" class="px-3">Comment</th>
-              <th scope="col" class="px-3 d-none d-md-table-cell" style="width: 200px;">Submitted</th>
+              <th scope="col" class="px-3" style="width: 120px;">評分</th>
+              <th scope="col" class="px-3">評論內容</th>
+              <th scope="col" class="px-3 d-none d-md-table-cell" style="width: 200px;">提交時間</th>
             </tr>
           </thead>
           <tbody id="reviews-table-body">
             <tr>
               <td colspan="3" class="text-center py-5 text-body-secondary">
                 <i class="bi bi-chat-dots display-1 text-muted"></i>
-                <div class="mt-3">No reviews yet.</div>
-                <small>Reviews from customers will appear here.</small>
+                <div class="mt-3">尚未收到評論。</div>
+                <small>客戶填寫的問卷會出現在這裡。</small>
               </td>
             </tr>
           </tbody>
@@ -97,7 +97,7 @@
           <div class="alert alert-${type} alert-dismissible fade show" role="alert">
             <i class="bi bi-${type === 'danger' ? 'exclamation-triangle' : 'check-circle'} me-2"></i>
             ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
           </div>`;
         feedback.innerHTML = alertHTML;
       }
@@ -133,19 +133,19 @@
         const total = items.reduce((sum, item) => sum + Number(item.rating || 0), 0);
         const average = total / items.length;
         averageRatingEl.textContent = average.toFixed(1);
-        ratingCountEl.textContent = `Based on ${items.length} review${items.length === 1 ? "" : "s"}`;
+        ratingCountEl.textContent = `來自 ${items.length} 則評論`;
         summaryContainer.hidden = false;
       }
 
       function renderRows(items) {
         if (!items.length) {
-          renderEmptyRow("No reviews have been submitted yet.");
+          renderEmptyRow("目前尚無評論。");
           return;
         }
         
         const rows = items
           .map((item) => {
-            const comment = item.comment ? item.comment.replace(/\n/g, "<br>") : "<em class='text-muted'>No additional comments</em>";
+            const comment = item.comment ? item.comment.replace(/\n/g, "<br>") : "<em class='text-muted'>沒有額外評論</em>";
             const rating = Number(item.rating || 0);
             
             return `
@@ -174,21 +174,21 @@
       }
 
       async function loadReviews() {
-        renderEmptyRow("Loading reviews...");
+        renderEmptyRow("載入評價中…");
         try {
           const response = await fetch(apiBase, {
             headers: { Accept: "application/json" },
           });
           if (!response.ok) {
-            throw new Error("Unable to load reviews");
+            throw new Error("無法載入評價資料");
           }
           const data = await response.json();
           const items = Array.isArray(data) ? data : data.results || [];
           renderSummary(items);
           renderRows(items);
         } catch (error) {
-          renderEmptyRow("Failed to load reviews. Please try again later.");
-          showFeedback(error.message || "An unexpected error occurred.");
+          renderEmptyRow("載入失敗，請稍後再試。");
+          showFeedback(error.message || "發生未知錯誤。");
         }
       }
 

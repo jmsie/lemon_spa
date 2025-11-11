@@ -1,6 +1,6 @@
 {% extends "therapist_panel/base.html" %}
 
-{% block title %}Dashboard | Therapist Panel{% endblock %}
+{% block title %}主控台 | 治療師面板{% endblock %}
 
 {% block extra_head %}
   {{ block.super }}
@@ -16,25 +16,25 @@
   <!-- 歡迎區域 -->
   <div class="row align-items-center mb-4">
     <div class="col-12 col-lg-6">
-      <h1 class="h3 mb-1">Hello {{ user.first_name|default:user.get_username }}</h1>
-      <p class="text-body-secondary mb-0">Welcome back to your therapist workspace.</p>
+      <h1 class="h3 mb-1">嗨 {{ user.first_name|default:user.get_username }}</h1>
+      <p class="text-body-secondary mb-0">歡迎回到你的治療師工作區。</p>
     </div>
     <div class="col-12 col-lg-6">
       <div class="d-flex flex-column flex-lg-row gap-2 mt-3 mt-lg-0">
         <a href="{% url 'therapist_panel:treatments' %}" class="btn btn-primary">
           <i class="bi bi-heart-pulse me-1"></i>
-          Manage treatments
+          管理療程
         </a>
         <a href="{% url 'therapist_panel:profile_edit' %}" class="btn btn-outline-primary">
           <i class="bi bi-person-gear me-1"></i>
-          Edit contact info
+          編輯聯絡資訊
         </a>
         {% if has_client_role %}
           <form method="post" action="{% url 'accounts:switch_role' 'client' %}" class="d-inline">
             {% csrf_token %}
             <button type="submit" class="btn btn-info text-white w-100">
               <i class="bi bi-arrow-right-circle me-1"></i>
-              Client Dashboard
+              客戶主控台
             </button>
           </form>
         {% endif %}
@@ -130,15 +130,15 @@
         <div class="card-header">
           <h5 class="card-title mb-0">
             <span class="badge bg-primary me-2">{{ active_role_label }}</span>
-            Get started
+            快速導覽
           </h5>
         </div>
         <div class="card-body">
-          <p class="card-text">This dashboard is ready for therapist tools, scheduling, and client insights.</p>
+          <p class="card-text">這個主控台已整合治療師工具、排程與客戶洞察。</p>
           {% if therapist_profile %}
             <div class="alert alert-info mb-0" role="alert">
               <i class="bi bi-info-circle me-2"></i>
-              Your therapist record ID is <strong>{{ therapist_profile.id }}</strong>.
+              你的治療師資料編號是 <strong>{{ therapist_profile.id }}</strong>。
             </div>
           {% endif %}
         </div>
@@ -151,21 +151,21 @@
         <div class="card-header">
           <h5 class="card-title mb-0">
             <i class="bi bi-lightning-charge text-warning me-2"></i>
-            Quick actions
+            快速操作
           </h5>
         </div>
         <div class="list-group list-group-flush">
           <a href="{% url 'therapist_panel:scheduling:therapist_schedule' %}" class="list-group-item list-group-item-action">
             <i class="bi bi-calendar-check me-2 text-primary"></i>
-            Review upcoming appointments
+            查看即將到來的預約
           </a>
           <a href="{% url 'therapist_panel:scheduling:therapist_schedule' %}" class="list-group-item list-group-item-action">
             <i class="bi bi-clock me-2 text-success"></i>
-            Update your availability
+            更新可預約時段
           </a>
           <a href="{% url 'therapist_panel:treatments' %}" class="list-group-item list-group-item-action">
             <i class="bi bi-share me-2 text-info"></i>
-            Share resources with clients
+            與客戶分享療程資訊
           </a>
         </div>
       </div>
