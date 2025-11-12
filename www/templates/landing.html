@@ -317,10 +317,57 @@
         }
 
         footer {
-            padding: 2.5rem 1.5rem;
+            padding: 3rem 1.5rem 2.5rem;
             text-align: center;
             color: var(--muted);
             font-size: 0.9rem;
+            background: linear-gradient(to bottom, transparent, rgba(244, 185, 66, 0.05));
+        }
+
+        .footer-content {
+            max-width: 50rem;
+            margin: 0 auto;
+        }
+
+        .footer-tagline {
+            margin: 0 0 2rem;
+            font-size: 0.9rem;
+        }
+
+        .footer-social {
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(31, 31, 31, 0.1);
+        }
+
+        .footer-text {
+            margin: 0 0 1rem;
+            font-size: 1rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .ig-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform 150ms ease, box-shadow 150ms ease;
+            box-shadow: 0 4px 12px rgba(188, 24, 136, 0.3);
+        }
+
+        .ig-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(188, 24, 136, 0.4);
+        }
+
+        .ig-icon {
+            font-size: 1.3rem;
         }
 
         @media (max-width: 640px) {
@@ -440,7 +487,16 @@
     </main>
 
     <footer>
-        &copy; {% now "Y" %} Lemon Spa. 讓按摩師專注在手藝，其他交給我們 🍋
+        <div class="footer-content">
+            <p class="footer-tagline">&copy; {% now "Y" %} Lemon Spa. 讓按摩師專注在手藝，其他交給我們 🍋</p>
+            <div class="footer-social">
+                <p class="footer-text">有想要的功能或使用上的問題？</p>
+                <a href="https://www.instagram.com/lmspa.app/" target="_blank" rel="noopener noreferrer" class="ig-link">
+                    <span class="ig-icon">📷</span>
+                    來 Instagram 跟我們聊聊
+                </a>
+            </div>
+        </div>
     </footer>
 </body>
 </html>
