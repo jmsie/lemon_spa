@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -6,6 +7,19 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>按摩預約</title>
+
+  <!-- Open Graph / 社群分享縮圖設定 -->
+  <meta property="og:title" content="按摩預約 - Lemon Spa">
+  <meta property="og:description" content="線上預約按摩服務，輕鬆選擇時段">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo-og-image.png' %}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta property="og:type" content="website">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="按摩預約 - Lemon Spa">
+  <meta name="twitter:description" content="線上預約按摩服務，輕鬆選擇時段">
+  <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo-og-image.png' %}">
   <style>
     /* Mobile-first 設計 */
     * { box-sizing: border-box; }
