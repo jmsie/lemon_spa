@@ -9,17 +9,21 @@ from therapist_panel.models import Therapist
 class TherapistProfileForm(forms.ModelForm):
     """Allow therapists to update contact information and email."""
 
-    email = forms.EmailField(label="Email")
-    phone_number = forms.CharField(label="Phone number", max_length=32)
-    timezone = forms.ChoiceField(label="Timezone", choices=THERAPIST_TIMEZONE_CHOICES)
+    email = forms.EmailField(label="電子郵件")
+    phone_number = forms.CharField(label="電話號碼", max_length=32)
+    timezone = forms.ChoiceField(label="時區", choices=THERAPIST_TIMEZONE_CHOICES)
 
     class Meta:
         model = Therapist
-        fields = ["nickname", "address", "timezone"]
+        fields = ["nickname", "address", "timezone", "booking_notes"]
         labels = {
-            "nickname": "Nickname",
-            "address": "Address",
-            "timezone": "Timezone",
+            "nickname": "暱稱",
+            "address": "地址",
+            "timezone": "時區",
+            "booking_notes": "預約備註",
+        }
+        widgets = {
+            "booking_notes": forms.Textarea(attrs={"rows": 4}),
         }
 
     def __init__(self, *args, user, **kwargs):
@@ -27,12 +31,16 @@ class TherapistProfileForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["email"].initial = user.email
         self.fields["phone_number"].initial = user.phone_number
-        self.fields["nickname"].widget.attrs.setdefault("placeholder", "Preferred display name")
-        self.fields["address"].widget.attrs.setdefault("placeholder", "Mailing address")
+        self.fields["nickname"].widget.attrs.setdefault("placeholder", "顯示名稱")
+        self.fields["address"].widget.attrs.setdefault("placeholder", "服務地址")
+        self.fields["booking_notes"].widget.attrs.setdefault(
+            "placeholder",
+            "顧客預約時會看到的重要資訊（例如：停車說明、準備事項、取消政策）"
+        )
         for field in self.fields.values():
             css_classes = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{css_classes} form-control".strip()
-        self.fields["phone_number"].widget.attrs.setdefault("placeholder", "e.g. +1 555 123 4567")
+        self.fields["phone_number"].widget.attrs.setdefault("placeholder", "例如：+886 912 345 678")
 
     def save(self, commit: bool = True):
         therapist = super().save(commit=commit)

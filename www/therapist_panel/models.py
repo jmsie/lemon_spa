@@ -25,6 +25,10 @@ class Therapist(models.Model):
         default=DEFAULT_THERAPIST_TIMEZONE,
         help_text="IANA timezone identifier describing the therapist's local time.",
     )
+    booking_notes = models.TextField(
+        blank=True,
+        help_text="會顯示在客戶的預約介面上，提供重要的預約資訊或注意事項。",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

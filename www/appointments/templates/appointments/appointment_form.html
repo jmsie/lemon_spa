@@ -213,6 +213,20 @@
       white-space: pre-wrap;
       word-wrap: break-word;
     }
+    .therapist-booking-notes {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border: 1.5px solid #60a5fa;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .therapist-booking-notes-content {
+      color: #1e3a8a;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
     .time-slot-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -577,6 +591,10 @@
         </div>
       {% endif %}
 
+      <div id="therapist-booking-notes-container" class="therapist-booking-notes visually-hidden">
+        <div class="therapist-booking-notes-content" id="therapist-booking-notes-content"></div>
+      </div>
+
       <form method="post">
         {% csrf_token %}
         {% for hidden_field in form.hidden_fields %}
@@ -833,6 +851,8 @@
       const submitButton = form ? form.querySelector('button[type="submit"]') : null;
       const treatmentNotesContainer = document.getElementById("treatment-notes-container");
       const treatmentNotesContent = document.getElementById("treatment-notes-content");
+      const therapistBookingNotesContainer = document.getElementById("therapist-booking-notes-container");
+      const therapistBookingNotesContent = document.getElementById("therapist-booking-notes-content");
       if (submitButton) {
         submitButton.dataset.defaultText = submitButton.textContent;
       }
@@ -1726,6 +1746,30 @@
         }
       }
 
+      function updateTherapistBookingNotes() {
+        if (!therapistBookingNotesContainer || !therapistBookingNotesContent) {
+          return;
+        }
+
+        // Get therapist info from selected therapist or therapist select
+        let bookingNotes = "";
+
+        if (config.selectedTherapist && config.selectedTherapist.booking_notes) {
+          bookingNotes = config.selectedTherapist.booking_notes;
+        } else if (therapistSelect && therapistSelect.value) {
+          const therapistMeta = config.therapists ? config.therapists[therapistSelect.value] : null;
+          bookingNotes = therapistMeta ? therapistMeta.booking_notes : "";
+        }
+
+        if (bookingNotes && bookingNotes.trim()) {
+          therapistBookingNotesContent.textContent = bookingNotes.trim();
+          therapistBookingNotesContainer.classList.remove("visually-hidden");
+        } else {
+          therapistBookingNotesContainer.classList.add("visually-hidden");
+          therapistBookingNotesContent.textContent = "";
+        }
+      }
+
       function clearSlots(messageText, cssClass = "slot-message", options = {}) {
         const { resetSelection = true } = options;
         slotContainer.innerHTML = "";
@@ -2041,6 +2085,7 @@
         therapistSelect.addEventListener("change", () => {
           latestAvailability = null;
           startTimeInput.value = "";
+          updateTherapistBookingNotes();
           if (dateInput.value) {
             refreshAvailability();
           } else {
@@ -2076,6 +2121,9 @@
 
       // Initialize treatment notes display on page load
       updateTreatmentNotes();
+
+      // Initialize therapist booking notes display on page load
+      updateTherapistBookingNotes();
     });
   </script>
 </body>

@@ -184,6 +184,7 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
                         "uuid": str(therapist.uuid),
                         "timezone": therapist.timezone,
                         "display_name": therapist.nickname,
+                        "booking_notes": therapist.booking_notes,
                     }
                     for therapist in therapists_qs
                 }
@@ -204,6 +205,7 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
                     "uuid": str(self.selected_therapist.uuid),
                     "timezone": self.selected_therapist.timezone,
                     "pk": str(self.selected_therapist.pk),
+                    "booking_notes": self.selected_therapist.booking_notes,
                 }
 
         context["appointment_config"] = appointment_config

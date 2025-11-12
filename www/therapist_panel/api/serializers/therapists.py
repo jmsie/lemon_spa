@@ -30,6 +30,7 @@ class TherapistSerializer(serializers.ModelSerializer):
             "nickname",
             "address",
             "timezone",
+            "booking_notes",
             "created_at",
             "updated_at",
         ]
