@@ -124,73 +124,112 @@
             margin: 4rem 0;
         }
 
-        .pricing-card {
-            background: #ffffff;
-            border-radius: 1.2rem;
-            padding: 3rem 2.5rem;
-            box-shadow: 0 8px 24px rgba(31, 31, 31, 0.08);
-            max-width: 42rem;
+        .pricing-plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 58rem;
             margin: 0 auto;
         }
 
-        .pricing-highlight {
+        .pricing-plan {
+            background: #ffffff;
+            border-radius: 1.2rem;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 4px 16px rgba(31, 31, 31, 0.08);
+            position: relative;
+            transition: transform 200ms ease, box-shadow 200ms ease;
+        }
+
+        .pricing-plan:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(31, 31, 31, 0.12);
+        }
+
+        .pricing-plan.featured {
+            border: 2px solid var(--accent);
+            box-shadow: 0 8px 24px rgba(244, 185, 66, 0.2);
+        }
+
+        .pricing-plan.featured:hover {
+            box-shadow: 0 12px 32px rgba(244, 185, 66, 0.3);
+        }
+
+        .plan-badge {
+            position: absolute;
+            top: -0.75rem;
+            right: 1.5rem;
+            background: linear-gradient(135deg, #f8d06a, #f4b942);
+            color: #1f1f1f;
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(244, 185, 66, 0.4);
+        }
+
+        .plan-header {
             text-align: center;
-            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(31, 31, 31, 0.1);
         }
 
-        .pricing-icon {
-            font-size: 3rem;
+        .plan-icon {
+            font-size: 2.5rem;
             display: block;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
-        .pricing-highlight h3 {
-            margin: 0;
-            font-size: 1.8rem;
+        .plan-header h3 {
+            margin: 0 0 1rem;
+            font-size: 1.5rem;
             font-weight: 600;
-            color: var(--text);
         }
 
-        .pricing-details {
-            background: linear-gradient(135deg, rgba(248, 208, 106, 0.1), rgba(244, 185, 66, 0.1));
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
+        .plan-price {
+            margin-top: 0.5rem;
         }
 
-        .price-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 0;
+        .price-amount {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
         }
 
-        .price-label {
-            font-size: 1.1rem;
-            color: var(--text);
+        .price-period {
+            font-size: 1rem;
+            color: var(--muted);
             font-weight: 500;
         }
 
-        .price-value {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--accent);
-            white-space: nowrap;
-        }
-
-        .price-divider {
-            height: 1px;
-            background: rgba(31, 31, 31, 0.1);
-            margin: 0.5rem 0;
-        }
-
-        .pricing-note {
+        .plan-subtitle {
             text-align: center;
+            margin: 1.5rem 0 1rem;
             color: var(--muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0 0;
+        }
+
+        .plan-features li {
+            padding: 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
             font-size: 1rem;
-            margin: 0;
-            line-height: 1.6;
+            line-height: 1.5;
+        }
+
+        .check-icon {
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 1.1rem;
+            flex-shrink: 0;
         }
 
         .how-it-works {
@@ -305,7 +344,7 @@
             <article class="feature-card">
                 <span class="feature-icon">📱</span>
                 <h3>24小時預約頁面</h3>
-                <p>給你一個專屬的預約連結，可以放在 Instagram 個人簡介、Line 狀態、Threads 貼文⋯⋯任何地方！</p>
+                <p>屬於你的專屬的預約連結，可以放在 Instagram 個人簡介、Line 訊息、Threads 貼文⋯⋯任何地方！</p>
                 <p>客人想預約的時候，隨時點進去就能看到你的空檔時間，直接預約，不用再私訊來回問。</p>
                 <div class="feature-benefit">
                     <span class="benefit-icon">✓</span>
@@ -327,23 +366,42 @@
 
         <section class="pricing">
             <h2 class="section-title">定價方案</h2>
-            <div class="pricing-card">
-                <div class="pricing-highlight">
-                    <span class="pricing-icon">🎉</span>
-                    <h3>超划算的彈性收費</h3>
-                </div>
-                <div class="pricing-details">
-                    <div class="price-item">
-                        <span class="price-label">每月前 100 個預約</span>
-                        <span class="price-value">完全免費</span>
+            <div class="pricing-plans">
+                <div class="pricing-plan">
+                    <div class="plan-header">
+                        <span class="plan-icon">🌱</span>
+                        <h3>入門款</h3>
+                        <div class="plan-price">
+                            <span class="price-amount">免費</span>
+                        </div>
                     </div>
-                    <div class="price-divider"></div>
-                    <div class="price-item">
-                        <span class="price-label">第 101 個預約開始</span>
-                        <span class="price-value">每個預約 NT$10</span>
-                    </div>
+                    <ul class="plan-features">
+                        <li><span class="check-icon">✓</span> 預約連結</li>
+                        <li><span class="check-icon">✓</span> 管理上班時段</li>
+                        <li><span class="check-icon">✓</span> 管理休假時段</li>
+                        <li><span class="check-icon">✓</span> 管理預約</li>
+                        <li><span class="check-icon">✓</span> 發送問卷</li>
+                        <li><span class="check-icon">✓</span> 查看用戶回饋</li>
+                    </ul>
                 </div>
-                <p class="pricing-note">💡 沒有月費、沒有年費，只有在你真正有生意的時候才收費</p>
+
+                <div class="pricing-plan featured">
+                    <div class="plan-badge">推薦</div>
+                    <div class="plan-header">
+                        <span class="plan-icon">⭐</span>
+                        <h3>進階款</h3>
+                        <div class="plan-price">
+                            <span class="price-amount">NT$199</span>
+                            <span class="price-period">/月</span>
+                        </div>
+                    </div>
+                    <p class="plan-subtitle">包含入門款所有功能，再加上：</p>
+                    <ul class="plan-features">
+                        <li><span class="check-icon">✓</span> 通知客人記得要來</li>
+                        <li><span class="check-icon">✓</span> 客製化預約頁面</li>
+                        <li><span class="check-icon">✓</span> 把用戶設為黑名單</li>
+                    </ul>
+                </div>
             </div>
         </section>
 
@@ -361,7 +419,7 @@
                     <div class="step-number">2</div>
                     <div class="step-content">
                         <h4>把連結放在你的社群媒體</h4>
-                        <p>複製你的預約連結，貼到 IG 個人簡介、Line 狀態、Threads⋯⋯想放哪就放哪</p>
+                        <p>複製你的預約連結，貼到 IG 個人簡介、Line 自動回覆、Threads⋯⋯想放哪就放哪</p>
                     </div>
                 </div>
                 <div class="step">
