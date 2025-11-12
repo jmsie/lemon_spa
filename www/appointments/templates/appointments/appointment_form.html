@@ -199,6 +199,20 @@
       text-align: center;
       font-size: 0.95rem;
     }
+    .treatment-notes {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 1.5px solid #fbbf24;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .treatment-notes-content {
+      color: #78350f;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
     .time-slot-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -664,6 +678,10 @@
           </div>
         {% endfor %}
 
+        <div id="treatment-notes-container" class="treatment-notes visually-hidden">
+          <div class="treatment-notes-content" id="treatment-notes-content"></div>
+        </div>
+
         <div class="actions">
           <button type="submit">送出預約</button>
         </div>
@@ -813,6 +831,8 @@
       const successPhone = document.getElementById("success-phone");
       const bookAnotherButton = document.getElementById("book-another");
       const submitButton = form ? form.querySelector('button[type="submit"]') : null;
+      const treatmentNotesContainer = document.getElementById("treatment-notes-container");
+      const treatmentNotesContent = document.getElementById("treatment-notes-content");
       if (submitButton) {
         submitButton.dataset.defaultText = submitButton.textContent;
       }
@@ -1682,6 +1702,30 @@
         return treatmentMeta ? Number(treatmentMeta.duration_minutes) : null;
       }
 
+      function updateTreatmentNotes() {
+        if (!treatmentSelect || !treatmentNotesContainer || !treatmentNotesContent) {
+          return;
+        }
+
+        const selectedTreatmentId = treatmentSelect.value;
+        if (!selectedTreatmentId) {
+          treatmentNotesContainer.classList.add("visually-hidden");
+          treatmentNotesContent.textContent = "";
+          return;
+        }
+
+        const treatmentMeta = config.treatments ? config.treatments[selectedTreatmentId] : null;
+        const notes = treatmentMeta ? treatmentMeta.notes : "";
+
+        if (notes && notes.trim()) {
+          treatmentNotesContent.textContent = notes.trim();
+          treatmentNotesContainer.classList.remove("visually-hidden");
+        } else {
+          treatmentNotesContainer.classList.add("visually-hidden");
+          treatmentNotesContent.textContent = "";
+        }
+      }
+
       function clearSlots(messageText, cssClass = "slot-message", options = {}) {
         const { resetSelection = true } = options;
         slotContainer.innerHTML = "";
@@ -1982,6 +2026,7 @@
       if (treatmentSelect) {
         treatmentSelect.addEventListener("change", () => {
           startTimeInput.value = "";
+          updateTreatmentNotes();
           if (latestAvailability) {
             reRenderWithExistingAvailability();
           } else if (dateInput.value) {
@@ -2028,6 +2073,9 @@
       } else {
         clearSlots("請先選擇日期與療程。");
       }
+
+      // Initialize treatment notes display on page load
+      updateTreatmentNotes();
     });
   </script>
 </body>

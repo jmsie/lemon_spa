@@ -194,6 +194,7 @@ class AppointmentCreateView(SuccessMessageMixin, CreateView):
                     str(treatment.pk): {
                         "duration_minutes": treatment.duration_minutes,
                         "therapist_id": treatment.therapist_id,
+                        "notes": treatment.notes,
                     }
                     for treatment in treatments_qs
                 }
