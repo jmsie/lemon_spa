@@ -1395,6 +1395,67 @@
           resetVerificationIfActive();
         });
         phoneNationalInput.addEventListener("blur", updateHiddenPhoneFromInputs);
+
+        // 處理瀏覽器自動填入：檢測並修正國碼
+        phoneNationalInput.addEventListener("change", () => {
+          handleAutofillPhone();
+        });
+      }
+
+      // 處理瀏覽器自動填入的電話號碼
+      function handleAutofillPhone() {
+        if (!phoneNationalInput || !phoneRegionSelect || !window.libphonenumber) {
+          return;
+        }
+
+        const inputValue = phoneNationalInput.value.trim();
+        if (!inputValue) {
+          return;
+        }
+
+        // 如果輸入的號碼以 + 開頭，表示可能是完整國際格式
+        if (inputValue.startsWith('+')) {
+          try {
+            const parsed = libphonenumber.parsePhoneNumberFromString(inputValue);
+            if (parsed && parsed.isValid()) {
+              // 更新國碼選單
+              phoneRegionSelect.value = parsed.country;
+              // 更新號碼欄位為國內格式
+              phoneNationalInput.value = parsed.nationalNumber;
+              // 更新隱藏欄位
+              updateHiddenPhoneFromInputs();
+              return;
+            }
+          } catch (error) {
+            console.log('Failed to parse international phone number', error);
+          }
+        }
+
+        // 如果沒有 +，嘗試用當前選擇的國碼解析
+        const currentRegion = phoneRegionSelect.value || 'TW';
+
+        // 移除所有空格和連字號
+        const cleanedInput = sanitizeNationalInput(inputValue);
+
+        // 嘗試偵測國碼（例如：886912345678 或 +886912345678）
+        const commonCountries = ['TW', 'CN', 'HK', 'US', 'JP'];
+        for (const country of commonCountries) {
+          try {
+            const testParsed = libphonenumber.parsePhoneNumberFromString(cleanedInput, country);
+            if (testParsed && testParsed.isValid()) {
+              phoneRegionSelect.value = testParsed.country;
+              phoneNationalInput.value = testParsed.nationalNumber;
+              updateHiddenPhoneFromInputs();
+              return;
+            }
+          } catch (error) {
+            continue;
+          }
+        }
+
+        // 如果都無法解析，保持原樣並用當前國碼
+        phoneNationalInput.value = cleanedInput;
+        updateHiddenPhoneFromInputs();
       }
 
       if (verificationForm) {
