@@ -1418,10 +1418,16 @@
           try {
             const parsed = libphonenumber.parsePhoneNumberFromString(inputValue);
             if (parsed && parsed.isValid()) {
-              // 更新國碼選單
+              // 更新國碼選單（避免觸發下拉選單跳出）
               phoneRegionSelect.value = parsed.country;
+              // 立即移除焦點，避免下拉選單跳出
+              if (document.activeElement === phoneRegionSelect) {
+                phoneRegionSelect.blur();
+              }
               // 更新號碼欄位為國內格式
               phoneNationalInput.value = parsed.nationalNumber;
+              // 將焦點保持在輸入框
+              phoneNationalInput.focus();
               // 更新隱藏欄位
               updateHiddenPhoneFromInputs();
               return;
@@ -1444,7 +1450,13 @@
             const testParsed = libphonenumber.parsePhoneNumberFromString(cleanedInput, country);
             if (testParsed && testParsed.isValid()) {
               phoneRegionSelect.value = testParsed.country;
+              // 立即移除焦點，避免下拉選單跳出
+              if (document.activeElement === phoneRegionSelect) {
+                phoneRegionSelect.blur();
+              }
               phoneNationalInput.value = testParsed.nationalNumber;
+              // 將焦點保持在輸入框
+              phoneNationalInput.focus();
               updateHiddenPhoneFromInputs();
               return;
             }
