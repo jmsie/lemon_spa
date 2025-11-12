@@ -8,17 +8,22 @@
     /* 使用 Bootstrap 的 min-height utilities 和自定義 CSS variables */
     :root {
       --calendar-height-desktop: 720px;
-      --calendar-height-mobile: 500px;
+      --calendar-height-mobile: 600px; /* 增加手機版高度以提供更好的視覺體驗 */
     }
-    
-    #schedule-calendar { 
+
+    #schedule-calendar {
       min-height: var(--calendar-height-desktop);
     }
-    
+
     /* 簡化響應式設計 - 更多使用 Bootstrap utilities */
     @media (max-width: 767.98px) {
-      #schedule-calendar { 
+      #schedule-calendar {
         min-height: var(--calendar-height-mobile);
+      }
+
+      /* 手機版優化：日曆使用更多可用空間 */
+      .fc .fc-timegrid-slot {
+        height: 3em; /* 增加時間槽高度，更易於點擊 */
       }
     }
     
@@ -76,19 +81,19 @@
 
 {% block content %}
   <!-- 使用 Bootstrap 的 d-flex 和 justify-content-between -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
     <div>
       <h1 class="h3 mb-1">本週預約行程</h1>
-      <p class="text-body-secondary mb-0">檢視並管理您的按摩行程與營業時間。</p>
+      <p class="text-body-secondary mb-0 d-none d-sm-block">檢視並管理您的按摩行程與營業時間。</p>
     </div>
-    <div class="btn-group">
-      <button type="button" class="btn btn-outline-secondary" id="calendar-mode-toggle">
-        <i class="bi bi-pencil-square me-1"></i>開啟編輯模式
+    <div class="btn-group flex-wrap">
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="calendar-mode-toggle">
+        <i class="bi bi-pencil-square me-1"></i><span class="d-none d-sm-inline">開啟</span>編輯<span class="d-none d-sm-inline">模式</span>
       </button>
-      <button type="button" class="btn btn-outline-success" id="working-hours-create-button">
-        <i class="bi bi-clock-history me-1"></i>設定上班時間
+      <button type="button" class="btn btn-outline-success btn-sm" id="working-hours-create-button">
+        <i class="bi bi-clock-history me-1"></i><span class="d-none d-sm-inline">設定</span>上班時間
       </button>
-      <button type="button" class="btn btn-outline-primary" id="time-off-create-button">
+      <button type="button" class="btn btn-outline-primary btn-sm" id="time-off-create-button">
         <i class="bi bi-calendar-minus me-1"></i>新增休假
       </button>
     </div>
@@ -687,14 +692,16 @@
 
       // 日曆初始化
       initCalendar() {
-        const getInitialView = () => window.innerWidth < 768 ? 'listWeek' : 'timeGridWeek';
-        
+        // 手機版預設使用周曆 (timeGridWeek)，提供更好的視覺體驗
+        const getInitialView = () => window.innerWidth < 768 ? 'timeGridWeek' : 'timeGridWeek';
+
         this.calendar = new FullCalendar.Calendar(this.elements.calendar, {
           initialView: getInitialView(),
           headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: window.innerWidth < 768 ? 'listWeek,timeGridDay' : 'timeGridWeek,timeGridDay,listWeek'
+            // 手機版按鈕順序：周曆、日曆、列表，更符合使用習慣
+            right: window.innerWidth < 768 ? 'timeGridWeek,timeGridDay,listWeek' : 'timeGridWeek,timeGridDay,listWeek'
           },
           slotMinTime: '08:00:00',
           slotMaxTime: '23:00:00',
@@ -762,6 +769,9 @@
                 };
               });
 
+              // 根據營業時間自動調整日曆顯示範圍
+              this.updateCalendarTimeRange(data);
+
               successCallback(events);
               this.applyCalendarMode();
             } catch (error) {
@@ -770,6 +780,43 @@
             }
           }
         };
+      }
+
+      // 根據營業時間動態調整日曆顯示的時間範圍
+      updateCalendarTimeRange(workingHoursData) {
+        if (!workingHoursData || workingHoursData.length === 0) {
+          // 沒有營業時間，使用預設範圍 08:00-22:00
+          this.calendar.setOption('slotMinTime', '08:00:00');
+          this.calendar.setOption('slotMaxTime', '22:00:00');
+          return;
+        }
+
+        let minHour = 24;
+        let maxHour = 0;
+
+        // 遍歷所有營業時間，找出最早和最晚的時間
+        workingHoursData.forEach(item => {
+          const startTime = new Date(item.starts_at);
+          const endTime = new Date(item.ends_at);
+
+          const startHour = startTime.getHours() + startTime.getMinutes() / 60;
+          const endHour = endTime.getHours() + endTime.getMinutes() / 60;
+
+          minHour = Math.min(minHour, startHour);
+          maxHour = Math.max(maxHour, endHour);
+        });
+
+        // 向下取整最早時間，向上取整最晚時間，並增加一些緩衝
+        const slotMinHour = Math.max(0, Math.floor(minHour) - 1);
+        const slotMaxHour = Math.min(24, Math.ceil(maxHour) + 1);
+
+        // 格式化為 HH:00:00 格式
+        const slotMinTime = `${String(slotMinHour).padStart(2, '0')}:00:00`;
+        const slotMaxTime = `${String(slotMaxHour).padStart(2, '0')}:00:00`;
+
+        // 更新日曆選項
+        this.calendar.setOption('slotMinTime', slotMinTime);
+        this.calendar.setOption('slotMaxTime', slotMaxTime);
       }
 
       createAppointmentEventSource() {
