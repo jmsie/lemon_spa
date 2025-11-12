@@ -67,6 +67,31 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(therapist=therapist)
 
+    @action(detail=True, methods=["post"], url_path="cancel")
+    def cancel(self, request, *args, **kwargs):
+        """Cancel an appointment."""
+        appointment: Appointment = self.get_object()
+
+        if appointment.is_cancelled:
+            return Response(
+                {"detail": "此預約已經取消。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if appointment.end_time <= timezone.now():
+            return Response(
+                {"detail": "已完成的預約無法取消。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        appointment.is_cancelled = True
+        appointment.save(update_fields=["is_cancelled"])
+
+        return Response(
+            {"detail": "預約已成功取消。"},
+            status=status.HTTP_200_OK,
+        )
+
     @action(detail=True, methods=["post"], url_path="send-questionnaire")
     def send_questionnaire(self, request, *args, **kwargs):
         """Send questionnaire invitation SMS for this appointment."""

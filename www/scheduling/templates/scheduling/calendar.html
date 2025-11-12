@@ -1846,19 +1846,24 @@
 
         try {
           const response = await this.apiRequest(
-            `${this.appointmentsApiBase}${this.activeEvent.id}/`,
-            { method: 'PATCH', body: JSON.stringify({ is_cancelled: true }) }
+            `${this.appointmentsApiBase}${this.activeEvent.id}/cancel/`,
+            { method: 'POST' }
           );
 
-          if (!response.ok) throw new Error('預約取消失敗');
+          const payload = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            const message = payload.detail || '預約取消失敗';
+            throw new Error(message);
+          }
 
           this.elements.appointmentModal.hide();
-          this.showFeedback('預約已取消。', 'warning');
+          this.showFeedback(payload.detail || '預約已取消。', 'warning');
           this.activeEvent = null;
           this.calendar.refetchEvents();
         } catch (error) {
           console.error(error);
-          this.showFeedback('取消失敗，請稍後再試。', 'danger');
+          this.showFeedback(error.message || '取消失敗，請稍後再試。', 'danger');
         }
       }
 

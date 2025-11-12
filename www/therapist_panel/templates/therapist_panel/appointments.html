@@ -247,19 +247,22 @@
           toggleButton(button, true, "取消中...");
 
           try {
-            const response = await fetch(`${apiBase}${appointmentId}/`, {
-              method: "PATCH",
+            const response = await fetch(`${apiBase}${appointmentId}/cancel/`, {
+              method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 "X-CSRFToken": getCookie("csrftoken") || "",
               },
-              body: JSON.stringify({ is_cancelled: true }),
             });
 
+            const payload = await response.json().catch(() => ({}));
+
             if (!response.ok) {
-              throw new Error("預約取消失敗");
+              const message = payload.detail || "預約取消失敗";
+              throw new Error(message);
             }
 
+            alert(payload.detail || "預約已成功取消。");
             window.location.reload();
           } catch (error) {
             console.error(error);
