@@ -28,6 +28,7 @@ class TherapistAdmin(admin.ModelAdmin):
         "get_phone_number",
         "timezone",
         "get_email",
+        "uuid",
     )
     search_fields = (
         "user__first_name",
@@ -36,6 +37,7 @@ class TherapistAdmin(admin.ModelAdmin):
         "user__username",
         "user__email",
         "user__phone_number",
+        "uuid",
     )
     autocomplete_fields = ("user",)
     inlines = (TherapistTreatmentInline,)
