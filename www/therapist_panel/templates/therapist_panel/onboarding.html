@@ -201,14 +201,14 @@
               <div class="col-6 col-md-3">
                 <label for="treatment-duration" class="form-label fw-semibold">服務時間</label>
                 <div class="input-group input-group-lg">
-                  <input type="number" class="form-control" id="treatment-duration" name="duration_minutes" min="1" required value="60">
+                  <input type="number" class="form-control" id="treatment-duration" name="duration_minutes" min="1" required placeholder="60">
                   <span class="input-group-text">分鐘</span>
                 </div>
               </div>
               <div class="col-6 col-md-3">
                 <label for="treatment-preparation" class="form-label fw-semibold">預留準備</label>
                 <div class="input-group input-group-lg">
-                  <input type="number" class="form-control" id="treatment-preparation" name="preparation_minutes" min="0" value="10">
+                  <input type="number" class="form-control" id="treatment-preparation" name="preparation_minutes" min="0" placeholder="10">
                   <span class="input-group-text">分鐘</span>
                 </div>
               </div>
@@ -884,7 +884,6 @@
         treatmentForm.reset();
         treatmentErrors.innerHTML = "";
         treatmentFields.id.value = "";
-        treatmentFields.preparation.value = treatmentFields.preparation.value || 10;
         treatmentFields.active.checked = true;
       }
 
@@ -947,8 +946,8 @@
 
         const payload = {
           name: treatmentFields.name.value.trim(),
-          duration_minutes: Number(treatmentFields.duration.value),
-          preparation_minutes: Number(treatmentFields.preparation.value || 0),
+          duration_minutes: Number(treatmentFields.duration.value || 60),
+          preparation_minutes: Number(treatmentFields.preparation.value || 10),
           price: treatmentFields.price.value,
           notes: treatmentFields.notes.value.trim(),
           is_active: treatmentFields.active.checked,
